@@ -98,6 +98,9 @@ public final class MapTileCache {
 
     public static int lodForZoom(float zoom) {
         int lod = (int) Math.ceil(-Math.log(zoom) / Math.log(2) - LOD_ZOOM_BIAS);
+        if (zoom > 300) lod = Math.max(lod, 2);
+        if (zoom > 500) lod = Math.max(lod, 3);
+        if (zoom > 1000) lod = Math.max(lod, 4);
         return Math.max(0, Math.min(MAX_LOD, lod));
     }
 
@@ -337,7 +340,7 @@ public final class MapTileCache {
     }
 
     private static void finishTile(MapTile tile, NativeImage image, int[] heights, boolean[] water,
-                                   int[] waterDepth, boolean[] lightEmitting) {
+                                   int[] waterDepth, boolean[] lightEmitting, boolean[] haloHasData) {
         boolean anyWater = false;
         for (boolean w : water) {
             if (w) {
@@ -350,7 +353,7 @@ public final class MapTileCache {
             applyWaterRelief(image, water, waterDepth);
         }
         if (SolarisConfig.HILLSHADING.get()) {
-            applyHillshading(image, heights);
+            applyHillshading(image, heights, haloHasData);
         }
 
         Level level = Minecraft.getInstance().level;
@@ -498,7 +501,7 @@ public final class MapTileCache {
             }
         }
 
-        finishTile(tile, image, heights, water, waterDepth, lightEmitting);
+        finishTile(tile, image, heights, water, waterDepth, lightEmitting, haloHasData);
     }
 
     private static void buildTile(TileKey key, MapTile tile) {
@@ -507,6 +510,7 @@ public final class MapTileCache {
         boolean[] water = new boolean[HALO * HALO];
         int[] waterDepth = new int[HALO * HALO];
         boolean[] lightEmitting = new boolean[TILE_PIXELS * TILE_PIXELS];
+        boolean[] haloHasData = new boolean[HALO * HALO];
 
         int fogColor = themeToAbgr(SolarisThemeUtils.C_FAINT);
         UnexploredStyle unexploredStyle = SolarisAPI.getUnexploredStyle(key.dimension());
@@ -635,12 +639,13 @@ public final class MapTileCache {
                         water[idx] = chunkWater != null && chunkWater[local];
                         lightEmitting[pz * TILE_PIXELS + px] = chunkLight != null && chunkLight[local];
                         waterDepth[idx] = chunkWaterDepth != null ? chunkWaterDepth[local] : 0;
+                        haloHasData[idx] = chunkHeights != null;
                     }
                 }
             }
         }
 
-        fillHalo(key, heights, water, waterDepth, persistedChunks);
+        fillHalo(key, heights, water, waterDepth, persistedChunks, haloHasData);
 
         if (SolarisConfig.PERF_LOGGING.get() && blankChunks > 0) {
             PhoenixSolaris.LOGGER.info(
@@ -661,7 +666,7 @@ public final class MapTileCache {
             applyWaterRelief(image, water, waterDepth);
         }
         if (SolarisConfig.HILLSHADING.get()) {
-            applyHillshading(image, heights);
+            applyHillshading(image, heights, haloHasData);
         }
 
         Level level = Minecraft.getInstance().level;
@@ -679,31 +684,32 @@ public final class MapTileCache {
     }
 
     private static void fillHalo(TileKey key, int[] heights, boolean[] water, int[] waterDepth,
-                                 ConcurrentHashMap<ChunkKey, PersistentChunkStore.Entry> persistedChunks) {
+                                 ConcurrentHashMap<ChunkKey, PersistentChunkStore.Entry> persistedChunks,
+                                 boolean[] haloHasData) {
         int tileChunkMinX = key.tileX() * TILE_CHUNKS;
         int tileChunkMinZ = key.tileZ() * TILE_CHUNKS;
 
         for (int cz = 0; cz < TILE_CHUNKS; cz++) {
             int chunkZ = tileChunkMinZ + cz;
             fillHaloEdge(key.dimension(), tileChunkMinX - 1, chunkZ, 15, persistedChunks, heights, water, waterDepth,
-                    true, -1, cz * 16);
+                    haloHasData, true, -1, cz * 16);
             fillHaloEdge(key.dimension(), tileChunkMinX + TILE_CHUNKS, chunkZ, 0, persistedChunks, heights, water,
-                    waterDepth, true, TILE_PIXELS, cz * 16);
+                    waterDepth, haloHasData, true, TILE_PIXELS, cz * 16);
         }
         for (int cx = 0; cx < TILE_CHUNKS; cx++) {
             int chunkX = tileChunkMinX + cx;
             fillHaloEdge(key.dimension(), chunkX, tileChunkMinZ - 1, 15, persistedChunks, heights, water, waterDepth,
-                    false, cx * 16, -1);
+                    haloHasData, false, cx * 16, -1);
             fillHaloEdge(key.dimension(), chunkX, tileChunkMinZ + TILE_CHUNKS, 0, persistedChunks, heights, water,
-                    waterDepth, false, cx * 16, TILE_PIXELS);
+                    waterDepth, haloHasData, false, cx * 16, TILE_PIXELS);
         }
     }
 
     private static void fillHaloEdge(ResourceLocation dimension, int neighborChunkX, int neighborChunkZ,
                                      int neighborLocalEdge,
                                      ConcurrentHashMap<ChunkKey, PersistentChunkStore.Entry> persistedChunks,
-                                     int[] heights, boolean[] water, int[] waterDepth, boolean vertical, int haloX,
-                                     int haloZ) {
+                                     int[] heights, boolean[] water, int[] waterDepth, boolean[] haloHasData,
+                                     boolean vertical, int haloX, int haloZ) {
         ChunkKey neighborKey = new ChunkKey(dimension, neighborChunkX, neighborChunkZ);
         int[] nHeights = ChunkHeightCache.get(neighborKey);
         boolean[] nWater = ChunkWaterCache.get(neighborKey);
@@ -726,6 +732,7 @@ public final class MapTileCache {
                 heights[idx] = nHeights[local];
                 water[idx] = nWater != null && nWater[local];
                 waterDepth[idx] = nWaterDepth != null ? nWaterDepth[local] : 0;
+                haloHasData[idx] = true;
             } else {
                 int fallbackX = vertical ? (haloX < 0 ? 0 : TILE_PIXELS - 1) : x;
                 int fallbackZ = vertical ? z : (haloZ < 0 ? 0 : TILE_PIXELS - 1);
@@ -733,6 +740,7 @@ public final class MapTileCache {
                 heights[idx] = heights[fallbackIdx];
                 water[idx] = water[fallbackIdx];
                 waterDepth[idx] = waterDepth[fallbackIdx];
+                haloHasData[idx] = false;
             }
         }
     }
@@ -806,13 +814,21 @@ public final class MapTileCache {
         }
     }
 
-    private static void applyHillshading(NativeImage image, int[] heights) {
+    private static void applyHillshading(NativeImage image, int[] heights, boolean[] haloHasData) {
         double strength = SolarisConfig.HILLSHADING_STRENGTH.get();
-        int edgeSkip = 4;
-        for (int z = edgeSkip; z < TILE_PIXELS - edgeSkip; z++) {
-            for (int x = edgeSkip; x < TILE_PIXELS - edgeSkip; x++) {
-                float dzdx = (heights[haloIdx(x + 1, z)] - heights[haloIdx(x - 1, z)]) * 0.5f;
-                float dzdy = (heights[haloIdx(x, z + 1)] - heights[haloIdx(x, z - 1)]) * 0.5f;
+        for (int z = 0; z < TILE_PIXELS; z++) {
+            for (int x = 0; x < TILE_PIXELS; x++) {
+                int idx = haloIdx(x, z);
+                int idxW = haloIdx(x - 1, z);
+                int idxE = haloIdx(x + 1, z);
+                int idxN = haloIdx(x, z - 1);
+                int idxS = haloIdx(x, z + 1);
+
+                if (!haloHasData[idx] || !haloHasData[idxW] || !haloHasData[idxE] ||
+                    !haloHasData[idxN] || !haloHasData[idxS]) continue;
+
+                float dzdx = (heights[idxE] - heights[idxW]) * 0.5f;
+                float dzdy = (heights[idxS] - heights[idxN]) * 0.5f;
                 float factor = shadeFactor(dzdx, dzdy, (float) strength * SolarisTexture.HILLSHADE_GAIN);
                 factor = Mth.clamp(factor, 0.3f, 1.8f);
 
