@@ -825,7 +825,8 @@ public final class MapTileCache {
                 int idxS = haloIdx(x, z + 1);
 
                 if (!haloHasData[idx] || !haloHasData[idxW] || !haloHasData[idxE] ||
-                    !haloHasData[idxN] || !haloHasData[idxS]) continue;
+                        !haloHasData[idxN] || !haloHasData[idxS])
+                    continue;
 
                 float dzdx = (heights[idxE] - heights[idxW]) * 0.5f;
                 float dzdy = (heights[idxS] - heights[idxN]) * 0.5f;

@@ -85,7 +85,7 @@ public class SolarisMapScreen extends Screen {
 
     private static final int BUTTON_R = 9;
     private static final int BUTTON_MARGIN = 14;
-    private static final int BUTTON_GAP = 22;
+    private static final int MIN_BUTTON_GAP = 12;
 
     private static SolarisTexture texture;
 
@@ -231,6 +231,7 @@ public class SolarisMapScreen extends Screen {
     private void buildIconButtons() {
         iconButtons.clear();
 
+        int buttonGap = calculateButtonGap();
         int settingsX = BUTTON_MARGIN + BUTTON_R;
         int bottomY = height - BUTTON_MARGIN - BUTTON_R;
         iconButtons.add(new IconButton(settingsX, bottomY, "Settings",
@@ -238,19 +239,19 @@ public class SolarisMapScreen extends Screen {
                 () -> runIfEnabled(SolarisAPI.FEATURE_SETTINGS_MENU,
                         () -> Minecraft.getInstance().setScreen(new SolarisDisplaySettingsScreen(this)))));
 
-        int exportX = settingsX + BUTTON_GAP;
+        int exportX = settingsX + buttonGap;
         iconButtons.add(new IconButton(exportX, bottomY, "Export as PNG",
                 (g, hover) -> drawItemIcon(g, exportX, bottomY, EXPORT_ICON),
                 () -> runIfEnabled(SolarisAPI.FEATURE_PNG_EXPORT,
                         () -> texture().exportToPng(SolarisMapScreen::sendMapMessage))));
 
-        int webExportX = exportX + BUTTON_GAP;
+        int webExportX = exportX + buttonGap;
         iconButtons.add(new IconButton(webExportX, bottomY, "Export for Web Map",
                 (g, hover) -> drawItemIcon(g, webExportX, bottomY, WEB_EXPORT_ICON),
                 () -> runIfEnabled(SolarisAPI.FEATURE_WEB_EXPORT,
                         () -> SolarisWebExporter.exportCurrentDimension(SolarisMapScreen::sendMapMessage))));
 
-        int gotoX = webExportX + BUTTON_GAP;
+        int gotoX = webExportX + buttonGap;
         iconButtons.add(new IconButton(gotoX, bottomY, "Go to Coordinate",
                 (g, hover) -> drawItemIcon(g, gotoX, bottomY, GOTO_ICON),
                 () -> runIfEnabled(SolarisAPI.FEATURE_GOTO_COORDINATE,
@@ -262,20 +263,20 @@ public class SolarisMapScreen extends Screen {
                 () -> runIfStateAtLeast(SolarisAPI.FEATURE_WAYPOINTS, SolarisFeatureState.VISIBLE,
                         () -> Minecraft.getInstance().setScreen(new WaypointListScreen(this)))));
 
-        int themeX = waypointsX - BUTTON_GAP;
+        int themeX = waypointsX - buttonGap;
         iconButtons.add(new IconButton(themeX, bottomY, "Theme",
                 (g, hover) -> drawItemIcon(g, themeX, bottomY, THEME_ICON),
                 () -> runIfEnabled(SolarisAPI.FEATURE_THEME_SELECT,
                         () -> Minecraft.getInstance().setScreen(new PhoenixThemeEditorScreen(this, "Solaris")))));
 
-        int wikiX = themeX - BUTTON_GAP;
+        int wikiX = themeX - buttonGap;
         iconButtons.add(new IconButton(wikiX, bottomY, "Wiki",
                 (g, hover) -> drawItemIcon(g, wikiX, bottomY, WIKI_ICON),
                 () -> runIfEnabled(SolarisAPI.FEATURE_WIKI, this::openWiki)));
 
         int lastIconX = wikiX;
         if (SolarisConfig.GLOBE_VIEW_ENABLED.get()) {
-            int globeX = lastIconX - BUTTON_GAP;
+            int globeX = lastIconX - buttonGap;
             iconButtons.add(new IconButton(globeX, bottomY, "Globe View",
                     (g, hover) -> drawGlobeIcon(g, globeX, bottomY),
                     () -> runIfEnabled(SolarisAPI.FEATURE_GLOBE_VIEW, () -> {
@@ -286,7 +287,7 @@ public class SolarisMapScreen extends Screen {
             lastIconX = globeX;
         }
 
-        int undergroundX = lastIconX - BUTTON_GAP;
+        int undergroundX = lastIconX - buttonGap;
         iconButtons.add(new IconButton(undergroundX, bottomY, "Underground View",
                 (g, hover) -> {
                     if (undergroundView) SmoothShapes.drawRing(g, undergroundX, bottomY, BUTTON_R - 1, C_ACCENT);
@@ -295,7 +296,7 @@ public class SolarisMapScreen extends Screen {
                 () -> runIfEnabled(SolarisAPI.FEATURE_UNDERGROUND_MAP, () -> undergroundView = !undergroundView)));
         lastIconX = undergroundX;
 
-        int hillshadingX = lastIconX - BUTTON_GAP;
+        int hillshadingX = lastIconX - buttonGap;
         iconButtons.add(new IconButton(hillshadingX, bottomY, "Hillshading",
                 (g, hover) -> drawHillshadingIcon(g, hillshadingX, bottomY, SolarisConfig.HILLSHADING.get()),
                 () -> runIfEnabled(SolarisAPI.FEATURE_HILLSHADING, () -> {
@@ -308,7 +309,7 @@ public class SolarisMapScreen extends Screen {
                 })));
         lastIconX = hillshadingX;
 
-        int mobsX = lastIconX - BUTTON_GAP;
+        int mobsX = lastIconX - buttonGap;
         iconButtons.add(new IconButton(mobsX, bottomY, "Show Mobs",
                 (g, hover) -> drawItemIcon(g, mobsX, bottomY, MOBS_ICON),
                 () -> runIfEnabled(SolarisAPI.FEATURE_SHOW_MOBS, () -> {
@@ -318,7 +319,7 @@ public class SolarisMapScreen extends Screen {
                 })));
         lastIconX = mobsX;
 
-        int chunkGridX = lastIconX - BUTTON_GAP;
+        int chunkGridX = lastIconX - buttonGap;
         iconButtons.add(new IconButton(chunkGridX, bottomY, "Show Chunk Grid",
                 (g, hover) -> drawChunkGridIcon(g, chunkGridX, bottomY, SolarisConfig.SHOW_CHUNK_GRID.get()),
                 () -> runIfEnabled(SolarisAPI.FEATURE_CHUNK_GRID, () -> {
@@ -328,7 +329,7 @@ public class SolarisMapScreen extends Screen {
                 })));
         lastIconX = chunkGridX;
 
-        int vignetteX = lastIconX - BUTTON_GAP;
+        int vignetteX = lastIconX - buttonGap;
         iconButtons.add(new IconButton(vignetteX, bottomY, "Vignette",
                 (g, hover) -> drawVignetteIcon(g, vignetteX, bottomY, SolarisConfig.VIGNETTE.get()),
                 () -> runIfEnabled(SolarisAPI.FEATURE_VIGNETTE, () -> {
@@ -341,7 +342,7 @@ public class SolarisMapScreen extends Screen {
                 })));
         lastIconX = vignetteX;
 
-        int blackAndWhiteX = lastIconX - BUTTON_GAP;
+        int blackAndWhiteX = lastIconX - buttonGap;
         iconButtons.add(new IconButton(blackAndWhiteX, bottomY, "Black & White",
                 (g, hover) -> drawBlackAndWhiteIcon(g, blackAndWhiteX, bottomY, SolarisConfig.BLACK_AND_WHITE.get()),
                 () -> runIfEnabled(SolarisAPI.FEATURE_BLACK_AND_WHITE, () -> {
@@ -354,7 +355,7 @@ public class SolarisMapScreen extends Screen {
                 })));
         lastIconX = blackAndWhiteX;
 
-        int unexploredX = lastIconX - BUTTON_GAP;
+        int unexploredX = lastIconX - buttonGap;
         iconButtons.add(new IconButton(unexploredX, bottomY, "Unexplored Style",
                 (g, hover) -> drawUnexploredStyleIcon(g, unexploredX, bottomY, SolarisConfig.UNEXPLORED_STYLE.get()),
                 () -> runIfEnabled(SolarisAPI.FEATURE_UNEXPLORED_STYLE, () -> {
@@ -365,13 +366,13 @@ public class SolarisMapScreen extends Screen {
                 })));
         lastIconX = unexploredX;
 
-        int shapesX = lastIconX - BUTTON_GAP;
+        int shapesX = lastIconX - buttonGap;
         iconButtons.add(new IconButton(shapesX, bottomY, "Shapes",
                 (g, hover) -> drawItemIcon(g, shapesX, bottomY, SHAPES_ICON),
                 () -> runIfEnabled(SolarisAPI.FEATURE_SHAPE_PLANNER,
                         () -> Minecraft.getInstance().setScreen(new PlanShapeListScreen(this)))));
 
-        int planX = shapesX - BUTTON_GAP;
+        int planX = shapesX - buttonGap;
         iconButtons.add(new IconButton(planX, bottomY, "Plan",
                 (g, hover) -> drawItemIcon(g, planX, bottomY, PLAN_ICON),
                 () -> runIfEnabled(SolarisAPI.FEATURE_SHAPE_PLANNER, () -> {
@@ -379,6 +380,15 @@ public class SolarisMapScreen extends Screen {
                     mode = ViewMode.FLAT;
                     switchDrawTool(ToolMode.DRAW_RECTANGLE);
                 })));
+    }
+
+    private int calculateButtonGap() {
+        int buttonCount = 13;
+        if (SolarisConfig.GLOBE_VIEW_ENABLED.get()) buttonCount++;
+        int totalButtonWidth = buttonCount * (BUTTON_R * 2);
+        int availableWidth = width - 2 * BUTTON_MARGIN;
+        int maxGap = (availableWidth - totalButtonWidth) / (buttonCount - 1);
+        return Math.max(MIN_BUTTON_GAP, Math.min(maxGap, 22));
     }
 
     private static void runIfEnabled(String featureId, Runnable action) {
