@@ -142,7 +142,7 @@ public class MinimapHudOverlay {
         float scale = screenSize / (float) viewPixels;
         float wrappedU = TextureAddressing.properMod(originX + u, tex.getSizePixels());
         float wrappedV = TextureAddressing.properMod(originZ + v, tex.getSizePixels());
-        
+
         if (shape == MinimapShape.SQUARE) {
             if (rotate) {
                 float overscan = 1.5f;
@@ -220,7 +220,6 @@ public class MinimapHudOverlay {
 
     private static void drawClippedTerrain(GuiGraphics g, MinimapShape shape, SolarisTexture tex, int x, int y,
                                            int screenSize, float u, float v, float scale) {
-        
         RenderSystem.setShaderTexture(0, tex.textureId());
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         BufferBuilder buffer = Tesselator.getInstance().getBuilder();

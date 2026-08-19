@@ -1,6 +1,7 @@
 package net.phoenixvine.solaris.client;
 
 import net.minecraft.util.Mth;
+import net.phoenixvine.wiki.theme.PhoenixTheme;
 
 public final class SolarisThemeUtils {
 
@@ -17,7 +18,7 @@ public final class SolarisThemeUtils {
     public static int C_FAINT;
 
     public static void refreshCache() {
-        SolarisTheme current = SolarisTheme.current();
+        PhoenixTheme current = PhoenixTheme.current();
         if (current == null) return;
 
         C_BG = current.bg.getColor();
@@ -26,8 +27,8 @@ public final class SolarisThemeUtils {
         C_BORDER = current.border.getColor();
         C_ACCENT = current.accent.getColor();
         C_TEXT = current.text.getColor();
-        C_DIM = current.dim.getColor();
-        C_FAINT = current.faint.getColor();
+        C_DIM = current.textDim.getColor();
+        C_FAINT = current.textFaint.getColor();
 
         int a = (C_BORDER >> 24) & 0xFF;
         int r = Mth.clamp(((C_BORDER >> 16) & 0xFF) - 12, 0, 255);

@@ -9,7 +9,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.client.SolarisMapScreen;
-import net.phoenixvine.solaris.client.SolarisTheme;
 import net.phoenixvine.solaris.client.overlay.SolarisOverlay;
 import net.phoenixvine.solaris.client.overlay.SolarisOverlayRegistry;
 import net.phoenixvine.solaris.client.render.MapTileCache;
@@ -18,6 +17,7 @@ import net.phoenixvine.solaris.client.render.UnexploredStyle;
 import net.phoenixvine.solaris.client.waypoint.Waypoint;
 import net.phoenixvine.solaris.client.waypoint.WaypointManager;
 import net.phoenixvine.solaris.config.SolarisConfig;
+import net.phoenixvine.wiki.theme.PhoenixTheme;
 
 import java.util.List;
 import java.util.Map;
@@ -41,6 +41,7 @@ public final class SolarisAPI {
     public static final String FEATURE_SETTINGS_MENU = "settings_menu";
     public static final String FEATURE_GOTO_COORDINATE = "goto_coordinate";
     public static final String FEATURE_THEME_SELECT = "theme_select";
+    public static final String FEATURE_WIKI = "wiki";
     public static final String FEATURE_HILLSHADING = "hillshading";
     public static final String FEATURE_VIGNETTE = "vignette";
     public static final String FEATURE_BLACK_AND_WHITE = "black_and_white";
@@ -63,9 +64,9 @@ public final class SolarisAPI {
                 FEATURE_GLOBE_VIEW, FEATURE_SHAPE_PLANNER, FEATURE_PNG_EXPORT, FEATURE_WEB_EXPORT,
                 FEATURE_GUILD_SHARE, FEATURE_FULLSCREEN_MAP, FEATURE_SHOW_COORDINATES,
                 FEATURE_WAYPOINTS, FEATURE_MINIMAP, FEATURE_WORLD_MAP, FEATURE_UNDERGROUND_MAP,
-                FEATURE_SETTINGS_MENU, FEATURE_GOTO_COORDINATE, FEATURE_THEME_SELECT, FEATURE_HILLSHADING,
-                FEATURE_VIGNETTE, FEATURE_BLACK_AND_WHITE, FEATURE_CHUNK_GRID, FEATURE_SHOW_MOBS,
-                FEATURE_RAIL_NETWORK, FEATURE_UNEXPLORED_STYLE, FEATURE_ZOOM_LIMITS));
+                FEATURE_SETTINGS_MENU, FEATURE_GOTO_COORDINATE, FEATURE_THEME_SELECT, FEATURE_WIKI,
+                FEATURE_HILLSHADING, FEATURE_VIGNETTE, FEATURE_BLACK_AND_WHITE, FEATURE_CHUNK_GRID,
+                FEATURE_SHOW_MOBS, FEATURE_RAIL_NETWORK, FEATURE_UNEXPLORED_STYLE, FEATURE_ZOOM_LIMITS));
     }
 
     private static volatile boolean refreshPending = false;
@@ -263,18 +264,18 @@ public final class SolarisAPI {
     }
 
     public static String getTheme() {
-        return SolarisTheme.getActiveName();
+        return PhoenixTheme.getActiveName();
     }
 
     public static List<String> getAvailableThemes() {
-        return List.copyOf(SolarisTheme.REGISTRY.keySet());
+        return List.copyOf(PhoenixTheme.REGISTRY.keySet());
     }
 
     public static boolean setTheme(String name) {
-        if (!SolarisTheme.REGISTRY.containsKey(name) && !SolarisTheme.REGISTRY.containsKey(name.toUpperCase())) {
+        if (!PhoenixTheme.REGISTRY.containsKey(name) && !PhoenixTheme.REGISTRY.containsKey(name.toUpperCase())) {
             return false;
         }
-        SolarisTheme.setCurrent(name);
+        PhoenixTheme.setCurrent(name);
         return true;
     }
 

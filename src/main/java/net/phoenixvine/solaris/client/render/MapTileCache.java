@@ -39,13 +39,74 @@ public final class MapTileCache {
     public static final int TILE_CHUNKS = 8;
     public static final int TILE_PIXELS = TILE_CHUNKS * 16;
 
-    private static final int MAX_CACHED_TILES = 512;
+    // See the matching comment in CaveTileCache — a fixed 512 was far too small for the working
+    // set at moderate zoom-out, causing the cache to thrash within/across frames (panning
+    // "flicker", and blank patches wherever the player's tiles lost that frame's LRU race).
+    private static volatile int capacity = 512;
+    private static final int HARD_CEILING = 4096;
 
-    public record TileKey(ResourceLocation dimension, int tileX, int tileZ) {
+    // Raising the cache ceiling alone only pushes the thrash further out — tile count still grows
+    // as (1/zoom)^2, so any fixed ceiling has a zoom level that breaks it again. LOD tiles cap the
+    // growth instead: past lod 0, a tile covers 2^lod times more world per texture pixel, so the
+    // on-screen tile count for a given screen size stays roughly constant across the whole zoom
+    // range instead of exploding. See lodForZoom below for how a zoom level picks its lod.
+    // A coarse tile costs the same to build regardless of how much world it covers (always a
+    // fixed 128x128 sample pass), so there's no real cost to a high ceiling here — only a low one
+    // is dangerous, since once zoom pushes past MAX_LOD the tile count starts growing again
+    // (capped at the coarsest level, same unbounded-tile-count problem LOD was built to avoid).
+    // 6 was too low: unlimited-zoom mode (down to 0.01) blew past it, which is what caused
+    // rendering delay/hitching at very far zoom-outs.
+    public static final int MAX_LOD = 14;
 
-        public static TileKey ofChunk(ResourceLocation dimension, int chunkX, int chunkZ) {
-            return new TileKey(dimension, Math.floorDiv(chunkX, TILE_CHUNKS), Math.floorDiv(chunkZ, TILE_CHUNKS));
+    public record TileKey(ResourceLocation dimension, int tileX, int tileZ, int lod) {
+
+        // Keeps the pre-LOD 3-arg constructor callable for external mods compiled against the
+        // old API (phoenix_domains' SolarisClaimMapScreen calls this directly to align its claim
+        // overlay with our tile grid) — without it, adding the lod field is a binary break that
+        // crashes with NoSuchMethodError the moment such a mod tries to build a TileKey.
+        public TileKey(ResourceLocation dimension, int tileX, int tileZ) {
+            this(dimension, tileX, tileZ, 0);
         }
+
+        public static void markChunkDirty(Set<TileKey> dirty, ResourceLocation dimension, int chunkX, int chunkZ) {
+            for (int lod = 0; lod <= MAX_LOD; lod++) {
+                int chunksPerTile = TILE_CHUNKS << lod;
+                dirty.add(new TileKey(dimension, Math.floorDiv(chunkX, chunksPerTile),
+                        Math.floorDiv(chunkZ, chunksPerTile), lod));
+            }
+        }
+    }
+
+    // Blocks covered by a single texture pixel at a given lod: 1 at lod 0 (native, 1:1 with
+    // blocks), doubling each level. World size of a tile is TILE_PIXELS * that.
+    public static int blocksPerPixel(int lod) {
+        return 1 << lod;
+    }
+
+    public static int tileWorldSize(int lod) {
+        return TILE_PIXELS << lod;
+    }
+
+    // Picks the coarsest lod whose texture pixels are still at least ~1 screen pixel, so tiles
+    // stay roughly TILE_PIXELS screen-pixels wide regardless of zoom instead of ballooning in
+    // count as you zoom out. ceil (not round) so we never undershoot into thrash territory.
+    // LOD_ZOOM_BIAS delays that switch by this many zoom-halvings. Tuned so lod 0 -> 1 happens
+    // around the scale bar reading ~150 blocks (scale bar shows 60/zoom blocks, so the threshold
+    // zoom is 60/150 = 0.4, and bias = -log2(0.4) ≈ 1.32) — sharper than the earlier ~240 block
+    // threshold, but not as trigger-happy as the unbiased ~60 block one.
+    private static final double LOD_ZOOM_BIAS = 1.32;
+
+    public static int lodForZoom(float zoom) {
+        int lod = (int) Math.ceil(-Math.log(zoom) / Math.log(2) - LOD_ZOOM_BIAS);
+        return Math.max(0, Math.min(MAX_LOD, lod));
+    }
+
+    // Helper for external callers (e.g. phoenix_domains) to get TileKey with correct LOD for zoom level.
+    // When zoom is available, use this instead of TileKey(dimension, tileX, tileZ) to get proper LOD.
+    public static TileKey getTileKeyForZoom(ResourceLocation dimension, int tileX, int tileZ, float zoom) {
+        int lod = lodForZoom(zoom);
+        int scale = 1 << lod;
+        return new TileKey(dimension, tileX / scale, tileZ / scale, lod);
     }
 
     public static final class MapTile implements AutoCloseable {
@@ -80,7 +141,7 @@ public final class MapTileCache {
 
                 @Override
                 protected boolean removeEldestEntry(Map.Entry<TileKey, MapTile> eldest) {
-                    if (size() <= MAX_CACHED_TILES) return false;
+                    if (size() <= capacity) return false;
                     eldest.getValue().close();
                     return true;
                 }
@@ -93,6 +154,12 @@ public final class MapTileCache {
 
     private MapTileCache() {}
 
+    public static void ensureCapacity(int neededTiles) {
+        if (neededTiles > capacity) {
+            capacity = Math.min(HARD_CEILING, neededTiles);
+        }
+    }
+
     public static void checkNightFactor(Level level) {
         if (level == null) return;
         double bucket = Math.round(ChunkColorSampler.nightFactor(level.getDayTime()) / NIGHT_FACTOR_BUCKET) *
@@ -102,6 +169,14 @@ public final class MapTileCache {
         synchronized (TILES) {
             DIRTY.addAll(TILES.keySet());
         }
+    }
+
+    // Pre-dates the per-frame build budget entirely (phoenix_domains' SolarisClaimMapScreen is
+    // still compiled against this no-budget signature) — kept as a compatibility overload so that
+    // mod doesn't crash with NoSuchMethodError. Effectively unlimited budget: the claim overlay
+    // calls this for its own, separately-bounded tile loop, not ours.
+    public static MapTile getOrBuildTile(TileKey key) {
+        return getOrBuildTile(key, new int[] { Integer.MAX_VALUE });
     }
 
     public static MapTile getOrBuildTile(TileKey key, int[] buildBudget) {
@@ -122,12 +197,16 @@ public final class MapTileCache {
 
         if (tile == null) {
             ResourceLocation id = new ResourceLocation(PhoenixSolaris.MOD_ID,
-                    "dynamic/tile_" + nextTileId++ + "_" + key.tileX() + "_" + key.tileZ());
+                    "dynamic/tile_" + nextTileId++ + "_" + key.tileX() + "_" + key.tileZ() + "_" + key.lod());
             tile = new MapTile(id);
             TILES.put(key, tile);
         }
         try {
-            buildTile(key, tile);
+            if (key.lod() == 0) {
+                buildTile(key, tile);
+            } else {
+                buildTileLod(key, tile);
+            }
         } catch (Exception e) {
 
             DIRTY.add(key);
@@ -137,7 +216,7 @@ public final class MapTileCache {
     }
 
     public static void markDirty(ChunkKey key) {
-        DIRTY.add(TileKey.ofChunk(key.dimension(), key.x(), key.z()));
+        TileKey.markChunkDirty(DIRTY, key.dimension(), key.x(), key.z());
     }
 
     public static void clearAll() {
@@ -228,6 +307,198 @@ public final class MapTileCache {
         int alpha = (int) Math.round(Mth.clamp(60 + t * 150 * brightness, 0, 235));
         int gray = Math.min(240, (int) Math.round(190 + t * 40));
         return FastColor.ABGR32.color(alpha, gray, gray, gray);
+    }
+
+    private record UnexploredStyleContext(UnexploredStyle style, double density, double brightness,
+                                          boolean imageCover, int fogColor, int starAccent, int starDim,
+                                          int starSpace) {
+
+        static UnexploredStyleContext forDimension(ResourceLocation dimension, int fogColor) {
+            return new UnexploredStyleContext(SolarisAPI.getUnexploredStyle(dimension),
+                    SolarisConfig.UNEXPLORED_DENSITY.get(), SolarisConfig.UNEXPLORED_BRIGHTNESS.get(),
+                    SolarisConfig.UNEXPLORED_IMAGE_COVER.get(), fogColor, themeToAbgr(SolarisThemeUtils.C_ACCENT),
+                    themeToAbgr(SolarisThemeUtils.C_DIM), SolarisTexture.scaleBrightness(fogColor, 0.3));
+        }
+    }
+
+    private static int unexploredColor(UnexploredStyleContext ctx, int worldPx, int worldPz) {
+        return switch (ctx.style()) {
+            case FOG -> ctx.fogColor();
+            case STARFIELD -> starfieldPixel(worldPx, worldPz, ctx.density(), ctx.brightness(), ctx.starAccent(),
+                    ctx.starDim(), ctx.starSpace());
+            case PHOENIX -> phoenixPixel(worldPx, worldPz, ctx.density(), ctx.brightness());
+            case CLOUD -> cloudPixel(worldPx, worldPz, ctx.density(), ctx.brightness());
+            case IMAGE -> {
+                if (ctx.imageCover()) yield 0;
+                int imgColor = UnexploredImageStyle.getPixel(worldPx, worldPz);
+                yield imgColor != 0 ? imgColor : ctx.fogColor();
+            }
+        };
+    }
+
+    private static void finishTile(MapTile tile, NativeImage image, int[] heights, boolean[] water,
+                                   int[] waterDepth, boolean[] lightEmitting) {
+        boolean anyWater = false;
+        for (boolean w : water) {
+            if (w) {
+                anyWater = true;
+                break;
+            }
+        }
+        if (anyWater) {
+            blurWater(image, water);
+            applyWaterRelief(image, water, waterDepth);
+        }
+        if (SolarisConfig.HILLSHADING.get()) {
+            applyHillshading(image, heights);
+        }
+
+        Level level = Minecraft.getInstance().level;
+        if (level != null) {
+            applyNightDarkening(image, lightEmitting, level);
+        }
+        if (SolarisConfig.BLACK_AND_WHITE.get()) {
+            applyBlackAndWhite(image);
+        }
+
+        tile.texture.bind();
+        tile.texture.upload();
+
+        tile.texture.setFilter(false, false);
+    }
+
+    // Coarse (lod > 0) tiles trade block-level precision for area coverage: each texture pixel
+    // represents a blocksPerPixel(lod)-sized block region, sampled by picking the one chunk that
+    // region's corner falls in (nearest-neighbor decimation — the same approach vanilla Minecraft
+    // uses for its own zoomed-out map levels) rather than averaging every block in between. That
+    // keeps the build cheap (one chunk-cache lookup per pixel, same order of work as a native
+    // tile) regardless of how much world area the tile covers. The -1..TILE_PIXELS loop bounds
+    // fold the halo ring into the same pass instead of a separate neighbor-chunk walk, since a
+    // halo pixel here is just one more sample on the same coarse grid.
+    private static void buildTileLod(TileKey key, MapTile tile) {
+        NativeImage image = tile.image;
+        int[] heights = new int[HALO * HALO];
+        boolean[] water = new boolean[HALO * HALO];
+        int[] waterDepth = new int[HALO * HALO];
+        boolean[] lightEmitting = new boolean[TILE_PIXELS * TILE_PIXELS];
+        // Tracks which halo-ring cells got real chunk data vs. fell back to DEFAULT_HEIGHT. A
+        // ring cell whose neighboring chunk hasn't been explored (common right past a tile edge
+        // at low detail) would otherwise sit at a flat default height next to real, often much
+        // different, interior terrain — hillshading reads that fake cliff as a hard shadow right
+        // along the tile boundary, i.e. a black box outlining every tile. The fixup pass below
+        // replaces those with the tile's own clamped edge value instead, exactly like native
+        // tiles' fillHaloEdge fallback already does.
+        boolean[] haloHasData = new boolean[HALO * HALO];
+
+        int blocksPerPixel = blocksPerPixel(key.lod());
+        int worldOriginX = key.tileX() * tileWorldSize(key.lod());
+        int worldOriginZ = key.tileZ() * tileWorldSize(key.lod());
+
+        int fogColor = themeToAbgr(SolarisThemeUtils.C_FAINT);
+        UnexploredStyleContext unexplored = UnexploredStyleContext.forDimension(key.dimension(), fogColor);
+
+        double saturation = SolarisConfig.SATURATION.get();
+        double contrast = SolarisConfig.CONTRAST.get();
+        double brightness = SolarisConfig.BRIGHTNESS.get();
+        double foliageBrightness = SolarisConfig.FOLIAGE_BRIGHTNESS.get();
+        double tintRed = SolarisConfig.TINT_RED.get();
+        double tintGreen = SolarisConfig.TINT_GREEN.get();
+        double tintBlue = SolarisConfig.TINT_BLUE.get();
+        boolean hasColorTint = tintRed != 1.0 || tintGreen != 1.0 || tintBlue != 1.0;
+        boolean showClaims = SolarisConfig.SHOW_CLAIMS_MAP.get();
+
+        List<SolarisOverlay> overlays = SolarisOverlayRegistry.getOverlays();
+        ConcurrentHashMap<ChunkKey, PersistentChunkStore.Entry> persistedChunks = PersistentChunkStore
+                .chunksFor(key.dimension().toString());
+
+        for (int pz = -1; pz <= TILE_PIXELS; pz++) {
+            int worldZ = worldOriginZ + pz * blocksPerPixel;
+            int chunkZ = Math.floorDiv(worldZ, 16);
+            int localZ = Math.floorMod(worldZ, 16);
+
+            for (int px = -1; px <= TILE_PIXELS; px++) {
+                int worldX = worldOriginX + px * blocksPerPixel;
+                int chunkX = Math.floorDiv(worldX, 16);
+                int localX = Math.floorMod(worldX, 16);
+                int local = localZ * 16 + localX;
+
+                ChunkKey ckey = new ChunkKey(key.dimension(), chunkX, chunkZ);
+                int[] pixels = ChunkColorCache.get(ckey);
+                int[] chunkHeights = ChunkHeightCache.get(ckey);
+                boolean[] chunkWater = ChunkWaterCache.get(ckey);
+                boolean[] chunkLight = ChunkLightCache.get(ckey);
+                int[] chunkWaterTint = ChunkWaterTintCache.get(ckey);
+                int[] chunkWaterDepth = ChunkWaterDepthCache.get(ckey);
+                boolean[] chunkWaterOcean = ChunkWaterOceanCache.get(ckey);
+                boolean[] chunkFoliage = ChunkFoliageCache.get(ckey);
+                if (pixels == null) {
+                    PersistentChunkStore.Entry persisted = persistedChunks != null ? persistedChunks.get(ckey) : null;
+                    if (persisted != null) {
+                        pixels = persisted.pixels();
+                        chunkHeights = persisted.heights();
+                        chunkWater = persisted.water();
+                        chunkWaterTint = persisted.waterTint();
+                        chunkWaterDepth = persisted.waterDepth();
+                        chunkWaterOcean = persisted.waterOcean();
+                        chunkFoliage = persisted.foliage();
+                    }
+                }
+
+                int height = chunkHeights != null ? chunkHeights[local] : SolarisTexture.DEFAULT_HEIGHT;
+                int color = pixels != null ? pixels[local] : 0;
+                if (color == 0) {
+                    color = unexploredColor(unexplored, worldX, worldZ);
+                } else {
+                    if (chunkWaterTint != null && chunkWaterTint[local] != 0) {
+                        color = ChunkColorSampler.compositeWaterTint(chunkWaterTint[local], chunkWaterDepth[local],
+                                chunkWaterOcean[local], height);
+                    }
+                    if (saturation != 1.0) color = SolarisTexture.applySaturation(color, saturation);
+                    if (contrast != 1.0) color = SolarisTexture.applyContrast(color, contrast);
+                    if (brightness != 1.0) color = SolarisTexture.scaleBrightness(color, brightness);
+                    if (chunkFoliage != null && chunkFoliage[local] && foliageBrightness != 1.0) {
+                        color = SolarisTexture.scaleBrightness(color, foliageBrightness);
+                    }
+                    if (hasColorTint) {
+                        color = SolarisTexture.scaleChannels(color, tintRed, tintGreen, tintBlue);
+                    }
+                }
+
+                if (showClaims && px >= 0 && px < TILE_PIXELS && pz >= 0 && pz < TILE_PIXELS) {
+                    for (SolarisOverlay overlay : overlays) {
+                        Optional<Integer> tint = overlay.colorAt(key.dimension(), chunkX, chunkZ);
+                        if (tint.isPresent()) color = SolarisTexture.blend(color, tint.get());
+                    }
+                }
+
+                int idx = haloIdx(px, pz);
+                heights[idx] = height;
+                water[idx] = chunkWater != null && chunkWater[local];
+                waterDepth[idx] = chunkWaterDepth != null ? chunkWaterDepth[local] : 0;
+                haloHasData[idx] = chunkHeights != null;
+
+                if (px >= 0 && px < TILE_PIXELS && pz >= 0 && pz < TILE_PIXELS) {
+                    image.setPixelRGBA(px, pz, color);
+                    lightEmitting[pz * TILE_PIXELS + px] = chunkLight != null && chunkLight[local];
+                }
+            }
+        }
+
+        for (int pz = -1; pz <= TILE_PIXELS; pz++) {
+            boolean ringRow = pz < 0 || pz >= TILE_PIXELS;
+            for (int px = -1; px <= TILE_PIXELS; px++) {
+                if (!ringRow && px >= 0 && px < TILE_PIXELS) continue;
+                int idx = haloIdx(px, pz);
+                if (haloHasData[idx]) continue;
+                int fallbackIdx = haloIdx(Math.max(0, Math.min(TILE_PIXELS - 1, px)),
+                        Math.max(0, Math.min(TILE_PIXELS - 1, pz)));
+                heights[idx] = heights[fallbackIdx];
+                water[idx] = water[fallbackIdx];
+                waterDepth[idx] = waterDepth[fallbackIdx];
+            }
+        }
+
+        finishTile(tile, image, heights, water, waterDepth, lightEmitting);
     }
 
     private static void buildTile(TileKey key, MapTile tile) {
@@ -456,7 +727,6 @@ public final class MapTileCache {
                 water[idx] = nWater != null && nWater[local];
                 waterDepth[idx] = nWaterDepth != null ? nWaterDepth[local] : 0;
             } else {
-
                 int fallbackX = vertical ? (haloX < 0 ? 0 : TILE_PIXELS - 1) : x;
                 int fallbackZ = vertical ? z : (haloZ < 0 ? 0 : TILE_PIXELS - 1);
                 int fallbackIdx = haloIdx(fallbackX, fallbackZ);
@@ -538,8 +808,9 @@ public final class MapTileCache {
 
     private static void applyHillshading(NativeImage image, int[] heights) {
         double strength = SolarisConfig.HILLSHADING_STRENGTH.get();
-        for (int z = 0; z < TILE_PIXELS; z++) {
-            for (int x = 0; x < TILE_PIXELS; x++) {
+        int edgeSkip = 4;
+        for (int z = edgeSkip; z < TILE_PIXELS - edgeSkip; z++) {
+            for (int x = edgeSkip; x < TILE_PIXELS - edgeSkip; x++) {
                 float dzdx = (heights[haloIdx(x + 1, z)] - heights[haloIdx(x - 1, z)]) * 0.5f;
                 float dzdy = (heights[haloIdx(x, z + 1)] - heights[haloIdx(x, z - 1)]) * 0.5f;
                 float factor = shadeFactor(dzdx, dzdy, (float) strength * SolarisTexture.HILLSHADE_GAIN);

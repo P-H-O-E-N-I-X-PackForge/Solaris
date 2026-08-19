@@ -696,7 +696,13 @@ function render() {
 
   renderUnexploredBackground(ctx, canvas.width, canvas.height, state.options.unexploredStyle);
 
-  ctx.imageSmoothingEnabled = true;
+  // Nearest-neighbor, not smoothed — matches the in-game map's own filtering (SolarisTexture
+  // uses texture.setFilter(false, false)), and avoids a real bug: smoothing a scaled image with
+  // a hard alpha edge (explored terrain next to fully-transparent unexplored pixels) blends
+  // partially-transparent halo pixels along that edge, letting the background show through in a
+  // blur that shifts every frame as you pan/zoom — reads as the background "smearing" or
+  // "bleeding" into the map, especially obvious against a high-contrast custom image.
+  ctx.imageSmoothingEnabled = false;
   const v = state.view;
   ctx.drawImage(state.map.canvas, v.offsetX, v.offsetY, state.map.width * v.zoom, state.map.height * v.zoom);
 

@@ -27,7 +27,7 @@ import java.util.zip.GZIPOutputStream;
 public final class SolarisWebExporter {
 
     private static final int MAGIC = 0x534F4C4D;
-    private static final int VERSION = 2; 
+    private static final int VERSION = 2;
     private static final DateTimeFormatter EXPORT_NAME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH.mm.ss");
 
     private SolarisWebExporter() {}
@@ -120,7 +120,7 @@ public final class SolarisWebExporter {
                 int[] waterTint = entry.waterTint();
                 int[] waterDepth = entry.waterDepth();
                 boolean[] waterOcean = entry.waterOcean();
-                boolean[] water = entry.water(); 
+                boolean[] water = entry.water();
                 int[] heights = entry.heights();
 
                 for (int i = 0; i < pixels.length; i++) {

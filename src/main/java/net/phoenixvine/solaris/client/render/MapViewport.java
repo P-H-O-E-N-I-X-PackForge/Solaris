@@ -2,7 +2,7 @@ package net.phoenixvine.solaris.client.render;
 
 public class MapViewport {
 
-    private static final float ZOOM_STEP = 0.1f;
+    private static final float ZOOM_STEP_FACTOR = 1.1f;
 
     private float zoomMin;
     private float zoomMax;
@@ -27,7 +27,13 @@ public class MapViewport {
 
     public boolean adjustZoomToAnchor(double scrollDelta, double mouseX, double mouseY, int originX, int originY) {
         float oldZoom = this.zoom;
-        this.zoom = Math.max(zoomMin, Math.min(zoomMax, this.zoom + (float) scrollDelta * ZOOM_STEP));
+        // Multiplicative, not additive — a fixed absolute step (e.g. -0.1) is a huge relative
+        // jump once zoom is already small (zoomed way out), and that ratio feeds straight into
+        // the offset math below, which was throwing the pan position wildly off and reading as
+        // the map "glitching"/jumping at low zoom. A fixed percentage per scroll notch stays
+        // proportional at any zoom level, matching how GlobeCamera already zooms.
+        float newZoom = (float) (this.zoom * Math.pow(ZOOM_STEP_FACTOR, scrollDelta));
+        this.zoom = Math.max(zoomMin, Math.min(zoomMax, newZoom));
         if (this.zoom == oldZoom) return false;
 
         float ratio = this.zoom / oldZoom;

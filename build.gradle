@@ -141,6 +141,12 @@ dependencies {
     modCompileOnly 'curse.maven:phoenix-guilds-1612085:8460956'
     modRuntimeOnly 'curse.maven:phoenix-guilds-1612085:8460956'
 
+    // Phoenix Wiki - jar-in-jar'd shared theme system (net.phoenixvine.wiki.theme.PhoenixTheme)
+    // and markdown/wiki engine (net.phoenixvine.wiki.PhoenixWikiAPI) - the same theme choice this
+    // library holds is shared with every other Phoenixvine mod that also embeds it. After changing
+    // anything in that project, run `./gradlew publishToSolaris` there to refresh libs/phoenix_wiki-*.jar.
+    jarJar(modImplementation("local:phoenix_wiki:0.1.0"))
+
     // Optional camouflage-block map-color integrations — none of these three are required to
     // run Solaris, only to render what a camouflaged/materially-textured block is actually
     // displaying instead of its own undefined placeholder color. See integration.framedblocks /

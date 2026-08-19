@@ -84,6 +84,11 @@ public final class CaveColorSampler {
                     BlockState state = level.getBlockState(cursor);
                     if (state.isAir()) continue;
 
+                    // A building's foundation/basement can dip into this Y-band even while
+                    // you're legitimately underground beneath it — skip player-built structure so
+                    // the cave view shows real terrain, not a stray patch of house wall.
+                    if (isLikelyStructure(level, cursor, state)) continue;
+
                     MapColor mapColor = state.getMapColor(level, cursor);
                     rgb = mapColor != MapColor.NONE ? mapColor.calculateRGBColor(MapColor.Brightness.NORMAL) :
                             packAbgr(BlockTextureColors.get(state));

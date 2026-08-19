@@ -52,6 +52,10 @@ import net.phoenixvine.solaris.client.waypoint.WaypointListScreen;
 import net.phoenixvine.solaris.client.waypoint.WaypointManager;
 import net.phoenixvine.solaris.config.SolarisConfig;
 import net.phoenixvine.solaris.integration.gtceu.GtceuIntegration;
+import net.phoenixvine.wiki.PhoenixWikiAPI;
+import net.phoenixvine.wiki.client.screen.WikiTheme;
+import net.phoenixvine.wiki.theme.PhoenixTheme;
+import net.phoenixvine.wiki.theme.PhoenixThemeEditorScreen;
 
 import org.lwjgl.glfw.GLFW;
 
@@ -70,7 +74,14 @@ public class SolarisMapScreen extends Screen {
 
     private static final int MARGIN = 20;
 
-    private static final int MAX_TILE_BUILDS_PER_FRAME = 12;
+    // 12 was too conservative once the fixed tile-count clamp (that used to bound how much area
+    // could need covering) was removed: panning/zooming can now legitimately reveal hundreds of
+    // never-before-seen tiles in view at once, and only this many get (cheap cache lookups plus
+    // one small GPU upload each) built per frame — anything past budget stays blank until a later
+    // frame, which read as a wave of missing/culled data trailing the pan or zoom. The original
+    // "laggy" complaint this budget was added for came from building an *unbounded* number of
+    // tiles synchronously in one frame, not from a merely-generous bound like this one.
+    private static final int MAX_TILE_BUILDS_PER_FRAME = 300;
 
     private static final int BUTTON_R = 9;
     private static final int BUTTON_MARGIN = 14;
@@ -201,6 +212,21 @@ public class SolarisMapScreen extends Screen {
     private static final ItemStack GOTO_ICON = new ItemStack(Items.COMPASS);
     private static final ItemStack MOBS_ICON = new ItemStack(Items.ZOMBIE_SPAWN_EGG);
     private static final ItemStack UNDERGROUND_ICON = new ItemStack(Items.LADDER);
+    private static final ItemStack WIKI_ICON = new ItemStack(Items.BOOK);
+
+    /**
+     * Opens the dev wiki via the jar-in-jar'd Phoenix Wiki library, themed to match this mod's
+     * currently active (suite-wide shared) PhoenixTheme.
+     */
+    private void openWiki() {
+        if (minecraft == null) return;
+        PhoenixTheme t = PhoenixTheme.current();
+        WikiTheme wikiTheme = new WikiTheme(
+                t.bg.getColor(), t.panel.getColor(), t.header.getColor(), t.border.getColor(),
+                t.accent.getColor(), t.text.getColor(), t.textDim.getColor(), t.textFaint.getColor(),
+                t.done.getColor(), t.activeColor.getColor());
+        PhoenixWikiAPI.open(this, "solaris", "wiki", wikiTheme);
+    }
 
     private void buildIconButtons() {
         iconButtons.clear();
@@ -240,9 +266,14 @@ public class SolarisMapScreen extends Screen {
         iconButtons.add(new IconButton(themeX, bottomY, "Theme",
                 (g, hover) -> drawItemIcon(g, themeX, bottomY, THEME_ICON),
                 () -> runIfEnabled(SolarisAPI.FEATURE_THEME_SELECT,
-                        () -> Minecraft.getInstance().setScreen(new SolarisThemeEditorScreen(this)))));
+                        () -> Minecraft.getInstance().setScreen(new PhoenixThemeEditorScreen(this, "Solaris")))));
 
-        int lastIconX = themeX;
+        int wikiX = themeX - BUTTON_GAP;
+        iconButtons.add(new IconButton(wikiX, bottomY, "Wiki",
+                (g, hover) -> drawItemIcon(g, wikiX, bottomY, WIKI_ICON),
+                () -> runIfEnabled(SolarisAPI.FEATURE_WIKI, this::openWiki)));
+
+        int lastIconX = wikiX;
         if (SolarisConfig.GLOBE_VIEW_ENABLED.get()) {
             int globeX = lastIconX - BUTTON_GAP;
             iconButtons.add(new IconButton(globeX, bottomY, "Globe View",
@@ -472,9 +503,7 @@ public class SolarisMapScreen extends Screen {
         return undergroundView;
     }
 
-    private void clampViewport() {
-
-    }
+    private void clampViewport() {}
 
     private void recenterGlobeIfNeeded() {
         Minecraft mc = Minecraft.getInstance();
@@ -621,7 +650,6 @@ public class SolarisMapScreen extends Screen {
     }
 
     private void drawChunkGridWorld(GuiGraphics g) {
-        
         if (viewport.getZoom() < 0.4f) return;
 
         int frameLeft = MARGIN;
@@ -854,11 +882,30 @@ public class SolarisMapScreen extends Screen {
         drawShapePreview(g, mx, my);
     }
 
+    // player.getY() isn't perfectly stable frame-to-frame even standing still (sub-tick
+    // interpolation, minor physics jitter) — recomputing the Y-bucket fresh from it every frame
+    // meant a value that happened to sit right at a bucket boundary could flip the bucket back
+    // and forth every single frame. Since the bucket is part of every visible tile's cache key,
+    // that swapped the entire rendered tile set out from under itself each frame — read as
+    // constant flickering. Only move the render-facing bucket once the player has actually
+    // crossed meaningfully past a boundary, not merely touched it.
+    private int renderYBucket = Integer.MIN_VALUE;
+
+    private int stableCaveYBucket(int playerY) {
+        int raw = PersistentCaveStore.yBucket(playerY);
+        if (renderYBucket == Integer.MIN_VALUE ||
+                Math.abs(playerY - renderYBucket * PersistentCaveStore.Y_BUCKET_SIZE) >
+                        PersistentCaveStore.Y_BUCKET_SIZE) {
+            renderYBucket = raw;
+        }
+        return renderYBucket;
+    }
+
     private void renderCaveMapTiles(GuiGraphics g) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
         ResourceLocation dimension = mc.level.dimension().location();
-        int yBucket = PersistentCaveStore.yBucket(mc.player != null ? Mth.floor(mc.player.getY()) : 0);
+        int yBucket = stableCaveYBucket(mc.player != null ? Mth.floor(mc.player.getY()) : 0);
 
         float zoom = viewport.getZoom();
         if (zoom < 0.05f) return;
@@ -868,39 +915,46 @@ public class SolarisMapScreen extends Screen {
         double worldMinZ = viewport.toWorldZ(MARGIN, 0);
         double worldMaxZ = viewport.toWorldZ(height - MARGIN, 0);
 
-        int tileMinX = Math.floorDiv((int) Math.floor(worldMinX) >> 4, CaveTileCache.TILE_CHUNKS);
-        int tileMaxX = Math.floorDiv((int) Math.floor(worldMaxX) >> 4, CaveTileCache.TILE_CHUNKS);
-        int tileMinZ = Math.floorDiv((int) Math.floor(worldMinZ) >> 4, CaveTileCache.TILE_CHUNKS);
-        int tileMaxZ = Math.floorDiv((int) Math.floor(worldMaxZ) >> 4, CaveTileCache.TILE_CHUNKS);
+        // At low zoom, a fixed native tile size would need an unbounded number of tiles to cover
+        // the screen (tile count grows with (1/zoom)^2) — no cache size survives that. lod picks
+        // a coarser tile (covering more world per texture pixel) once zoom drops, keeping the
+        // on-screen tile count roughly constant instead. See MapTileCache.lodForZoom.
+        int lod = MapTileCache.lodForZoom(zoom);
+        int chunksPerTile = CaveTileCache.TILE_CHUNKS << lod;
+        int tileWorldSize = CaveTileCache.TILE_PIXELS << lod;
 
-        if (tileMaxX - tileMinX > 40) {
-            int midX = (tileMinX + tileMaxX) / 2;
-            tileMinX = midX - 20;
-            tileMaxX = midX + 20;
-        }
-        if (tileMaxZ - tileMinZ > 40) {
-            int midZ = (tileMinZ + tileMaxZ) / 2;
-            tileMinZ = midZ - 20;
-            tileMaxZ = midZ + 20;
-        }
+        int tileMinX = Math.floorDiv((int) Math.floor(worldMinX) >> 4, chunksPerTile);
+        int tileMaxX = Math.floorDiv((int) Math.floor(worldMaxX) >> 4, chunksPerTile);
+        int tileMinZ = Math.floorDiv((int) Math.floor(worldMinZ) >> 4, chunksPerTile);
+        int tileMaxZ = Math.floorDiv((int) Math.floor(worldMaxZ) >> 4, chunksPerTile);
+
+        // No count-based clamp on the tile range here: at low zoom the screen can genuinely need
+        // a few hundred tiles to cover it, but iterating that (each an O(1) hashmap lookup plus a
+        // cheap viewport-culling check before anything expensive happens) is negligible — the
+        // real costs are already bounded elsewhere (building a new tile texture is capped by
+        // buildBudget below, and GL blits only happen for tiles that survive the on-screen cull).
+        // A previous fixed cap here shrank the *rendered area* itself at low zoom instead of just
+        // limiting cost, leaving most of the screen blank.
+
+        CaveTileCache.ensureCapacity((tileMaxX - tileMinX + 1) * (tileMaxZ - tileMinZ + 1));
 
         int[] buildBudget = { MAX_TILE_BUILDS_PER_FRAME };
         for (int tz = tileMinZ; tz <= tileMaxZ; tz++) {
             for (int tx = tileMinX; tx <= tileMaxX; tx++) {
-                int tileWorldX = tx * CaveTileCache.TILE_CHUNKS * 16;
-                int tileWorldZ = tz * CaveTileCache.TILE_CHUNKS * 16;
+                int tileWorldX = tx * tileWorldSize;
+                int tileWorldZ = tz * tileWorldSize;
 
                 int destX = (int) Math.round(viewport.toScreenX(tileWorldX, 0));
                 int destY = (int) Math.round(viewport.toScreenY(tileWorldZ, 0));
-                int destSizeX = (int) Math.round(viewport.toScreenX(tileWorldX + CaveTileCache.TILE_PIXELS, 0)) - destX;
-                int destSizeZ = (int) Math.round(viewport.toScreenY(tileWorldZ + CaveTileCache.TILE_PIXELS, 0)) - destY;
+                int destSizeX = (int) Math.round(viewport.toScreenX(tileWorldX + tileWorldSize, 0)) - destX;
+                int destSizeZ = (int) Math.round(viewport.toScreenY(tileWorldZ + tileWorldSize, 0)) - destY;
 
                 if (destX + destSizeX < MARGIN || destX > width - MARGIN ||
                         destY + destSizeZ < MARGIN || destY > height - MARGIN) {
                     continue;
                 }
 
-                CaveTileCache.TileKey key = new CaveTileCache.TileKey(dimension, tx, tz, yBucket);
+                CaveTileCache.TileKey key = new CaveTileCache.TileKey(dimension, tx, tz, yBucket, lod);
                 CaveTileCache.CaveTile tile = CaveTileCache.getOrBuildTile(key, mc.level, mc.player, buildBudget);
 
                 if (tile == null) continue;
@@ -924,39 +978,38 @@ public class SolarisMapScreen extends Screen {
         double worldMinZ = viewport.toWorldZ(MARGIN, 0);
         double worldMaxZ = viewport.toWorldZ(height - MARGIN, 0);
 
-        int tileMinX = Math.floorDiv((int) Math.floor(worldMinX) >> 4, MapTileCache.TILE_CHUNKS);
-        int tileMaxX = Math.floorDiv((int) Math.floor(worldMaxX) >> 4, MapTileCache.TILE_CHUNKS);
-        int tileMinZ = Math.floorDiv((int) Math.floor(worldMinZ) >> 4, MapTileCache.TILE_CHUNKS);
-        int tileMaxZ = Math.floorDiv((int) Math.floor(worldMaxZ) >> 4, MapTileCache.TILE_CHUNKS);
+        // See the matching comment in renderCaveMapTiles for why lod exists.
+        int lod = MapTileCache.lodForZoom(zoom);
+        int chunksPerTile = MapTileCache.TILE_CHUNKS << lod;
+        int tileWorldSize = MapTileCache.TILE_PIXELS << lod;
 
-        if (tileMaxX - tileMinX > 40) {
-            int midX = (tileMinX + tileMaxX) / 2;
-            tileMinX = midX - 20;
-            tileMaxX = midX + 20;
-        }
-        if (tileMaxZ - tileMinZ > 40) {
-            int midZ = (tileMinZ + tileMaxZ) / 2;
-            tileMinZ = midZ - 20;
-            tileMaxZ = midZ + 20;
-        }
+        int tileMinX = Math.floorDiv((int) Math.floor(worldMinX) >> 4, chunksPerTile);
+        int tileMaxX = Math.floorDiv((int) Math.floor(worldMaxX) >> 4, chunksPerTile);
+        int tileMinZ = Math.floorDiv((int) Math.floor(worldMinZ) >> 4, chunksPerTile);
+        int tileMaxZ = Math.floorDiv((int) Math.floor(worldMaxZ) >> 4, chunksPerTile);
+
+        // No count-based clamp here either, for the same reason as renderCaveMapTiles: it was
+        // shrinking the rendered area itself at low zoom, not just bounding cost.
+
+        MapTileCache.ensureCapacity((tileMaxX - tileMinX + 1) * (tileMaxZ - tileMinZ + 1));
 
         int[] buildBudget = { MAX_TILE_BUILDS_PER_FRAME };
         for (int tz = tileMinZ; tz <= tileMaxZ; tz++) {
             for (int tx = tileMinX; tx <= tileMaxX; tx++) {
-                int tileWorldX = tx * MapTileCache.TILE_CHUNKS * 16;
-                int tileWorldZ = tz * MapTileCache.TILE_CHUNKS * 16;
+                int tileWorldX = tx * tileWorldSize;
+                int tileWorldZ = tz * tileWorldSize;
 
                 int destX = (int) Math.round(viewport.toScreenX(tileWorldX, 0));
                 int destY = (int) Math.round(viewport.toScreenY(tileWorldZ, 0));
-                int destSizeX = (int) Math.round(viewport.toScreenX(tileWorldX + MapTileCache.TILE_PIXELS, 0)) - destX;
-                int destSizeZ = (int) Math.round(viewport.toScreenY(tileWorldZ + MapTileCache.TILE_PIXELS, 0)) - destY;
+                int destSizeX = (int) Math.round(viewport.toScreenX(tileWorldX + tileWorldSize, 0)) - destX;
+                int destSizeZ = (int) Math.round(viewport.toScreenY(tileWorldZ + tileWorldSize, 0)) - destY;
 
                 if (destX + destSizeX < MARGIN || destX > width - MARGIN ||
                         destY + destSizeZ < MARGIN || destY > height - MARGIN) {
                     continue;
                 }
 
-                MapTileCache.TileKey key = new MapTileCache.TileKey(dimension, tx, tz);
+                MapTileCache.TileKey key = new MapTileCache.TileKey(dimension, tx, tz, lod);
                 MapTileCache.MapTile tile = MapTileCache.getOrBuildTile(key, buildBudget);
 
                 if (tile == null) continue;
@@ -1472,8 +1525,14 @@ public class SolarisMapScreen extends Screen {
             if (mode == ViewMode.GLOBE) {
                 globeCamera.rotate(dx, dy);
             } else {
-                double panSpeed = Math.max(1.0, Math.sqrt(viewport.getZoom()));
-                viewport.pan(dx * panSpeed, dy * panSpeed);
+                // offsetX/offsetY are already screen-pixel units (toScreenX = worldX*zoom +
+                // offsetX), so a 1:1 pan is what keeps the point under the cursor glued to the
+                // cursor. The old sqrt(zoom) multiplier over-panned at zoom > 1 — each drag tick
+                // moved content past faster than the mouse did, which is both why panning felt
+                // like it kept "resetting" (a burst of new tiles entering view every tick) and
+                // why the accumulated offset drift showed up as the view being miles from the
+                // player once you zoomed back out.
+                viewport.pan(dx, dy);
 
                 clampViewport();
             }
