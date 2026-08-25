@@ -6,6 +6,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -25,6 +26,14 @@ public class PlanShapeListScreen extends Screen {
 
     private static final int ROW_H = 16;
 
+    // Same fix as WaypointListScreen: no floor previously. The right-hand edit panel here is
+    // smaller (name, color, base Y/height, visible, save, delete - no scrolling), so it needs
+    // less room, but it's still a hard fixed-pixel minimum with nothing else that adapts.
+    private static final int MIN_W = 420;
+    private static final int MIN_H = 280;
+    private float uiScale = 1f;
+    private int vw, vh;
+
     private final Screen parent;
     private PlanShape selected;
     private EditBox nameBox;
@@ -43,13 +52,18 @@ public class PlanShapeListScreen extends Screen {
     @Override
     protected void init() {
         clearWidgets();
-        int sideW = Math.max(180, width / 3);
-        int leftW = width - sideW - 10;
+
+        uiScale = (width < MIN_W || height < MIN_H) ? Math.min(width / (float) MIN_W, height / (float) MIN_H) : 1f;
+        vw = Math.round(width / uiScale);
+        vh = Math.round(height / uiScale);
+
+        int sideW = Math.max(180, vw / 3);
+        int leftW = vw - sideW - 10;
         listTop = 40;
-        listBottom = height - 12;
+        listBottom = vh - 12;
 
         if (selected != null) {
-            int editX = width - sideW + 10;
+            int editX = vw - sideW + 10;
             int y = 40;
 
             nameBox = new EditBox(font, editX, y, sideW - 20, 16, Component.literal("Name"));
@@ -98,7 +112,7 @@ public class PlanShapeListScreen extends Screen {
         }
 
         addRenderableWidget(Button.builder(Component.literal("Close"), b -> onClose())
-                .bounds(width - 66, 6, 56, 18).build());
+                .bounds(vw - 66, 6, 56, 18).build());
     }
 
     private void saveSelected() {
@@ -133,15 +147,22 @@ public class PlanShapeListScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics g, int mx, int my, float pt) {
-        int sideW = Math.max(180, width / 3);
-        int leftW = width - sideW - 10;
+    public void render(GuiGraphics g, int rawMx, int rawMy, float pt) {
+        int mx = Math.round(rawMx / uiScale);
+        int my = Math.round(rawMy / uiScale);
 
         renderBackground(g);
-        g.fill(0, 0, width, height, C_PANEL);
-        VanillaPanel.draw(g, -8, -8, width + 16, height + 16, C_PANEL);
-        g.fill(0, 0, width, 28, C_HEADER);
-        g.drawCenteredString(font, "Plan Shapes", width / 2, 10, C_ACCENT);
+
+        g.pose().pushPose();
+        g.pose().scale(uiScale, uiScale, 1f);
+
+        int sideW = Math.max(180, vw / 3);
+        int leftW = vw - sideW - 10;
+
+        g.fill(0, 0, vw, vh, C_PANEL);
+        VanillaPanel.draw(g, -8, -8, vw + 16, vh + 16, C_PANEL);
+        g.fill(0, 0, vw, 28, C_HEADER);
+        g.drawCenteredString(font, "Plan Shapes", vw / 2, 10, C_ACCENT);
 
         List<PlanShape> shapes = PlanShapeManager.getAll();
         int rowY = listTop;
@@ -161,12 +182,17 @@ public class PlanShapeListScreen extends Screen {
         }
 
         if (shapes.isEmpty()) {
-            g.drawString(font, "No plan shapes yet — use the Plan tool on the map to draw one.", 12, listTop + 4,
-                    C_DIM, false);
+            String emptyMsg = "No plan shapes yet — use the Plan tool on the map to draw one.";
+            List<FormattedCharSequence> emptyLines = font.split(Component.literal(emptyMsg), leftW - 16);
+            int emptyY = listTop + 4;
+            for (FormattedCharSequence line : emptyLines) {
+                g.drawString(font, line, 12, emptyY, C_DIM, false);
+                emptyY += font.lineHeight;
+            }
         }
 
         if (selected != null) {
-            int editX = width - sideW + 10;
+            int editX = vw - sideW + 10;
             g.drawString(font, "Name", editX, 30, C_DIM, false);
             g.drawString(font, "Color (hex)", editX, 30 + ROW_H + 10, C_DIM, false);
             g.drawString(font, "Base Y / Height", editX, 30 + 2 * (ROW_H + 10), C_DIM, false);
@@ -176,17 +202,21 @@ public class PlanShapeListScreen extends Screen {
             if (heightBox != null) heightBox.render(g, mx, my, pt);
         }
 
-        g.fill(width - sideW, 28, width - sideW + 1, height, C_BORDER);
+        g.fill(vw - sideW, 28, vw - sideW + 1, vh, C_BORDER);
 
         super.render(g, mx, my, pt);
+
+        g.pose().popPose();
     }
 
     @Override
-    public boolean mouseClicked(double mx, double my, int button) {
+    public boolean mouseClicked(double rawMx, double rawMy, int button) {
+        double mx = rawMx / uiScale;
+        double my = rawMy / uiScale;
         if (button != 0) return super.mouseClicked(mx, my, button);
 
-        int sideW = Math.max(180, width / 3);
-        int leftW = width - sideW - 10;
+        int sideW = Math.max(180, vw / 3);
+        int leftW = vw - sideW - 10;
         List<PlanShape> shapes = PlanShapeManager.getAll();
         int rowY = listTop;
         for (int i = scrollOffset; i < shapes.size() && rowY + ROW_H <= listBottom; i++) {
@@ -198,6 +228,16 @@ public class PlanShapeListScreen extends Screen {
             rowY += ROW_H;
         }
         return super.mouseClicked(mx, my, button);
+    }
+
+    @Override
+    public boolean mouseDragged(double rawMx, double rawMy, int btn, double dragX, double dragY) {
+        return super.mouseDragged(rawMx / uiScale, rawMy / uiScale, btn, dragX / uiScale, dragY / uiScale);
+    }
+
+    @Override
+    public boolean mouseReleased(double rawMx, double rawMy, int btn) {
+        return super.mouseReleased(rawMx / uiScale, rawMy / uiScale, btn);
     }
 
     @Override

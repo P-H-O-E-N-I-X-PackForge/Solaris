@@ -69,6 +69,20 @@ public final class ChunkColorSampler {
         return GLASS_BLOCKS.contains(state.getBlock());
     }
 
+    // Flowers, saplings, dead bushes, mushrooms etc. default to MapColor.NONE and should be seen
+    // through to the ground beneath them — that used to be exactly what this checked for (mapColor
+    // == MapColor.NONE), but that also matches any solid opaque modded block that simply never set
+    // a map color (extremely common for quickly-registered decorative blocks), which made those
+    // blocks invisible on the map: sampling drilled straight through them to whatever was there
+    // before they were placed, and never picked up further changes to them. Collision shape is a
+    // more accurate signal for "this is a walk-through decoration, not a solid surface" — it's
+    // empty for the vanilla plant-type blocks this was meant to skip, but non-empty for full-cube
+    // blocks regardless of whether they bothered to set a map color, letting BlockTextureColors'
+    // texture-average fallback render them properly instead.
+    private static boolean isNonSolidDecoration(Level level, BlockPos pos, BlockState state) {
+        return state.getMapColor(level, pos) == MapColor.NONE && state.getCollisionShape(level, pos).isEmpty();
+    }
+
     private static final double GLASS_TINT_STRENGTH = 0.3;
 
     private static final int PLAIN_GLASS_TINT_ABGR = packAbgr(0xC8E8F0, 255);
@@ -159,7 +173,8 @@ public final class ChunkColorSampler {
 
                 int minY = level.getMinBuildHeight() + 1;
                 while (surfaceY > minY && (BlockColorOverrides.isTransparent(state.getBlock()) || isGlass(state) ||
-                        (mapColor == MapColor.NONE && BlockColorOverrides.get(state.getBlock()) == null))) {
+                        (isNonSolidDecoration(level, cursor, state) &&
+                                BlockColorOverrides.get(state.getBlock()) == null))) {
                     surfaceY--;
                     cursor.set(worldX, surfaceY, worldZ);
                     state = level.getBlockState(cursor);
@@ -275,7 +290,7 @@ public final class ChunkColorSampler {
 
                 int minY = level.getMinBuildHeight() + 1;
                 while (surfaceY > minY && (BlockColorOverrides.isTransparent(state.getBlock()) || isGlass(state) ||
-                        (state.getMapColor(level, cursor) == MapColor.NONE &&
+                        (isNonSolidDecoration(level, cursor, state) &&
                                 BlockColorOverrides.get(state.getBlock()) == null))) {
                     surfaceY--;
                     cursor.set(worldX, surfaceY, worldZ);

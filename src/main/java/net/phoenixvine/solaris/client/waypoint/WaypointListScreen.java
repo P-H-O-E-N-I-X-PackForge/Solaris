@@ -6,6 +6,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -30,6 +31,15 @@ import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_TEXT;
 public class WaypointListScreen extends Screen {
 
     private static final int ROW_H = 16;
+
+    // No floor at all previously - the right-hand edit panel alone (name, color, x/y/z, category,
+    // label color, icon, visible, track, [share], save, delete) needs ~290-300px of fixed-height
+    // rows with nothing that scrolls, so MIN_H covers that with margin. MIN_W keeps the waypoint
+    // list column (leftW) at a readable width even once sideW is floored at 180.
+    private static final int MIN_W = 460;
+    private static final int MIN_H = 340;
+    private float uiScale = 1f;
+    private int vw, vh;
 
     private final Screen parent;
     private Waypoint selected;
@@ -56,10 +66,15 @@ public class WaypointListScreen extends Screen {
     @Override
     protected void init() {
         clearWidgets();
-        int sideW = Math.max(180, width / 3);
-        int leftW = width - sideW - 10;
+
+        uiScale = (width < MIN_W || height < MIN_H) ? Math.min(width / (float) MIN_W, height / (float) MIN_H) : 1f;
+        vw = Math.round(width / uiScale);
+        vh = Math.round(height / uiScale);
+
+        int sideW = Math.max(180, vw / 3);
+        int leftW = vw - sideW - 10;
         listTop = 96;
-        listBottom = height - 12;
+        listBottom = vh - 12;
 
         addRenderableWidget(Button.builder(Component.literal("+ Add here"), b -> addHere())
                 .bounds(8, 32, leftW - 90, 18).build());
@@ -92,7 +107,7 @@ public class WaypointListScreen extends Screen {
         }
 
         if (selected != null) {
-            int editX = width - sideW + 10;
+            int editX = vw - sideW + 10;
             int y = 40;
 
             nameBox = new EditBox(font, editX, y, sideW - 20, 16, Component.literal("Name"));
@@ -191,7 +206,7 @@ public class WaypointListScreen extends Screen {
         }
 
         addRenderableWidget(Button.builder(Component.literal("Close"), b -> onClose())
-                .bounds(width - 66, 6, 56, 18).build());
+                .bounds(vw - 66, 6, 56, 18).build());
     }
 
     private void addHere() {
@@ -297,15 +312,22 @@ public class WaypointListScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics g, int mx, int my, float pt) {
-        int sideW = Math.max(180, width / 3);
-        int leftW = width - sideW - 10;
+    public void render(GuiGraphics g, int rawMx, int rawMy, float pt) {
+        int mx = Math.round(rawMx / uiScale);
+        int my = Math.round(rawMy / uiScale);
 
         renderBackground(g);
-        g.fill(0, 0, width, height, C_PANEL);
-        VanillaPanel.draw(g, -8, -8, width + 16, height + 16, C_PANEL);
-        g.fill(0, 0, width, 28, C_HEADER);
-        g.drawCenteredString(font, "Waypoints", width / 2, 10, C_ACCENT);
+
+        g.pose().pushPose();
+        g.pose().scale(uiScale, uiScale, 1f);
+
+        int sideW = Math.max(180, vw / 3);
+        int leftW = vw - sideW - 10;
+
+        g.fill(0, 0, vw, vh, C_PANEL);
+        VanillaPanel.draw(g, -8, -8, vw + 16, vh + 16, C_PANEL);
+        g.fill(0, 0, vw, 28, C_HEADER);
+        g.drawCenteredString(font, "Waypoints", vw / 2, 10, C_ACCENT);
 
         List<Waypoint> visible = visibleList();
         int rowY = listTop;
@@ -325,17 +347,21 @@ public class WaypointListScreen extends Screen {
         }
 
         if (visible.isEmpty()) {
-            g.drawString(font,
-                    WaypointManager.getAll().isEmpty() ?
-                            "No waypoints yet — click \"+ Add here\", or right-click the map." :
-                            "No waypoints match your search.",
-                    12, listTop + 4, C_DIM, false);
+            String emptyMsg = WaypointManager.getAll().isEmpty() ?
+                    "No waypoints yet — click \"+ Add here\", or right-click the map." :
+                    "No waypoints match your search.";
+            List<FormattedCharSequence> emptyLines = font.split(Component.literal(emptyMsg), leftW - 16);
+            int emptyY = listTop + 4;
+            for (FormattedCharSequence line : emptyLines) {
+                g.drawString(font, line, 12, emptyY, C_DIM, false);
+                emptyY += font.lineHeight;
+            }
         }
 
         if (searchBox != null) searchBox.render(g, mx, my, pt);
 
         if (selected != null) {
-            int editX = width - sideW + 10;
+            int editX = vw - sideW + 10;
             g.drawString(font, "Name", editX, 30, C_DIM, false);
             g.drawString(font, "Color (hex)", editX, 30 + ROW_H + 10, C_DIM, false);
             g.drawString(font, "X / Y / Z", editX, 30 + 2 * (ROW_H + 10), C_DIM, false);
@@ -350,17 +376,21 @@ public class WaypointListScreen extends Screen {
             if (labelColorBox != null) labelColorBox.render(g, mx, my, pt);
         }
 
-        g.fill(width - sideW, 28, width - sideW + 1, height, C_BORDER);
+        g.fill(vw - sideW, 28, vw - sideW + 1, vh, C_BORDER);
 
         super.render(g, mx, my, pt);
+
+        g.pose().popPose();
     }
 
     @Override
-    public boolean mouseClicked(double mx, double my, int button) {
+    public boolean mouseClicked(double rawMx, double rawMy, int button) {
+        double mx = rawMx / uiScale;
+        double my = rawMy / uiScale;
         if (button != 0) return super.mouseClicked(mx, my, button);
 
-        int sideW = Math.max(180, width / 3);
-        int leftW = width - sideW - 10;
+        int sideW = Math.max(180, vw / 3);
+        int leftW = vw - sideW - 10;
         List<Waypoint> visible = visibleList();
         int rowY = listTop;
         for (int i = scrollOffset; i < visible.size() && rowY + ROW_H <= listBottom; i++) {
@@ -372,6 +402,16 @@ public class WaypointListScreen extends Screen {
             rowY += ROW_H;
         }
         return super.mouseClicked(mx, my, button);
+    }
+
+    @Override
+    public boolean mouseDragged(double rawMx, double rawMy, int btn, double dragX, double dragY) {
+        return super.mouseDragged(rawMx / uiScale, rawMy / uiScale, btn, dragX / uiScale, dragY / uiScale);
+    }
+
+    @Override
+    public boolean mouseReleased(double rawMx, double rawMy, int btn) {
+        return super.mouseReleased(rawMx / uiScale, rawMy / uiScale, btn);
     }
 
     @Override

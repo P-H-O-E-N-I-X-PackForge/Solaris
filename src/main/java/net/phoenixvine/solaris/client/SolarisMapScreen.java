@@ -61,6 +61,7 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 
 import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_ACCENT;
 import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_BG;
@@ -85,7 +86,6 @@ public class SolarisMapScreen extends Screen {
 
     private static final int BUTTON_R = 9;
     private static final int BUTTON_MARGIN = 14;
-    private static final int MIN_BUTTON_GAP = 12;
 
     private static SolarisTexture texture;
 
@@ -128,6 +128,11 @@ public class SolarisMapScreen extends Screen {
     private String hoveredPlayerName;
     private String hoveredMobName;
 
+    private int buttonR = 9;
+    private int buttonGap = 12;
+    private static final int IDEAL_BUTTON_R = 9;
+    private static final int MIN_BUTTON_GAP = 4;
+
     private static boolean gtceuBroken = false;
     private final Screen parent;
 
@@ -145,15 +150,21 @@ public class SolarisMapScreen extends Screen {
         return texture;
     }
 
-    private record IconButton(int cx, int cy, String label, java.util.function.BiConsumer<GuiGraphics, Boolean> draw,
-                              Runnable action) {
+    private record IconButton(int cx, int cy, int r, String label,
+                              BiConsumer<GuiGraphics, Boolean> draw, Runnable action) {
 
         boolean hit(double mx, double my) {
             double dx = mx - cx;
             double dy = my - cy;
-            return dx * dx + dy * dy <= (double) BUTTON_R * BUTTON_R;
+            return dx * dx + dy * dy <= (double) r * r;
         }
     }
+
+    // Unpositioned button spec: drawFactory receives the button's final resolved center-x (once
+    // the whole row's layout is computed) and returns the actual draw callback bound to that
+    // position - see buildIconButtons().
+    private record IconSpec(String label, java.util.function.IntFunction<BiConsumer<GuiGraphics, Boolean>> drawFactory,
+                            Runnable action) {}
 
     @Override
     protected void init() {
@@ -231,120 +242,74 @@ public class SolarisMapScreen extends Screen {
     private void buildIconButtons() {
         iconButtons.clear();
 
-        int buttonGap = calculateButtonGap();
-        int settingsX = BUTTON_MARGIN + BUTTON_R;
-        int bottomY = height - BUTTON_MARGIN - BUTTON_R;
-        iconButtons.add(new IconButton(settingsX, bottomY, "Settings",
-                (g, hover) -> drawItemIcon(g, settingsX, bottomY, SETTINGS_ICON),
+        int buttonCount = SolarisConfig.GLOBE_VIEW_ENABLED.get() ? 17 : 16;
+        int availableWidth = width - 2 * BUTTON_MARGIN;
+
+        int leftCount = 4;
+        int rightCount = buttonCount - leftCount;
+
+        // Buttons within a group sit at a fixed, minimal gap regardless of screen size - a group
+        // should never visually "spread out" just because the monitor is wide. Each group anchors
+        // straight to its own side of the map's boundary (BUTTON_MARGIN in from the edge) rather
+        // than the whole row floating toward the screen's center - the gap between the two groups
+        // is simply whatever's left between them, since that's the one thing that necessarily
+        // changes once both groups are pinned to their own edge. Only when the window is too
+        // narrow to fit both groups at all (even with zero gap between them) does anything shrink
+        // - radius and the intra-group gap scale down together, with floors so nothing collapses
+        // to zero.
+        final int idealButtonR = 9;
+        final int idealButtonGap = 4;
+
+        int idealMinFootprint = (leftCount - 1) * (idealButtonR * 2 + idealButtonGap) + idealButtonR * 2 +
+                (rightCount - 1) * (idealButtonR * 2 + idealButtonGap) + idealButtonR * 2;
+
+        int buttonRadius = idealButtonR;
+        int buttonGapPx = idealButtonGap;
+        if (idealMinFootprint > availableWidth) {
+            float scale = availableWidth / (float) idealMinFootprint;
+            buttonRadius = Math.max(4, Math.round(idealButtonR * scale));
+            buttonGapPx = Math.max(1, Math.round(idealButtonGap * scale));
+        }
+        this.buttonR = buttonRadius;
+
+        int bottomY = height - BUTTON_MARGIN - buttonRadius;
+
+        // Build every button as one ordered, unpositioned spec first - left-to-right in the same
+        // visual order they've always appeared in as two groups (4 "utility" + 12/13 "frequently
+        // used") - then resolve every x position in a single pass below.
+        List<IconSpec> specs = new ArrayList<>();
+
+        specs.add(new IconSpec("Settings", cx -> (g, hover) -> drawItemIcon(g, cx, bottomY, SETTINGS_ICON),
                 () -> runIfEnabled(SolarisAPI.FEATURE_SETTINGS_MENU,
                         () -> Minecraft.getInstance().setScreen(new SolarisDisplaySettingsScreen(this)))));
-
-        int exportX = settingsX + buttonGap;
-        iconButtons.add(new IconButton(exportX, bottomY, "Export as PNG",
-                (g, hover) -> drawItemIcon(g, exportX, bottomY, EXPORT_ICON),
+        specs.add(new IconSpec("Export as PNG", cx -> (g, hover) -> drawItemIcon(g, cx, bottomY, EXPORT_ICON),
                 () -> runIfEnabled(SolarisAPI.FEATURE_PNG_EXPORT,
                         () -> texture().exportToPng(SolarisMapScreen::sendMapMessage))));
-
-        int webExportX = exportX + buttonGap;
-        iconButtons.add(new IconButton(webExportX, bottomY, "Export for Web Map",
-                (g, hover) -> drawItemIcon(g, webExportX, bottomY, WEB_EXPORT_ICON),
+        specs.add(new IconSpec("Export for Web Map", cx -> (g, hover) -> drawItemIcon(g, cx, bottomY, WEB_EXPORT_ICON),
                 () -> runIfEnabled(SolarisAPI.FEATURE_WEB_EXPORT,
                         () -> SolarisWebExporter.exportCurrentDimension(SolarisMapScreen::sendMapMessage))));
-
-        int gotoX = webExportX + buttonGap;
-        iconButtons.add(new IconButton(gotoX, bottomY, "Go to Coordinate",
-                (g, hover) -> drawItemIcon(g, gotoX, bottomY, GOTO_ICON),
+        specs.add(new IconSpec("Go to Coordinate", cx -> (g, hover) -> drawItemIcon(g, cx, bottomY, GOTO_ICON),
                 () -> runIfEnabled(SolarisAPI.FEATURE_GOTO_COORDINATE,
                         () -> Minecraft.getInstance().setScreen(new QuickGotoScreen(this)))));
 
-        int waypointsX = width - BUTTON_MARGIN - BUTTON_R;
-        iconButtons.add(new IconButton(waypointsX, bottomY, "Waypoints",
-                (g, hover) -> drawItemIcon(g, waypointsX, bottomY, WAYPOINTS_ICON),
-                () -> runIfStateAtLeast(SolarisAPI.FEATURE_WAYPOINTS, SolarisFeatureState.VISIBLE,
-                        () -> Minecraft.getInstance().setScreen(new WaypointListScreen(this)))));
-
-        int themeX = waypointsX - buttonGap;
-        iconButtons.add(new IconButton(themeX, bottomY, "Theme",
-                (g, hover) -> drawItemIcon(g, themeX, bottomY, THEME_ICON),
-                () -> runIfEnabled(SolarisAPI.FEATURE_THEME_SELECT,
-                        () -> Minecraft.getInstance().setScreen(new PhoenixThemeEditorScreen(this, "Solaris")))));
-
-        int wikiX = themeX - buttonGap;
-        iconButtons.add(new IconButton(wikiX, bottomY, "Wiki",
-                (g, hover) -> drawItemIcon(g, wikiX, bottomY, WIKI_ICON),
-                () -> runIfEnabled(SolarisAPI.FEATURE_WIKI, this::openWiki)));
-
-        int lastIconX = wikiX;
-        if (SolarisConfig.GLOBE_VIEW_ENABLED.get()) {
-            int globeX = lastIconX - buttonGap;
-            iconButtons.add(new IconButton(globeX, bottomY, "Globe View",
-                    (g, hover) -> drawGlobeIcon(g, globeX, bottomY),
-                    () -> runIfEnabled(SolarisAPI.FEATURE_GLOBE_VIEW, () -> {
-
-                        if (mode == ViewMode.FLAT) cancelDrawing();
-                        mode = mode == ViewMode.FLAT ? ViewMode.GLOBE : ViewMode.FLAT;
-                    })));
-            lastIconX = globeX;
-        }
-
-        int undergroundX = lastIconX - buttonGap;
-        iconButtons.add(new IconButton(undergroundX, bottomY, "Underground View",
-                (g, hover) -> {
-                    if (undergroundView) SmoothShapes.drawRing(g, undergroundX, bottomY, BUTTON_R - 1, C_ACCENT);
-                    drawItemIcon(g, undergroundX, bottomY, UNDERGROUND_ICON);
-                },
-                () -> runIfEnabled(SolarisAPI.FEATURE_UNDERGROUND_MAP, () -> undergroundView = !undergroundView)));
-        lastIconX = undergroundX;
-
-        int hillshadingX = lastIconX - buttonGap;
-        iconButtons.add(new IconButton(hillshadingX, bottomY, "Hillshading",
-                (g, hover) -> drawHillshadingIcon(g, hillshadingX, bottomY, SolarisConfig.HILLSHADING.get()),
-                () -> runIfEnabled(SolarisAPI.FEATURE_HILLSHADING, () -> {
-                    boolean on = !SolarisConfig.HILLSHADING.get();
-                    SolarisConfig.HILLSHADING.set(on);
-                    SolarisConfig.HILLSHADING.save();
-                    SolarisTexture.invalidateAll();
+        specs.add(new IconSpec("Plan", cx -> (g, hover) -> drawItemIcon(g, cx, bottomY, PLAN_ICON),
+                () -> runIfEnabled(SolarisAPI.FEATURE_SHAPE_PLANNER, () -> {
+                    mode = ViewMode.FLAT;
+                    switchDrawTool(ToolMode.DRAW_RECTANGLE);
+                })));
+        specs.add(new IconSpec("Shapes", cx -> (g, hover) -> drawItemIcon(g, cx, bottomY, SHAPES_ICON),
+                () -> runIfEnabled(SolarisAPI.FEATURE_SHAPE_PLANNER,
+                        () -> Minecraft.getInstance().setScreen(new PlanShapeListScreen(this)))));
+        specs.add(new IconSpec("Unexplored Style",
+                cx -> (g, hover) -> drawUnexploredStyleIcon(g, cx, bottomY, SolarisConfig.UNEXPLORED_STYLE.get()),
+                () -> runIfEnabled(SolarisAPI.FEATURE_UNEXPLORED_STYLE, () -> {
+                    SolarisConfig.UNEXPLORED_STYLE.set(SolarisConfig.UNEXPLORED_STYLE.get().next());
+                    SolarisConfig.UNEXPLORED_STYLE.save();
                     MapTileCache.clearAll();
                     CaveTileCache.clearAll();
                 })));
-        lastIconX = hillshadingX;
-
-        int mobsX = lastIconX - buttonGap;
-        iconButtons.add(new IconButton(mobsX, bottomY, "Show Mobs",
-                (g, hover) -> drawItemIcon(g, mobsX, bottomY, MOBS_ICON),
-                () -> runIfEnabled(SolarisAPI.FEATURE_SHOW_MOBS, () -> {
-                    boolean on = !SolarisConfig.SHOW_MOBS.get();
-                    SolarisConfig.SHOW_MOBS.set(on);
-                    SolarisConfig.SHOW_MOBS.save();
-                })));
-        lastIconX = mobsX;
-
-        int chunkGridX = lastIconX - buttonGap;
-        iconButtons.add(new IconButton(chunkGridX, bottomY, "Show Chunk Grid",
-                (g, hover) -> drawChunkGridIcon(g, chunkGridX, bottomY, SolarisConfig.SHOW_CHUNK_GRID.get()),
-                () -> runIfEnabled(SolarisAPI.FEATURE_CHUNK_GRID, () -> {
-                    boolean on = !SolarisConfig.SHOW_CHUNK_GRID.get();
-                    SolarisConfig.SHOW_CHUNK_GRID.set(on);
-                    SolarisConfig.SHOW_CHUNK_GRID.save();
-                })));
-        lastIconX = chunkGridX;
-
-        int vignetteX = lastIconX - buttonGap;
-        iconButtons.add(new IconButton(vignetteX, bottomY, "Vignette",
-                (g, hover) -> drawVignetteIcon(g, vignetteX, bottomY, SolarisConfig.VIGNETTE.get()),
-                () -> runIfEnabled(SolarisAPI.FEATURE_VIGNETTE, () -> {
-                    boolean on = !SolarisConfig.VIGNETTE.get();
-                    SolarisConfig.VIGNETTE.set(on);
-                    SolarisConfig.VIGNETTE.save();
-                    SolarisTexture.invalidateAll();
-                    MapTileCache.clearAll();
-                    CaveTileCache.clearAll();
-                })));
-        lastIconX = vignetteX;
-
-        int blackAndWhiteX = lastIconX - buttonGap;
-        iconButtons.add(new IconButton(blackAndWhiteX, bottomY, "Black & White",
-                (g, hover) -> drawBlackAndWhiteIcon(g, blackAndWhiteX, bottomY, SolarisConfig.BLACK_AND_WHITE.get()),
+        specs.add(new IconSpec("Black & White",
+                cx -> (g, hover) -> drawBlackAndWhiteIcon(g, cx, bottomY, SolarisConfig.BLACK_AND_WHITE.get()),
                 () -> runIfEnabled(SolarisAPI.FEATURE_BLACK_AND_WHITE, () -> {
                     boolean on = !SolarisConfig.BLACK_AND_WHITE.get();
                     SolarisConfig.BLACK_AND_WHITE.set(on);
@@ -353,42 +318,94 @@ public class SolarisMapScreen extends Screen {
                     MapTileCache.clearAll();
                     CaveTileCache.clearAll();
                 })));
-        lastIconX = blackAndWhiteX;
-
-        int unexploredX = lastIconX - buttonGap;
-        iconButtons.add(new IconButton(unexploredX, bottomY, "Unexplored Style",
-                (g, hover) -> drawUnexploredStyleIcon(g, unexploredX, bottomY, SolarisConfig.UNEXPLORED_STYLE.get()),
-                () -> runIfEnabled(SolarisAPI.FEATURE_UNEXPLORED_STYLE, () -> {
-                    SolarisConfig.UNEXPLORED_STYLE.set(SolarisConfig.UNEXPLORED_STYLE.get().next());
-                    SolarisConfig.UNEXPLORED_STYLE.save();
+        specs.add(new IconSpec("Vignette",
+                cx -> (g, hover) -> drawVignetteIcon(g, cx, bottomY, SolarisConfig.VIGNETTE.get()),
+                () -> runIfEnabled(SolarisAPI.FEATURE_VIGNETTE, () -> {
+                    boolean on = !SolarisConfig.VIGNETTE.get();
+                    SolarisConfig.VIGNETTE.set(on);
+                    SolarisConfig.VIGNETTE.save();
+                    SolarisTexture.invalidateAll();
                     MapTileCache.clearAll();
                     CaveTileCache.clearAll();
                 })));
-        lastIconX = unexploredX;
-
-        int shapesX = lastIconX - buttonGap;
-        iconButtons.add(new IconButton(shapesX, bottomY, "Shapes",
-                (g, hover) -> drawItemIcon(g, shapesX, bottomY, SHAPES_ICON),
-                () -> runIfEnabled(SolarisAPI.FEATURE_SHAPE_PLANNER,
-                        () -> Minecraft.getInstance().setScreen(new PlanShapeListScreen(this)))));
-
-        int planX = shapesX - buttonGap;
-        iconButtons.add(new IconButton(planX, bottomY, "Plan",
-                (g, hover) -> drawItemIcon(g, planX, bottomY, PLAN_ICON),
-                () -> runIfEnabled(SolarisAPI.FEATURE_SHAPE_PLANNER, () -> {
-
-                    mode = ViewMode.FLAT;
-                    switchDrawTool(ToolMode.DRAW_RECTANGLE);
+        specs.add(new IconSpec("Show Chunk Grid",
+                cx -> (g, hover) -> drawChunkGridIcon(g, cx, bottomY, SolarisConfig.SHOW_CHUNK_GRID.get()),
+                () -> runIfEnabled(SolarisAPI.FEATURE_CHUNK_GRID, () -> {
+                    boolean on = !SolarisConfig.SHOW_CHUNK_GRID.get();
+                    SolarisConfig.SHOW_CHUNK_GRID.set(on);
+                    SolarisConfig.SHOW_CHUNK_GRID.save();
                 })));
+        specs.add(new IconSpec("Show Mobs", cx -> (g, hover) -> drawItemIcon(g, cx, bottomY, MOBS_ICON),
+                () -> runIfEnabled(SolarisAPI.FEATURE_SHOW_MOBS, () -> {
+                    boolean on = !SolarisConfig.SHOW_MOBS.get();
+                    SolarisConfig.SHOW_MOBS.set(on);
+                    SolarisConfig.SHOW_MOBS.save();
+                })));
+        specs.add(new IconSpec("Hillshading",
+                cx -> (g, hover) -> drawHillshadingIcon(g, cx, bottomY, SolarisConfig.HILLSHADING.get()),
+                () -> runIfEnabled(SolarisAPI.FEATURE_HILLSHADING, () -> {
+                    boolean on = !SolarisConfig.HILLSHADING.get();
+                    SolarisConfig.HILLSHADING.set(on);
+                    SolarisConfig.HILLSHADING.save();
+                    SolarisTexture.invalidateAll();
+                    MapTileCache.clearAll();
+                    CaveTileCache.clearAll();
+                })));
+        specs.add(new IconSpec("Underground View", cx -> (g, hover) -> {
+            if (undergroundView) SmoothShapes.drawRing(g, cx, bottomY, this.buttonR - 1, C_ACCENT);
+            drawItemIcon(g, cx, bottomY, UNDERGROUND_ICON);
+        }, () -> runIfEnabled(SolarisAPI.FEATURE_UNDERGROUND_MAP, () -> undergroundView = !undergroundView)));
+
+        if (SolarisConfig.GLOBE_VIEW_ENABLED.get()) {
+            specs.add(new IconSpec("Globe View", cx -> (g, hover) -> drawGlobeIcon(g, cx, bottomY),
+                    () -> runIfEnabled(SolarisAPI.FEATURE_GLOBE_VIEW, () -> {
+                        if (mode == ViewMode.FLAT) cancelDrawing();
+                        mode = mode == ViewMode.FLAT ? ViewMode.GLOBE : ViewMode.FLAT;
+                    })));
+        }
+
+        specs.add(new IconSpec("Wiki", cx -> (g, hover) -> drawItemIcon(g, cx, bottomY, WIKI_ICON),
+                () -> runIfEnabled(SolarisAPI.FEATURE_WIKI, this::openWiki)));
+        specs.add(new IconSpec("Theme", cx -> (g, hover) -> drawItemIcon(g, cx, bottomY, THEME_ICON),
+                () -> runIfEnabled(SolarisAPI.FEATURE_THEME_SELECT,
+                        () -> Minecraft.getInstance().setScreen(new PhoenixThemeEditorScreen(this, "Solaris")))));
+        specs.add(new IconSpec("Waypoints", cx -> (g, hover) -> drawItemIcon(g, cx, bottomY, WAYPOINTS_ICON),
+                () -> runIfStateAtLeast(SolarisAPI.FEATURE_WAYPOINTS, SolarisFeatureState.VISIBLE,
+                        () -> Minecraft.getInstance().setScreen(new WaypointListScreen(this)))));
+
+        int stride = buttonRadius * 2 + buttonGapPx;
+        int leftSpan = (leftCount - 1) * stride;
+        int rightSpan = (rightCount - 1) * stride;
+
+        int leftStartX = BUTTON_MARGIN + buttonRadius;
+        int rightEndX = width - BUTTON_MARGIN - buttonRadius;
+        int rightStartX = rightEndX - rightSpan;
+
+        for (int i = 0; i < specs.size(); i++) {
+            IconSpec spec = specs.get(i);
+            int cx = i < leftCount ? leftStartX + i * stride : rightStartX + (i - leftCount) * stride;
+            iconButtons.add(new IconButton(cx, bottomY, buttonRadius, spec.label(), spec.drawFactory().apply(cx),
+                    spec.action()));
+        }
     }
 
-    private int calculateButtonGap() {
+    private void calculateButtonLayout() {
         int buttonCount = 13;
         if (SolarisConfig.GLOBE_VIEW_ENABLED.get()) buttonCount++;
-        int totalButtonWidth = buttonCount * (BUTTON_R * 2);
+
         int availableWidth = width - 2 * BUTTON_MARGIN;
-        int maxGap = (availableWidth - totalButtonWidth) / (buttonCount - 1);
-        return Math.max(MIN_BUTTON_GAP, Math.min(maxGap, 22));
+        int maxIdealWidth = buttonCount * (IDEAL_BUTTON_R * 2) + (buttonCount - 1) * MIN_BUTTON_GAP;
+
+        if (availableWidth >= maxIdealWidth) {
+            // Screen is large enough; use ideal radius and stretch the gap
+            buttonR = IDEAL_BUTTON_R;
+            int maxGap = (availableWidth - (buttonCount * (buttonR * 2))) / Math.max(1, buttonCount - 1);
+            buttonGap = Math.min(maxGap, 22);
+        } else {
+            // Screen is too small; force minimum gap and scale down the button radius
+            buttonGap = MIN_BUTTON_GAP;
+            buttonR = Math.max(4, (availableWidth - (buttonCount - 1) * buttonGap) / (2 * buttonCount));
+        }
     }
 
     private static void runIfEnabled(String featureId, Runnable action) {

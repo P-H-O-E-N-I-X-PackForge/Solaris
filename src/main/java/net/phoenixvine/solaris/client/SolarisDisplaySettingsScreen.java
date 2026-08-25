@@ -3,6 +3,7 @@ package net.phoenixvine.solaris.client;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractSliderButton;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -28,15 +29,29 @@ import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_HEADER;
 @OnlyIn(Dist.CLIENT)
 public class SolarisDisplaySettingsScreen extends Screen {
 
-    private static final int BOX_W = 420;
-    private static final int ROW_H = 24;
-    private static final int HEADER_H = 24;
-
     private static final int DISPLAY_GRID_ROWS = 11;
 
+    private static final int ROW_H = 24;
+    private static final int HEADER_H = 24;
     private static final int HEADING_H = 12;
     private static final int GROUP_COUNT = 4;
     private static final String[] GROUP_HEADINGS = { "TERRAIN & WATER", "ICONS & LABELS", "EFFECTS", "MINIMAP & GRID" };
+
+    // This screen had no size floor at all, same as the others - MIN_W/MIN_H are sized so the
+    // widest tab (DISPLAY, 4 groups up to 9 items each) still lays out at a comfortable 2-3 column
+    // width and doesn't need to scroll. Below either floor, uiScale shrinks the whole panel
+    // uniformly instead of letting it overflow the window.
+    private static final int MIN_W = 460;
+    private static final int MIN_H = 520;
+    private float uiScale = 1f;
+    private int vw, vh;
+
+    // Add these dynamic instance variables
+    private int boxW;
+    private int boxH;
+    private int boxX;
+    private int boxY;
+    private final int[] headingY = new int[GROUP_COUNT];
 
     private enum Tab {
 
@@ -53,21 +68,32 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
     private final Screen parent;
     private Tab activeTab = Tab.DISPLAY;
-    private int boxH;
-
-    private final int[] headingY = new int[GROUP_COUNT];
 
     public SolarisDisplaySettingsScreen(Screen parent) {
         super(Component.literal("Solaris Settings"));
         this.parent = parent;
     }
 
-    private int boxX() {
-        return (width - BOX_W) / 2;
-    }
+    private int placeWidgetsFluidly(int startX, int startY, int availableWidth, int[] currentY, int gap,
+                                    AbstractWidget... widgets) {
+        int xCursor = startX;
+        int maxRowH = ROW_H;
 
-    private int boxY() {
-        return (height - boxH) / 2;
+        for (AbstractWidget widget : widgets) {
+            // If the widget exceeds the row (and isn't the first in the row), wrap to the next line
+            if (xCursor + widget.getWidth() > startX + availableWidth && xCursor != startX) {
+                xCursor = startX;
+                currentY[0] += maxRowH;
+            }
+
+            widget.setPosition(xCursor, currentY[0]);
+            this.addRenderableWidget(widget);
+
+            xCursor += widget.getWidth() + gap;
+        }
+        // Move to the next row after the group finishes
+        currentY[0] += maxRowH;
+        return currentY[0];
     }
 
     @Override
@@ -79,19 +105,42 @@ public class SolarisDisplaySettingsScreen extends Screen {
             parent.resize(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
         }
 
-        boolean showIntegrationsTab = GtceuIntegration.isAvailable();
+        uiScale = (width < MIN_W || height < MIN_H) ? Math.min(width / (float) MIN_W, height / (float) MIN_H) : 1f;
+        vw = Math.round(width / uiScale);
+        vh = Math.round(height / uiScale);
 
-        boxH = HEADER_H + DISPLAY_GRID_ROWS * ROW_H + GROUP_COUNT * HEADING_H + 22 + 22 + 22 + 8;
+        // 1. Calculate dynamic box width (max 450, or screen width minus padding)
+        boxW = Math.min(450, vw - 40);
+        boxX = (vw - boxW) / 2;
 
-        int x = boxX();
-        int y = boxY();
-        int contentY = y + HEADER_H;
+        // 2. Build the contents dynamically to find total height
+        int contentStartY = HEADER_H;
+        int[] cursorY = new int[] { contentStartY };
 
         switch (activeTab) {
-            case DISPLAY -> initDisplayTab(x, contentY);
-            case WAYPOINTS -> initWaypointsTab(x, contentY);
-            case INTEGRATIONS -> initIntegrationsTab(x, contentY);
+            case DISPLAY -> initDisplayTab(boxX, cursorY);
+            case WAYPOINTS -> initWaypointsTab(boxX, cursorY);
+            case INTEGRATIONS -> initIntegrationsTab(boxX, cursorY);
         }
+
+        // 3. Add tab and preset buttons to the total height calculation
+        boolean showIntegrationsTab = GtceuIntegration.isAvailable();
+        int tabBarYOffset = cursorY[0] + 6;
+
+        // Final height calculation (header + content + bottom controls + padding)
+        boxH = tabBarYOffset + 18 + 24 + 18 + 8;
+        boxY = Math.max(10, (vh - boxH) / 2); // Prevent it from going off the top of the screen
+
+        // 4. Shift all previously added widgets down by the newly calculated boxY
+        for (net.minecraft.client.gui.components.events.GuiEventListener widget : this.children()) {
+            if (widget instanceof AbstractWidget aw) aw.setY(aw.getY() + boxY);
+        }
+        for (int i = 0; i < headingY.length; i++) {
+            headingY[i] += boxY;
+        }
+
+        // 5. Add Bottom Controls (Tabs & Presets) using absolute Y coordinates now
+        int absoluteTabBarY = boxY + tabBarYOffset;
 
         List<Tab> tabs = new ArrayList<>();
         tabs.add(Tab.DISPLAY);
@@ -99,179 +148,178 @@ public class SolarisDisplaySettingsScreen extends Screen {
         if (showIntegrationsTab) tabs.add(Tab.INTEGRATIONS);
         else if (activeTab == Tab.INTEGRATIONS) activeTab = Tab.DISPLAY;
 
-        int tabBarY = contentY + DISPLAY_GRID_ROWS * ROW_H + GROUP_COUNT * HEADING_H + 6;
-        int tabW = (BOX_W - 20) / tabs.size();
+        int tabW = (boxW - 20 - ((tabs.size() - 1) * 6)) / tabs.size();
         for (int i = 0; i < tabs.size(); i++) {
             Tab tab = tabs.get(i);
-
             String label = (tab == activeTab ? "» " : "") + tab.label;
             addRenderableWidget(Button.builder(Component.literal(label), b -> {
                 activeTab = tab;
                 init();
-            }).bounds(x + 10 + i * tabW, tabBarY, tabW, 18).build());
+            }).bounds(boxX + 10 + i * (tabW + 6), absoluteTabBarY, tabW, 18).build());
         }
 
-        int presetHalfW = (BOX_W - 20 - 6) / 2;
+        int presetHalfW = (boxW - 20 - 6) / 2;
         addRenderableWidget(Button.builder(Component.literal("Save Preset"),
                 b -> Minecraft.getInstance().setScreen(new SolarisPresetSaveScreen(this, () -> {})))
-                .bounds(x + 10, tabBarY + 24, presetHalfW, 18).build());
+                .bounds(boxX + 10, absoluteTabBarY + 24, presetHalfW, 18).build());
         addRenderableWidget(Button.builder(Component.literal("Load Preset"),
-
                 b -> Minecraft.getInstance()
                         .setScreen(new SolarisPresetLoadScreen(this, SolarisTexture::invalidateAll)))
-                .bounds(x + 10 + presetHalfW + 6, tabBarY + 24, presetHalfW, 18).build());
+                .bounds(boxX + 10 + presetHalfW + 6, absoluteTabBarY + 24, presetHalfW, 18).build());
 
         addRenderableWidget(Button.builder(Component.literal("Close"), b -> onClose())
-                .bounds(x + 10, tabBarY + 48, BOX_W - 20, 18).build());
+                .bounds(boxX + 10, absoluteTabBarY + 48, boxW - 20, 18).build());
     }
 
-    private void initDisplayTab(int x, int y) {
-        int colW = (BOX_W - 20 - 20) / 3;
-        int col1X = x + 10;
-        int col2X = col1X + colW + 10;
-        int col3X = col2X + colW + 10;
+    private void initDisplayTab(int x, int[] cursorY) {
+        int padding = 10;
+        int gap = 6;
+        int availableW = boxW - (padding * 2);
+        int startX = x + padding;
 
-        headingY[0] = y;
-        y += HEADING_H;
+        // Dynamically size widgets based on available width (aiming for 3 columns, dropping to 2 or 1 if too small)
+        int colW = availableW > 380 ? (availableW - gap * 2) / 3 :
+                (availableW > 250 ? (availableW - gap) / 2 : availableW);
 
-        addRenderableWidget(new SaturationSlider(col1X, y, colW, 20));
-        addRenderableWidget(new WaterOpacitySlider(col2X, y, colW, 20));
-        addRenderableWidget(new BiomeBlendSlider(col3X, y, colW, 20));
-        y += ROW_H;
+        // Group 1: Terrain & Water
+        headingY[0] = cursorY[0];
+        cursorY[0] += HEADING_H;
 
-        addRenderableWidget(Button.builder(deepOnlyLabel(), b -> {
-            SolarisConfig.WATER_DEEP_ONLY.set(!SolarisConfig.WATER_DEEP_ONLY.get());
-            SolarisConfig.WATER_DEEP_ONLY.save();
-            b.setMessage(deepOnlyLabel());
-            SolarisTexture.invalidateAll();
-            MapTileCache.clearAll();
-            CaveTileCache.clearAll();
-        }).bounds(col1X, y, colW, 18).build());
-        addRenderableWidget(new ContrastSlider(col2X, y, colW, 20));
-        addRenderableWidget(new BrightnessSlider(col3X, y, colW, 20));
-        y += ROW_H;
+        placeWidgetsFluidly(startX, cursorY[0], availableW, cursorY, gap,
+                new SaturationSlider(0, 0, colW, 20),
+                new WaterOpacitySlider(0, 0, colW, 20),
+                new BiomeBlendSlider(0, 0, colW, 20),
+                Button.builder(deepOnlyLabel(), b -> {
+                    SolarisConfig.WATER_DEEP_ONLY.set(!SolarisConfig.WATER_DEEP_ONLY.get());
+                    SolarisConfig.WATER_DEEP_ONLY.save();
+                    b.setMessage(deepOnlyLabel());
+                }).size(colW, 18).build(),
+                new ContrastSlider(0, 0, colW, 20),
+                new BrightnessSlider(0, 0, colW, 20),
+                new FoliageBrightnessSlider(0, 0, colW, 20));
 
-        addRenderableWidget(new FoliageBrightnessSlider(col1X, y, colW, 20));
-        y += ROW_H;
+        // Group 2: Icons & Labels
+        headingY[1] = cursorY[0];
+        cursorY[0] += HEADING_H;
 
-        headingY[1] = y;
-        y += HEADING_H;
+        placeWidgetsFluidly(startX, cursorY[0], availableW, cursorY, gap,
+                new IconScaleSlider(0, 0, colW, 20),
+                Button.builder(labelSideLabel(), b -> {
+                    SolarisConfig.LABEL_SIDE.set(SolarisConfig.LABEL_SIDE.get().next());
+                    SolarisConfig.LABEL_SIDE.save();
+                    b.setMessage(labelSideLabel());
+                }).size(colW, 18).build(),
+                Button.builder(tooltipLabel(), b -> {
+                    SolarisConfig.SHOW_BLOCK_TOOLTIP.set(!SolarisConfig.SHOW_BLOCK_TOOLTIP.get());
+                    SolarisConfig.SHOW_BLOCK_TOOLTIP.save();
+                    b.setMessage(tooltipLabel());
+                }).size(colW, 18).build(),
+                Button.builder(railNetworkLabel(), b -> {
+                    SolarisConfig.SHOW_RAIL_NETWORK.set(!SolarisConfig.SHOW_RAIL_NETWORK.get());
+                    SolarisConfig.SHOW_RAIL_NETWORK.save();
+                    b.setMessage(railNetworkLabel());
+                }).size(colW, 18).build());
 
-        addRenderableWidget(new IconScaleSlider(col1X, y, colW, 20));
-        addRenderableWidget(Button.builder(labelSideLabel(), b -> {
-            SolarisConfig.LABEL_SIDE.set(SolarisConfig.LABEL_SIDE.get().next());
-            SolarisConfig.LABEL_SIDE.save();
-            b.setMessage(labelSideLabel());
-        }).bounds(col2X, y, colW, 18).build());
-        addRenderableWidget(Button.builder(tooltipLabel(), b -> {
-            SolarisConfig.SHOW_BLOCK_TOOLTIP.set(!SolarisConfig.SHOW_BLOCK_TOOLTIP.get());
-            SolarisConfig.SHOW_BLOCK_TOOLTIP.save();
-            b.setMessage(tooltipLabel());
-        }).bounds(col3X, y, colW, 18).build());
-        y += ROW_H;
+        // Group 3: Effects
+        headingY[2] = cursorY[0];
+        cursorY[0] += HEADING_H;
 
-        addRenderableWidget(Button.builder(railNetworkLabel(), b -> {
-            SolarisConfig.SHOW_RAIL_NETWORK.set(!SolarisConfig.SHOW_RAIL_NETWORK.get());
-            SolarisConfig.SHOW_RAIL_NETWORK.save();
-            b.setMessage(railNetworkLabel());
-            SolarisTexture.invalidateAll();
-        }).bounds(col1X, y, colW, 18).build());
-        y += ROW_H;
+        placeWidgetsFluidly(startX, cursorY[0], availableW, cursorY, gap,
+                new HillshadingStrengthSlider(0, 0, colW, 20),
+                new VignetteStrengthSlider(0, 0, colW, 20),
+                new UnexploredDensitySlider(0, 0, colW, 20),
+                new UnexploredBrightnessSlider(0, 0, colW, 20));
 
-        headingY[2] = y;
-        y += HEADING_H;
+        // Group 4: Minimap & Grid
+        headingY[3] = cursorY[0];
+        cursorY[0] += HEADING_H;
 
-        addRenderableWidget(new HillshadingStrengthSlider(col1X, y, colW, 20));
-        addRenderableWidget(new VignetteStrengthSlider(col2X, y, colW, 20));
-        y += ROW_H;
-
-        addRenderableWidget(new UnexploredDensitySlider(col1X, y, colW, 20));
-        addRenderableWidget(new UnexploredBrightnessSlider(col2X, y, colW, 20));
-        y += ROW_H;
-
-        headingY[3] = y;
-        y += HEADING_H;
-
-        addRenderableWidget(new MinimapZoomSlider(col1X, y, colW, 20));
-        addRenderableWidget(Button.builder(mapShapeLabel(), b -> {
-            SolarisConfig.MAP_SHAPE.set(SolarisConfig.MAP_SHAPE.get().next());
-            SolarisConfig.MAP_SHAPE.save();
-            b.setMessage(mapShapeLabel());
-        }).bounds(col2X, y, colW, 18).build());
-        addRenderableWidget(Button.builder(minimapTimeLabel(), b -> {
-            SolarisConfig.MINIMAP_SHOW_TIME.set(!SolarisConfig.MINIMAP_SHOW_TIME.get());
-            SolarisConfig.MINIMAP_SHOW_TIME.save();
-            b.setMessage(minimapTimeLabel());
-        }).bounds(col3X, y, colW, 18).build());
-        y += ROW_H;
-
-        addRenderableWidget(Button.builder(minimapCoordsLabel(), b -> {
-            SolarisConfig.MINIMAP_SHOW_COORDS.set(!SolarisConfig.MINIMAP_SHOW_COORDS.get());
-            SolarisConfig.MINIMAP_SHOW_COORDS.save();
-            b.setMessage(minimapCoordsLabel());
-        }).bounds(col1X, y, colW, 18).build());
-        addRenderableWidget(Button.builder(minimapRotateLabel(), b -> {
-            SolarisConfig.MINIMAP_ROTATE.set(!SolarisConfig.MINIMAP_ROTATE.get());
-            SolarisConfig.MINIMAP_ROTATE.save();
-            b.setMessage(minimapRotateLabel());
-        }).bounds(col2X, y, colW, 18).build());
-        y += ROW_H;
-
-        addRenderableWidget(Button.builder(claimsMapLabel(), b -> {
-            SolarisConfig.SHOW_CLAIMS_MAP.set(!SolarisConfig.SHOW_CLAIMS_MAP.get());
-            SolarisConfig.SHOW_CLAIMS_MAP.save();
-            b.setMessage(claimsMapLabel());
-            MapTileCache.clearAll();
-            CaveTileCache.clearAll();
-            SolarisTexture.invalidateAll();
-        }).bounds(col1X, y, colW, 18).build());
-        addRenderableWidget(Button.builder(claimsMinimapLabel(), b -> {
-            SolarisConfig.SHOW_CLAIMS_MINIMAP.set(!SolarisConfig.SHOW_CLAIMS_MINIMAP.get());
-            SolarisConfig.SHOW_CLAIMS_MINIMAP.save();
-            b.setMessage(claimsMinimapLabel());
-            SolarisTexture.invalidateAll();
-        }).bounds(col2X, y, colW, 18).build());
-        y += ROW_H;
-
-        addRenderableWidget(new MapZoomMinSlider(col1X, y, colW, 20));
-        addRenderableWidget(new MapZoomMaxSlider(col2X, y, colW, 20));
+        placeWidgetsFluidly(startX, cursorY[0], availableW, cursorY, gap,
+                new MinimapZoomSlider(0, 0, colW, 20),
+                Button.builder(mapShapeLabel(), b -> {
+                    SolarisConfig.MAP_SHAPE.set(SolarisConfig.MAP_SHAPE.get().next());
+                    SolarisConfig.MAP_SHAPE.save();
+                    b.setMessage(mapShapeLabel());
+                }).size(colW, 18).build(),
+                Button.builder(minimapTimeLabel(), b -> {
+                    SolarisConfig.MINIMAP_SHOW_TIME.set(!SolarisConfig.MINIMAP_SHOW_TIME.get());
+                    SolarisConfig.MINIMAP_SHOW_TIME.save();
+                    b.setMessage(minimapTimeLabel());
+                }).size(colW, 18).build(),
+                Button.builder(minimapCoordsLabel(), b -> {
+                    SolarisConfig.MINIMAP_SHOW_COORDS.set(!SolarisConfig.MINIMAP_SHOW_COORDS.get());
+                    SolarisConfig.MINIMAP_SHOW_COORDS.save();
+                    b.setMessage(minimapCoordsLabel());
+                }).size(colW, 18).build(),
+                Button.builder(minimapRotateLabel(), b -> {
+                    SolarisConfig.MINIMAP_ROTATE.set(!SolarisConfig.MINIMAP_ROTATE.get());
+                    SolarisConfig.MINIMAP_ROTATE.save();
+                    b.setMessage(minimapRotateLabel());
+                }).size(colW, 18).build(),
+                Button.builder(claimsMapLabel(), b -> {
+                    SolarisConfig.SHOW_CLAIMS_MAP.set(!SolarisConfig.SHOW_CLAIMS_MAP.get());
+                    SolarisConfig.SHOW_CLAIMS_MAP.save();
+                    b.setMessage(claimsMapLabel());
+                }).size(colW, 18).build(),
+                Button.builder(claimsMinimapLabel(), b -> {
+                    SolarisConfig.SHOW_CLAIMS_MINIMAP.set(!SolarisConfig.SHOW_CLAIMS_MINIMAP.get());
+                    SolarisConfig.SHOW_CLAIMS_MINIMAP.save();
+                    b.setMessage(claimsMinimapLabel());
+                }).size(colW, 18).build(),
+                new MapZoomMinSlider(0, 0, colW, 20),
+                new MapZoomMaxSlider(0, 0, colW, 20));
     }
 
-    private void initWaypointsTab(int x, int y) {
-        addRenderableWidget(Button.builder(beamsLabel(), b -> {
-            SolarisConfig.WAYPOINT_BEAMS.set(!SolarisConfig.WAYPOINT_BEAMS.get());
-            SolarisConfig.WAYPOINT_BEAMS.save();
-            b.setMessage(beamsLabel());
-        }).bounds(x + 10, y, BOX_W - 20, 18).build());
-        y += ROW_H;
+    private void initIntegrationsTab(int x, int[] cursorY) {
+        int padding = 10;
+        int gap = 6;
+        int availableW = boxW - (padding * 2);
+        int startX = x + padding;
 
-        addRenderableWidget(Button.builder(compassLabel(), b -> {
-            SolarisConfig.WAYPOINT_COMPASS.set(!SolarisConfig.WAYPOINT_COMPASS.get());
-            SolarisConfig.WAYPOINT_COMPASS.save();
-            b.setMessage(compassLabel());
-        }).bounds(x + 10, y, BOX_W - 20, 18).build());
-        y += ROW_H;
+        // Match the column scaling of the other tabs
+        int colW = availableW > 250 ? (availableW - gap) / 2 : availableW;
 
-        addRenderableWidget(Button.builder(deathMarkersLabel(), b -> {
-            SolarisConfig.DEATH_MARKERS.set(!SolarisConfig.DEATH_MARKERS.get());
-            SolarisConfig.DEATH_MARKERS.save();
-            b.setMessage(deathMarkersLabel());
-        }).bounds(x + 10, y, BOX_W - 20, 18).build());
-        y += ROW_H;
-
-        addRenderableWidget(Button.builder(planShapesLabel(), b -> {
-            SolarisConfig.SHOW_PLAN_SHAPES.set(!SolarisConfig.SHOW_PLAN_SHAPES.get());
-            SolarisConfig.SHOW_PLAN_SHAPES.save();
-            b.setMessage(planShapesLabel());
-        }).bounds(x + 10, y, BOX_W - 20, 18).build());
+        placeWidgetsFluidly(startX, cursorY[0], availableW, cursorY, gap,
+                Button.builder(gtVeinsLabel(), b -> {
+                    SolarisConfig.SHOW_GT_ORE_VEINS.set(!SolarisConfig.SHOW_GT_ORE_VEINS.get());
+                    SolarisConfig.SHOW_GT_ORE_VEINS.save();
+                    b.setMessage(gtVeinsLabel());
+                }).size(colW, 18).build());
     }
 
-    private void initIntegrationsTab(int x, int y) {
-        addRenderableWidget(Button.builder(gtVeinsLabel(), b -> {
-            SolarisConfig.SHOW_GT_ORE_VEINS.set(!SolarisConfig.SHOW_GT_ORE_VEINS.get());
-            SolarisConfig.SHOW_GT_ORE_VEINS.save();
-            b.setMessage(gtVeinsLabel());
-        }).bounds(x + 10, y, BOX_W - 20, 18).build());
+    private void initWaypointsTab(int x, int[] cursorY) {
+        int padding = 10;
+        int gap = 6;
+        int availableW = boxW - (padding * 2);
+        int startX = x + padding;
+
+        // Dynamic column width: 2 columns if space allows, otherwise 1 column
+        int colW = availableW > 250 ? (availableW - gap) / 2 : availableW;
+
+        placeWidgetsFluidly(startX, cursorY[0], availableW, cursorY, gap,
+                Button.builder(beamsLabel(), b -> {
+                    SolarisConfig.WAYPOINT_BEAMS.set(!SolarisConfig.WAYPOINT_BEAMS.get());
+                    SolarisConfig.WAYPOINT_BEAMS.save();
+                    b.setMessage(beamsLabel());
+                }).size(colW, 18).build(),
+
+                Button.builder(compassLabel(), b -> {
+                    SolarisConfig.WAYPOINT_COMPASS.set(!SolarisConfig.WAYPOINT_COMPASS.get());
+                    SolarisConfig.WAYPOINT_COMPASS.save();
+                    b.setMessage(compassLabel());
+                }).size(colW, 18).build(),
+
+                Button.builder(deathMarkersLabel(), b -> {
+                    SolarisConfig.DEATH_MARKERS.set(!SolarisConfig.DEATH_MARKERS.get());
+                    SolarisConfig.DEATH_MARKERS.save();
+                    b.setMessage(deathMarkersLabel());
+                }).size(colW, 18).build(),
+
+                Button.builder(planShapesLabel(), b -> {
+                    SolarisConfig.SHOW_PLAN_SHAPES.set(!SolarisConfig.SHOW_PLAN_SHAPES.get());
+                    SolarisConfig.SHOW_PLAN_SHAPES.save();
+                    b.setMessage(planShapesLabel());
+                }).size(colW, 18).build());
     }
 
     private Component tooltipLabel() {
@@ -305,7 +353,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
     private Component minimapRotateLabel() {
         boolean on = SolarisConfig.MINIMAP_ROTATE.get();
-        return Component.literal("Minimap Rotate: " + (on ? "ON (facing up)" : "OFF (north up)"));
+        return Component.literal("Minimap Rotate: " + (on ? "ON" : "OFF"));
     }
 
     private Component railNetworkLabel() {
@@ -349,31 +397,66 @@ public class SolarisDisplaySettingsScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics g, int mx, int my, float pt) {
+    public void render(GuiGraphics g, int rawMx, int rawMy, float pt) {
+        int mx = Math.round(rawMx / uiScale);
+        int my = Math.round(rawMy / uiScale);
+
+        // These two cover the real viewport regardless of our virtual scale, so they run before
+        // the pose push below and keep using the raw width/height.
         if (parent instanceof SolarisMapScreen mapScreen) {
             mapScreen.renderMapBackground(g);
             g.fill(0, 0, width, height, 0xE0101014);
         } else {
             renderBackground(g);
         }
-        int x = boxX();
-        int y = boxY();
-        g.fill(x, y, x + BOX_W, y + boxH, C_BG);
-        ModernPanel.draw(g, x - 8, y - 8, BOX_W + 16, boxH + 16, C_BORDER);
 
-        g.fill(x, y, x + BOX_W, y + HEADER_H, C_HEADER);
-        g.fill(x, y + HEADER_H, x + BOX_W, y + HEADER_H + 1, C_BORDER2);
-        g.drawCenteredString(font, title, x + BOX_W / 2, y + 6, C_ACCENT);
+        g.pose().pushPose();
+        g.pose().scale(uiScale, uiScale, 1f);
+
+        // Use the boxX/boxY fields (the values init() actually positioned every widget with),
+        // not a separately-recomputed position - those used to disagree (fixed BOX_W constant vs
+        // the dynamic boxW, and an unclamped recompute vs the clamped boxY field), which could
+        // draw this panel in a different place than its own buttons.
+        int x = boxX;
+        int y = boxY;
+        g.fill(x, y, x + boxW, y + boxH, C_BG);
+        ModernPanel.draw(g, x - 8, y - 8, boxW + 16, boxH + 16, C_BORDER);
+
+        g.fill(x, y, x + boxW, y + HEADER_H, C_HEADER);
+        g.fill(x, y + HEADER_H, x + boxW, y + HEADER_H + 1, C_BORDER2);
+        g.drawCenteredString(font, title, x + boxW / 2, y + 6, C_ACCENT);
 
         if (activeTab == Tab.DISPLAY) {
             for (int i = 0; i < GROUP_COUNT; i++) {
                 int hy = headingY[i];
                 g.drawString(font, GROUP_HEADINGS[i], x + 10, hy + 2, C_DIM, false);
-                g.fill(x + 10 + font.width(GROUP_HEADINGS[i]) + 6, hy + 6, x + BOX_W - 10, hy + 7, C_BORDER2);
+                g.fill(x + 10 + font.width(GROUP_HEADINGS[i]) + 6, hy + 6, x + boxW - 10, hy + 7, C_BORDER2);
             }
         }
 
         super.render(g, mx, my, pt);
+
+        g.pose().popPose();
+    }
+
+    @Override
+    public boolean mouseClicked(double rawMx, double rawMy, int btn) {
+        return super.mouseClicked(rawMx / uiScale, rawMy / uiScale, btn);
+    }
+
+    @Override
+    public boolean mouseDragged(double rawMx, double rawMy, int btn, double dragX, double dragY) {
+        return super.mouseDragged(rawMx / uiScale, rawMy / uiScale, btn, dragX / uiScale, dragY / uiScale);
+    }
+
+    @Override
+    public boolean mouseReleased(double rawMx, double rawMy, int btn) {
+        return super.mouseReleased(rawMx / uiScale, rawMy / uiScale, btn);
+    }
+
+    @Override
+    public boolean mouseScrolled(double rawMx, double rawMy, double delta) {
+        return super.mouseScrolled(rawMx / uiScale, rawMy / uiScale, delta);
     }
 
     @Override
@@ -513,7 +596,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
         @Override
         protected void updateMessage() {
-            setMessage(Component.literal("Density: " + Math.round((0.25 + value * 3.75) * 100) + "%"));
+            setMessage(Component.literal("Unexplored Density: " + Math.round((0.25 + value * 3.75) * 100) + "%"));
         }
 
         @Override
@@ -533,7 +616,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
         @Override
         protected void updateMessage() {
-            setMessage(Component.literal("Brightness: " + Math.round((0.25 + value * 2.25) * 100) + "%"));
+            setMessage(Component.literal("Unexplored Bright: " + Math.round((0.25 + value * 2.25) * 100) + "%"));
         }
 
         @Override
