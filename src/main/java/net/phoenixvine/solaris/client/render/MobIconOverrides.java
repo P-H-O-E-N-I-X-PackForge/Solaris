@@ -99,7 +99,7 @@ public final class MobIconOverrides {
             }
         } catch (Exception e) {
             PhoenixSolaris.LOGGER.warn(
-                    "Couldn't load solaris_mob_icons.json — custom mob icons from that file won't apply this session",
+                    "Couldn't load solaris_mob_icons.json. Custom mob icons from that file won't apply this session",
                     e);
         }
     }

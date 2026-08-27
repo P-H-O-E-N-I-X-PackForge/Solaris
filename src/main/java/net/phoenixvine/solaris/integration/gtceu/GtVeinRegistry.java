@@ -119,7 +119,7 @@ public final class GtVeinRegistry {
                 }
             }
         } catch (Exception e) {
-            PhoenixSolaris.LOGGER.error("Failed to load saved GT ore vein markers — starting fresh.", e);
+            PhoenixSolaris.LOGGER.error("Failed to load saved GT ore vein markers. Starting fresh.", e);
         }
         loadedWorldKey = key;
     }

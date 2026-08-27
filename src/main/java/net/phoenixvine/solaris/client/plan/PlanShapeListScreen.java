@@ -26,9 +26,6 @@ public class PlanShapeListScreen extends Screen {
 
     private static final int ROW_H = 16;
 
-    // Same fix as WaypointListScreen: no floor previously. The right-hand edit panel here is
-    // smaller (name, color, base Y/height, visible, save, delete - no scrolling), so it needs
-    // less room, but it's still a hard fixed-pixel minimum with nothing else that adapts.
     private static final int MIN_W = 420;
     private static final int MIN_H = 280;
     private float uiScale = 1f;
@@ -182,7 +179,7 @@ public class PlanShapeListScreen extends Screen {
         }
 
         if (shapes.isEmpty()) {
-            String emptyMsg = "No plan shapes yet — use the Plan tool on the map to draw one.";
+            String emptyMsg = "No plan shapes yet. Use the Plan tool on the map to draw one.";
             List<FormattedCharSequence> emptyLines = font.split(Component.literal(emptyMsg), leftW - 16);
             int emptyY = listTop + 4;
             for (FormattedCharSequence line : emptyLines) {

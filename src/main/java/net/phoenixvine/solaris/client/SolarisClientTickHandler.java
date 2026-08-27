@@ -31,11 +31,6 @@ public class SolarisClientTickHandler {
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
 
-        // SolarisThemeUtils's plain int color cache otherwise only refreshes on an explicit
-        // theme-change event, so an animated theme (e.g. rainbow) freezes at whatever color it
-        // happened to be showing when the map/HUD was last opened or the theme last switched.
-        // Refresh it every tick instead - NOT the full onThemeChanged(), which also invalidates the
-        // map/cave tile texture caches and would be far too expensive to run this often.
         SolarisThemeUtils.refreshCache();
 
         Minecraft mc = Minecraft.getInstance();

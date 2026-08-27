@@ -1,9 +1,6 @@
 "use strict";
 
-/*
- * Solaris Web Map — a static, fully client-side viewer for the ".solmap" files produced by
- * Solaris's in-game "Export for Web Map" button.
- */
+
 
 const MAGIC = 0x534f4c4d;
 
@@ -19,7 +16,7 @@ const state = {
     unexploredStyle: "FOG",
     unexploredDensity: 1,
     unexploredBrightness: 1,
-    unexploredImage: null, // an HTMLImageElement once loaded
+    unexploredImage: null,
     unexploredImageCover: false,
     saturation: 1,
     contrast: 1,
@@ -45,13 +42,11 @@ const scalebarLabelEl = document.getElementById("scalebar-label");
 const settingsToggleEl = document.getElementById("settings-toggle");
 const settingsPanelEl = document.getElementById("settings-panel");
 
-// ── Settings panel open/close ────────────────────────────────────────────────
 
 settingsToggleEl.addEventListener("click", () => settingsPanelEl.classList.toggle("hidden"));
 document.getElementById("settings-close").addEventListener("click", () =>
     settingsPanelEl.classList.add("hidden"));
 
-// ── Settings: options that require a full rebuild (they bake into the offscreen image) ──
 
 document.getElementById("opt-hillshade").addEventListener("change", (e) => {
   state.options.hillshading = e.target.checked;
@@ -80,7 +75,6 @@ document.getElementById("opt-bw").addEventListener("change", (e) => {
   rebuildAndRender();
 });
 
-// ── Settings: options that only affect drawing, no rebuild needed ───────────
 
 document.getElementById("opt-grid").addEventListener("change", (e) => {
   state.options.chunkGrid = e.target.checked;
@@ -143,7 +137,6 @@ function rebuildAndRender() {
   render();
 }
 
-// ── File loading ─────────────────────────────────────────────────────────────
 
 document.getElementById("map-input").addEventListener("change", (e) => {
   if (e.target.files[0]) loadMapFile(e.target.files[0]);
@@ -197,7 +190,6 @@ async function loadWaypointsFile(file) {
   }
 }
 
-// ── .solmap parsing ──────────────────────────────────────────────────────────
 
 async function parseSolmap(arrayBuffer) {
   if (typeof DecompressionStream === "undefined") {
@@ -298,7 +290,6 @@ async function parseSolmap(arrayBuffer) {
     width, height, baseImageData: imageData, heights, hasData, waterMap, waterDepthMap, canvas: null };
 }
 
-// ── Static Unexplored Pattern Generator ──────────────────────────────────────
 
 function mix64(bx, bz, seed = 0n) {
   let h = BigInt.asUintN(64, BigInt(bx) * 0x9E3779B97F4A7C15n + BigInt(bz) * 0xBF58476D1CE4E5B9n + BigInt(seed));
@@ -442,16 +433,12 @@ function renderUnexploredBackground(targetCtx, w, h, style) {
     }
 
     if (state.options.unexploredImageCover) {
-      // A static backdrop that fills the viewport — screen-locked, doesn't pan with the map
-      // (matches the in-game "cover" mode).
+
       targetCtx.imageSmoothingEnabled = false;
       targetCtx.drawImage(img, 0, 0, w, h);
       return;
     }
-    // Tiled mode falls through to the same screen-locked, pixel-exact generator every other
-    // unexplored style uses below (a cached ImageData, redrawn 1:1) — kept consistent with those
-    // rather than tracking world position, since a moving/scaling pattern under canvas smoothing
-    // is what caused the swimming/blurry look panning used to have.
+
   }
 
   const key = unexploredBgKey(w, h);
@@ -480,7 +467,6 @@ function renderUnexploredBackground(targetCtx, w, h, style) {
   targetCtx.drawImage(bgCanvas, 0, 0);
 }
 
-// ── Image Processing ────────────────────────────────────────────────────────
 
 const LIGHT_X = -0.5, LIGHT_Y = -0.5, LIGHT_Z = 0.8;
 const LIGHT_LEN = Math.sqrt(LIGHT_X * LIGHT_X + LIGHT_Y * LIGHT_Y + LIGHT_Z * LIGHT_Z);
@@ -505,7 +491,6 @@ function rebuildCanvas(map) {
   const shaded = new ImageData(new Uint8ClampedArray(baseImageData.data), width, height);
   const pixels = shaded.data;
 
-  // 1. Smart Biome & Water Blur Pass
   const temp = new Uint8ClampedArray(pixels);
   const radius = 2;
 
@@ -538,8 +523,6 @@ function rebuildCanvas(map) {
                 r += temp[p]; g += temp[p+1]; b += temp[p+2]; count++;
               }
             } else {
-              // Heuristic: Blur grass/leaves by blending pixels that are close in RGB distance.
-              // This prevents coastlines and stark paths from being destroyed while smoothing biome boundaries.
               const dr = temp[p] - temp[pxP];
               const dg = temp[p+1] - temp[pxP+1];
               const db = temp[p+2] - temp[pxP+2];
@@ -559,7 +542,6 @@ function rebuildCanvas(map) {
     }
   }
 
-  // 2. Hillshading and Water Relief Pass
   for (let z = 0; z < height; z++) {
     for (let x = 0; x < width; x++) {
       const idx = z * width + x;
@@ -581,18 +563,16 @@ function rebuildCanvas(map) {
         let factor = 1.0;
 
         if (isWater) {
-          // Apply Water Relief (waves)
           const dWest = (x > 0 && waterMap[idx - 1]) ? waterDepthMap[idx - 1] : waterDepthMap[idx];
           const dEast = (x < width - 1 && waterMap[idx + 1]) ? waterDepthMap[idx + 1] : waterDepthMap[idx];
           const dNorth = (z > 0 && waterMap[idx - width]) ? waterDepthMap[idx - width] : waterDepthMap[idx];
           const dSouth = (z < height - 1 && waterMap[idx + width]) ? waterDepthMap[idx + width] : waterDepthMap[idx];
 
-          const dzdx = -(dEast - dWest) * 0.5 * 0.3; // 0.3 is WATER_RELIEF_NEIGHBOR_SCALE
+          const dzdx = -(dEast - dWest) * 0.5 * 0.3;
           const dzdy = -(dSouth - dNorth) * 0.5 * 0.3;
-          factor = hillshadeFactor(dzdx, dzdy, 0.6); // 0.6 is WATER_RELIEF_GAIN
-          factor = Math.max(0.85, Math.min(1.15, factor)); // WATER_RELIEF_CLAMP = 0.15
+          factor = hillshadeFactor(dzdx, dzdy, 0.6);
+          factor = Math.max(0.85, Math.min(1.15, factor));
         } else {
-          // Normal Hillshading
           const dzdx = (east - west) * 0.5;
           const dzdy = (south - north) * 0.5;
           factor = hillshadeFactor(dzdx, dzdy, HILLSHADE_GAIN);
@@ -607,8 +587,6 @@ function rebuildCanvas(map) {
     }
   }
 
-  // 3. Color grading pass (saturation, contrast, brightness, tint, black & white) — mirrors the
-  // in-game post-processing chain applied to the same explored-terrain pixels.
   const o = state.options;
   const hasGrading = o.saturation !== 1 || o.contrast !== 1 || o.brightness !== 1 || o.tintR !== 1 ||
       o.tintG !== 1 || o.tintB !== 1 || o.blackAndWhite;
@@ -658,7 +636,6 @@ function rebuildCanvas(map) {
   map.canvas = off;
 }
 
-// ── View / rendering ─────────────────────────────────────────────────────────
 
 function resizeCanvas() {
   const rect = canvas.parentElement.getBoundingClientRect();
@@ -696,12 +673,6 @@ function render() {
 
   renderUnexploredBackground(ctx, canvas.width, canvas.height, state.options.unexploredStyle);
 
-  // Nearest-neighbor, not smoothed — matches the in-game map's own filtering (SolarisTexture
-  // uses texture.setFilter(false, false)), and avoids a real bug: smoothing a scaled image with
-  // a hard alpha edge (explored terrain next to fully-transparent unexplored pixels) blends
-  // partially-transparent halo pixels along that edge, letting the background show through in a
-  // blur that shifts every frame as you pan/zoom — reads as the background "smearing" or
-  // "bleeding" into the map, especially obvious against a high-contrast custom image.
   ctx.imageSmoothingEnabled = false;
   const v = state.view;
   ctx.drawImage(state.map.canvas, v.offsetX, v.offsetY, state.map.width * v.zoom, state.map.height * v.zoom);
@@ -791,7 +762,6 @@ function waypointColor(w) {
   return "#ffffff";
 }
 
-// ── Interaction: pan, zoom, hover ────────────────────────────────────────────
 
 canvas.addEventListener("pointerdown", (e) => {
   if (!state.map) return;
@@ -875,15 +845,9 @@ function handleResize() {
 
 window.addEventListener("resize", handleResize);
 
-// window "resize" doesn't reliably fire for every layout change that resizes the canvas's parent
-// (browser/OS fullscreen toggles in particular can lag or skip it entirely depending on browser).
-// A ResizeObserver on the actual parent element catches those directly, so entering/exiting
-// fullscreen doesn't leave the canvas's backing buffer — and everything drawn into it — stuck at
-// the old size while the element itself has already resized around it.
+
 new ResizeObserver(handleResize).observe(document.getElementById("stage"));
 document.addEventListener("fullscreenchange", handleResize);
-
-// ── Meta bar ──────────────────────────────────────────────────────────────────
 
 function updateMeta() {
   if (!state.map) return;

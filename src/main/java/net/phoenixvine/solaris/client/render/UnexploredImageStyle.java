@@ -52,7 +52,8 @@ public final class UnexploredImageStyle {
             if (!warnedMissing) {
                 warnedMissing = true;
                 PhoenixSolaris.LOGGER.warn(
-                        "[Solaris] Couldn't load unexplored-style image at {} — falling back to Fog until this " +
+                        "[Solaris] Couldn't load unexplored-style image at {}. " +
+                                "Falling back to Fog until this " +
                                 "resolves (path is relative to config/solaris/).",
                         file, e);
             }

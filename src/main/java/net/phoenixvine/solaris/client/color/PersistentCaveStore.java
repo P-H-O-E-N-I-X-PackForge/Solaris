@@ -116,7 +116,7 @@ public final class PersistentCaveStore {
             int version = in.readInt();
             if (magic != MAGIC || version != VERSION) {
                 PhoenixSolaris.LOGGER.warn(
-                        "[Solaris] Discarding persisted cave data for {} — found format version {} on disk, " +
+                        "[Solaris] Discarding persisted cave data for {}. Found format version {} on disk, " +
                                 "expected {} (magic {})",
                         dimension, version, VERSION, magic == MAGIC ? "ok" : "MISMATCH");
                 return loaded;

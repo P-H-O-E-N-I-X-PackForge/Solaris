@@ -50,8 +50,10 @@ public final class BlockTextureColors {
         }
         if (WARNED_FALLBACK_BLOCKS.add(block)) {
             PhoenixSolaris.LOGGER.warn(
-                    "[Solaris] Couldn't compute a texture-average color for {} — every chunk containing it will " +
-                            "fall back to its vanilla MapColor (or flat gray, if it has none) until this resolves. " +
+                    "[Solaris] Couldn't compute a texture-average color for {}." +
+                            " Every chunk containing it will " +
+                            "fall back to its vanilla MapColor (or flat gray, if it has none)" +
+                            " until this resolves. " +
                             "If this keeps recurring for the same block across sessions, it's a persistent " +
                             "failure worth reporting, not a one-time startup timing race.",
                     block);

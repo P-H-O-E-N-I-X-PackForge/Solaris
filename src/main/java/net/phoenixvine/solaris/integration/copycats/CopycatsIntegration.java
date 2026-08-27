@@ -38,7 +38,7 @@ public final class CopycatsIntegration {
         } catch (Throwable t) {
             broken = true;
             PhoenixSolaris.LOGGER.error(
-                    "Copycats is present but reading its material state failed — copycat blocks will render as " +
+                    "Copycats is present but reading its material state failed. Copycat blocks will render as " +
                             "their own default color for the rest of this session.",
                     t);
             return null;

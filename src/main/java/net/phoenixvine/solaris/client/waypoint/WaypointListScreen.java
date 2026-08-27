@@ -32,10 +32,6 @@ public class WaypointListScreen extends Screen {
 
     private static final int ROW_H = 16;
 
-    // No floor at all previously - the right-hand edit panel alone (name, color, x/y/z, category,
-    // label color, icon, visible, track, [share], save, delete) needs ~290-300px of fixed-height
-    // rows with nothing that scrolls, so MIN_H covers that with margin. MIN_W keeps the waypoint
-    // list column (leftW) at a readable width even once sideW is floored at 180.
     private static final int MIN_W = 460;
     private static final int MIN_H = 340;
     private float uiScale = 1f;
@@ -348,7 +344,7 @@ public class WaypointListScreen extends Screen {
 
         if (visible.isEmpty()) {
             String emptyMsg = WaypointManager.getAll().isEmpty() ?
-                    "No waypoints yet — click \"+ Add here\", or right-click the map." :
+                    "No waypoints yet. Click \"+ Add here\", or right-click the map." :
                     "No waypoints match your search.";
             List<FormattedCharSequence> emptyLines = font.split(Component.literal(emptyMsg), leftW - 16);
             int emptyY = listTop + 4;

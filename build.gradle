@@ -26,7 +26,6 @@ repositories {
     mavenLocal()
     mavenCentral()
     maven {
-        // GTCEu — optional ore-vein integration only, see integration.gtceu
         name = 'GTCEu Maven'
         url = 'https://maven.gtceu.com'
         content {
@@ -46,9 +45,6 @@ repositories {
         dir 'libs'
     }
     maven {
-        // FramedBlocks + Copycats — optional camouflage-block map-color integrations only, see
-        // integration.framedblocks / integration.copycats. Both publish to Modrinth's own maven
-        // proxy (verified: no self-hosted maven for either).
         name = 'Modrinth Maven'
         url = 'https://api.modrinth.com/maven'
         content {
@@ -56,9 +52,7 @@ repositories {
         }
     }
     maven {
-        // Domum Ornamentum — optional camouflage-block map-color integration only, see
-        // integration.domumornamentum. LDTTeam's own maven (verified via their shared Gradle
-        // conventions script, ldtteam/OperaPublicaCreator) — not on Modrinth/CurseForge maven.
+
         name = 'LDTTeam Maven'
         url = 'https://ldtteam.jfrog.io/ldtteam/mods-maven'
         content {
@@ -66,9 +60,7 @@ repositories {
         }
     }
     maven {
-        // KubeJS — optional scripting integration only, see integration.kubejs. Mirrors the
-        // same coordinates/version already verified working in the sibling PhoenixChronicles
-        // project's build.gradle.
+
         name = 'LatvianModder'
         url = 'https://maven.latvian.dev/releases'
         content {
@@ -133,46 +125,22 @@ dependencies {
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
-    // Optional ore-vein integration — GTCEu isn't required to run Solaris, only to see its
-    // veins on the map. See integration.gtceu for the isAvailable()-guarded access pattern.
     modCompileOnly("com.gregtechceu.gtceu:gtceu-${minecraft_version}:${gtceu_version}:slim") { transitive = false }
     modRuntimeOnly("com.gregtechceu.gtceu:gtceu-${minecraft_version}:${gtceu_version}:slim") { transitive = false }
 
-    modCompileOnly 'curse.maven:phoenix-guilds-1612085:8460956'
-    modRuntimeOnly 'curse.maven:phoenix-guilds-1612085:8460956'
+    modCompileOnly('curse.maven:phoenix-guilds-1612085:8743646')
+    modRuntimeOnly('curse.maven:phoenix-guilds-1612085:8743646')
 
-    // Phoenix Wiki - jar-in-jar'd shared theme system (net.phoenixvine.wiki.theme.PhoenixTheme)
-    // and markdown/wiki engine (net.phoenixvine.wiki.PhoenixWikiAPI) - the same theme choice this
-    // library holds is shared with every other Phoenixvine mod that also embeds it. After changing
-    // anything in that project, run `./gradlew publishToSolaris` there to refresh libs/phoenix_wiki-*.jar.
-    jarJar(modImplementation("local:phoenix_wiki:0.1.0"))
+    modImplementation("curse.maven:phoenixwiki-1647798:8735977")
 
-    // Optional camouflage-block map-color integrations — none of these three are required to
-    // run Solaris, only to render what a camouflaged/materially-textured block is actually
-    // displaying instead of its own undefined placeholder color. See integration.framedblocks /
-    // integration.copycats / integration.domumornamentum for the isAvailable()-guarded access
-    // pattern (mirrors the gtceu integration above).
     modCompileOnly("maven.modrinth:framedblocks:9.4.3") { transitive = false }
     modRuntimeOnly("maven.modrinth:framedblocks:9.4.3") { transitive = false }
 
-    // Copycats' own ICopycatBlockEntity interface extends several Create interfaces (which
-    // themselves reach into Flywheel/Registrate/Catnip) — javac needs that whole chain
-    // resolvable just to type-check a call to ICopycatBlockEntity's own methods, even though
-    // none of it is actually used. Reflection (see integration.copycats) sidesteps needing any
-    // of that on the compile classpath at all — no compileOnly dependency here, matching
-    // GtceuIntegration's own reflection-based access to a third-party private field. Kept as a
-    // dev-environment-only runtime dependency so integration.copycats is actually exercisable
-    // via ./gradlew runClient; real users' modpacks bring their own Copycats jar.
     modRuntimeOnly("maven.modrinth:copycats:3.0.7+mc.1.20.1-forge") { transitive = false }
 
     modCompileOnly("com.ldtteam:domum_ornamentum:1.20.1-1.0.296:api") { transitive = false }
     modRuntimeOnly("com.ldtteam:domum_ornamentum:1.20.1-1.0.296:universal") { transitive = false }
 
-    // KubeJS — compile-time only: the plugin class (see integration.kubejs) is only ever
-    // instantiated by KubeJS itself (via kubejs.plugins.txt), and only if KubeJS is actually
-    // installed, so Solaris works fine without it at runtime. Not added as modRuntimeOnly since
-    // packs that DO run KubeJS already provide it themselves — bundling/requiring our own copy
-    // would just be redundant and risks a version clash with whatever the pack ships.
     modCompileOnly("dev.latvian.mods:kubejs-forge:${kubejs_version}")
 
     // lombok

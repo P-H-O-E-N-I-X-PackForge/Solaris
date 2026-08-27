@@ -27,11 +27,7 @@ public class MapViewport {
 
     public boolean adjustZoomToAnchor(double scrollDelta, double mouseX, double mouseY, int originX, int originY) {
         float oldZoom = this.zoom;
-        // Multiplicative, not additive — a fixed absolute step (e.g. -0.1) is a huge relative
-        // jump once zoom is already small (zoomed way out), and that ratio feeds straight into
-        // the offset math below, which was throwing the pan position wildly off and reading as
-        // the map "glitching"/jumping at low zoom. A fixed percentage per scroll notch stays
-        // proportional at any zoom level, matching how GlobeCamera already zooms.
+
         float newZoom = (float) (this.zoom * Math.pow(ZOOM_STEP_FACTOR, scrollDelta));
         this.zoom = Math.max(zoomMin, Math.min(zoomMax, newZoom));
         if (this.zoom == oldZoom) return false;

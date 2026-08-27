@@ -174,7 +174,8 @@ public final class PersistentChunkStore {
             int version = in.readInt();
             if (magic != MAGIC || version != VERSION) {
                 PhoenixSolaris.LOGGER.warn(
-                        "[Solaris] Discarding persisted map data for {} — found format version {} on disk, " +
+                        "[Solaris] Discarding persisted map data for {} " +
+                                "Found format version {} on disk, " +
                                 "expected {} (magic {})",
                         dimension, version, VERSION, magic == MAGIC ? "ok" : "MISMATCH");
                 return loaded;

@@ -26,7 +26,7 @@ public class ChunkColorEvents {
 
     @SubscribeEvent
     public static void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
-        PhoenixSolaris.LOGGER.info("[Solaris] onLoggingIn fired — clearing in-memory chunk caches");
+        PhoenixSolaris.LOGGER.info("[Solaris] onLoggingIn fired. Clearing in-memory chunk caches");
 
         ChunkColorCache.clear();
         ChunkHeightCache.clear();

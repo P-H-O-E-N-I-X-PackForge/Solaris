@@ -1,14 +1,14 @@
 # Solaris: Map & Navigation
 
-Solaris is a live terrain minimap and world map for this pack, with an overlay layer other
-Phoenix mods (like Phoenix Domains) hook into.
+Solaris is a live terrain minimap and world map, with an overlay layer other
+Phoenix mods (like Phoenix Domains) can hook into.
 
 ## Opening the map
 
-- **Minimap** — always on in a corner of your screen while exploring.
-- **World Map** — open the fullscreen map to pan, zoom, and manage waypoints.
-- **Underground View** — toggle to see cave systems instead of the surface.
-- **Globe View** — if enabled, view the whole world as a rotating globe.
+- **Minimap**: always on in a corner of your screen while exploring.
+- **World Map**: open the fullscreen map to pan, zoom, and manage waypoints.
+- **Underground View**: toggle to see cave systems instead of the surface.
+- **Globe View**: if enabled, view the whole world as a rotating globe.
 
 ## Waypoints
 
@@ -17,7 +17,7 @@ with your guild if Phoenix Guilds is installed.
 
 ## Theme
 
-Solaris shares its color theme with every other Phoenix mod installed - use the Theme button to
+Solaris shares its color theme with every other Phoenix mod installed. use the Theme button to
 pick or customize one, and it applies everywhere at once.
 
 ## Exporting

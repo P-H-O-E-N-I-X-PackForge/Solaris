@@ -117,7 +117,7 @@ public class SolarisCommands {
             state = SolarisFeatureState.valueOf(stateName.toUpperCase(java.util.Locale.ROOT));
         } catch (IllegalArgumentException e) {
             source.sendFailure(Component.literal("Unknown state '" + stateName +
-                    "' — expected disabled, visible, or enabled."));
+                    "' Expected disabled, visible, or enabled."));
             return 0;
         }
 

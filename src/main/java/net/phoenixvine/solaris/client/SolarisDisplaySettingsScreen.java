@@ -37,16 +37,11 @@ public class SolarisDisplaySettingsScreen extends Screen {
     private static final int GROUP_COUNT = 4;
     private static final String[] GROUP_HEADINGS = { "TERRAIN & WATER", "ICONS & LABELS", "EFFECTS", "MINIMAP & GRID" };
 
-    // This screen had no size floor at all, same as the others - MIN_W/MIN_H are sized so the
-    // widest tab (DISPLAY, 4 groups up to 9 items each) still lays out at a comfortable 2-3 column
-    // width and doesn't need to scroll. Below either floor, uiScale shrinks the whole panel
-    // uniformly instead of letting it overflow the window.
     private static final int MIN_W = 460;
     private static final int MIN_H = 520;
     private float uiScale = 1f;
     private int vw, vh;
 
-    // Add these dynamic instance variables
     private int boxW;
     private int boxH;
     private int boxX;
@@ -80,7 +75,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
         int maxRowH = ROW_H;
 
         for (AbstractWidget widget : widgets) {
-            // If the widget exceeds the row (and isn't the first in the row), wrap to the next line
+            
             if (xCursor + widget.getWidth() > startX + availableWidth && xCursor != startX) {
                 xCursor = startX;
                 currentY[0] += maxRowH;
@@ -91,7 +86,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
             xCursor += widget.getWidth() + gap;
         }
-        // Move to the next row after the group finishes
+        
         currentY[0] += maxRowH;
         return currentY[0];
     }
@@ -109,11 +104,9 @@ public class SolarisDisplaySettingsScreen extends Screen {
         vw = Math.round(width / uiScale);
         vh = Math.round(height / uiScale);
 
-        // 1. Calculate dynamic box width (max 450, or screen width minus padding)
         boxW = Math.min(450, vw - 40);
         boxX = (vw - boxW) / 2;
 
-        // 2. Build the contents dynamically to find total height
         int contentStartY = HEADER_H;
         int[] cursorY = new int[] { contentStartY };
 
@@ -123,15 +116,12 @@ public class SolarisDisplaySettingsScreen extends Screen {
             case INTEGRATIONS -> initIntegrationsTab(boxX, cursorY);
         }
 
-        // 3. Add tab and preset buttons to the total height calculation
         boolean showIntegrationsTab = GtceuIntegration.isAvailable();
         int tabBarYOffset = cursorY[0] + 6;
 
-        // Final height calculation (header + content + bottom controls + padding)
         boxH = tabBarYOffset + 18 + 24 + 18 + 8;
-        boxY = Math.max(10, (vh - boxH) / 2); // Prevent it from going off the top of the screen
+        boxY = Math.max(10, (vh - boxH) / 2); 
 
-        // 4. Shift all previously added widgets down by the newly calculated boxY
         for (net.minecraft.client.gui.components.events.GuiEventListener widget : this.children()) {
             if (widget instanceof AbstractWidget aw) aw.setY(aw.getY() + boxY);
         }
@@ -139,7 +129,6 @@ public class SolarisDisplaySettingsScreen extends Screen {
             headingY[i] += boxY;
         }
 
-        // 5. Add Bottom Controls (Tabs & Presets) using absolute Y coordinates now
         int absoluteTabBarY = boxY + tabBarYOffset;
 
         List<Tab> tabs = new ArrayList<>();
@@ -177,11 +166,9 @@ public class SolarisDisplaySettingsScreen extends Screen {
         int availableW = boxW - (padding * 2);
         int startX = x + padding;
 
-        // Dynamically size widgets based on available width (aiming for 3 columns, dropping to 2 or 1 if too small)
         int colW = availableW > 380 ? (availableW - gap * 2) / 3 :
                 (availableW > 250 ? (availableW - gap) / 2 : availableW);
 
-        // Group 1: Terrain & Water
         headingY[0] = cursorY[0];
         cursorY[0] += HEADING_H;
 
@@ -198,7 +185,6 @@ public class SolarisDisplaySettingsScreen extends Screen {
                 new BrightnessSlider(0, 0, colW, 20),
                 new FoliageBrightnessSlider(0, 0, colW, 20));
 
-        // Group 2: Icons & Labels
         headingY[1] = cursorY[0];
         cursorY[0] += HEADING_H;
 
@@ -220,7 +206,6 @@ public class SolarisDisplaySettingsScreen extends Screen {
                     b.setMessage(railNetworkLabel());
                 }).size(colW, 18).build());
 
-        // Group 3: Effects
         headingY[2] = cursorY[0];
         cursorY[0] += HEADING_H;
 
@@ -230,7 +215,6 @@ public class SolarisDisplaySettingsScreen extends Screen {
                 new UnexploredDensitySlider(0, 0, colW, 20),
                 new UnexploredBrightnessSlider(0, 0, colW, 20));
 
-        // Group 4: Minimap & Grid
         headingY[3] = cursorY[0];
         cursorY[0] += HEADING_H;
 
@@ -276,7 +260,6 @@ public class SolarisDisplaySettingsScreen extends Screen {
         int availableW = boxW - (padding * 2);
         int startX = x + padding;
 
-        // Match the column scaling of the other tabs
         int colW = availableW > 250 ? (availableW - gap) / 2 : availableW;
 
         placeWidgetsFluidly(startX, cursorY[0], availableW, cursorY, gap,
@@ -293,7 +276,6 @@ public class SolarisDisplaySettingsScreen extends Screen {
         int availableW = boxW - (padding * 2);
         int startX = x + padding;
 
-        // Dynamic column width: 2 columns if space allows, otherwise 1 column
         int colW = availableW > 250 ? (availableW - gap) / 2 : availableW;
 
         placeWidgetsFluidly(startX, cursorY[0], availableW, cursorY, gap,
@@ -401,8 +383,6 @@ public class SolarisDisplaySettingsScreen extends Screen {
         int mx = Math.round(rawMx / uiScale);
         int my = Math.round(rawMy / uiScale);
 
-        // These two cover the real viewport regardless of our virtual scale, so they run before
-        // the pose push below and keep using the raw width/height.
         if (parent instanceof SolarisMapScreen mapScreen) {
             mapScreen.renderMapBackground(g);
             g.fill(0, 0, width, height, 0xE0101014);
@@ -413,10 +393,6 @@ public class SolarisDisplaySettingsScreen extends Screen {
         g.pose().pushPose();
         g.pose().scale(uiScale, uiScale, 1f);
 
-        // Use the boxX/boxY fields (the values init() actually positioned every widget with),
-        // not a separately-recomputed position - those used to disagree (fixed BOX_W constant vs
-        // the dynamic boxW, and an unclamped recompute vs the clamped boxY field), which could
-        // draw this panel in a different place than its own buttons.
         int x = boxX;
         int y = boxY;
         g.fill(x, y, x + boxW, y + boxH, C_BG);

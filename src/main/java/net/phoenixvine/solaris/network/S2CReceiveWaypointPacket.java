@@ -77,7 +77,7 @@ public class S2CReceiveWaypointPacket {
         WaypointManager.add(w);
 
         mc.player.sendSystemMessage(Component.literal(
-                "Received waypoint '" + pkt.name + "' from " + pkt.senderName + " — added to your list.")
+                "Received waypoint '" + pkt.name + "' from " + pkt.senderName + " Added to your list.")
                 .withStyle(ChatFormatting.AQUA));
     }
 }

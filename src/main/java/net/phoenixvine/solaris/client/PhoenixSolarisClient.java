@@ -27,9 +27,6 @@ public class PhoenixSolarisClient {
         modEventBus.addListener((ModConfigEvent.Loading event) -> onConfigChanged(event));
         modEventBus.addListener(PhoenixSolarisClient::clientSetup);
 
-        // PhoenixTheme is shared suite-wide, so the active theme can change from another mod's
-        // editor screen too - refresh our own cached colors and rendered tiles whenever that
-        // happens, not just when this mod's own theme UI is used.
         PhoenixTheme.addChangeListener(PhoenixSolarisClient::onThemeChanged);
     }
 

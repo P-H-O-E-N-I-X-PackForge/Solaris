@@ -31,7 +31,7 @@ public final class FramedBlocksIntegration {
         } catch (Throwable t) {
             broken = true;
             PhoenixSolaris.LOGGER.error(
-                    "FramedBlocks is present but reading its camo state failed — framed blocks will render as " +
+                    "FramedBlocks is present but reading its camo state failed. Framed blocks will render as " +
                             "their own default color for the rest of this session.",
                     t);
             return null;

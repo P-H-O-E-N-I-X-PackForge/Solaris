@@ -11,7 +11,8 @@ issueTrackerURL="https://github.com/Omicron-Industries/Solaris/issues" #optional
     displayURL = "${mod_url}"
     authors="${mod_author}"
     description = '''
-Solaris — a Phoenix-original live terrain minimap and world map, with an overlay layer other Phoenix mods (like Phoenix Domains) hook into.
+ A Phoenix-original map mod seeking to be beautiful, easy to use, and an owner of good api.
+ Has compat for xtones, create copycat blocks, PhoenixWiki, and phoenix guilds.
 '''
 
     [[dependencies.${mod_id}]]

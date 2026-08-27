@@ -39,7 +39,7 @@ public final class SolarisWebExporter {
         String dimension = mc.level.dimension().location().toString();
         if (!PersistentChunkStore.isLoaded(dimension)) {
             messageConsumer.accept(
-                    Component.literal("§eMap data is still loading — wait a moment and try again."));
+                    Component.literal("§eMap data is still loading. Wait a moment and try again."));
             return;
         }
 

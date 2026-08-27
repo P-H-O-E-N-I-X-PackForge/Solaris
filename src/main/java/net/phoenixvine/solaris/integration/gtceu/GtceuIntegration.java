@@ -38,8 +38,8 @@ public final class GtceuIntegration {
         } catch (Throwable t) {
             initBroken = true;
             PhoenixSolaris.LOGGER.error(
-                    "GTCEu is present but registering Solaris as a prospector waypoint target failed — " +
-                            "clicking veins in the prospector's map won't pin Solaris waypoints this session.",
+                    "GTCEu is present but registering Solaris as a prospector waypoint target failed. " +
+                            "Clicking veins in the prospector's map won't pin Solaris waypoints this session.",
                     t);
         }
     }

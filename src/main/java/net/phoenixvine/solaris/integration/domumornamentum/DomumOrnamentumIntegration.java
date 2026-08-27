@@ -50,7 +50,7 @@ public final class DomumOrnamentumIntegration {
         } catch (Throwable t) {
             broken = true;
             PhoenixSolaris.LOGGER.error(
-                    "Domum Ornamentum is present but reading its material data failed — its blocks will render " +
+                    "Domum Ornamentum is present but reading its material data failed. Its blocks will render " +
                             "as their own default color for the rest of this session.",
                     t);
             return null;

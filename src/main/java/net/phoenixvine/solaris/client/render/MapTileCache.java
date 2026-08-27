@@ -39,31 +39,13 @@ public final class MapTileCache {
     public static final int TILE_CHUNKS = 8;
     public static final int TILE_PIXELS = TILE_CHUNKS * 16;
 
-    // See the matching comment in CaveTileCache — a fixed 512 was far too small for the working
-    // set at moderate zoom-out, causing the cache to thrash within/across frames (panning
-    // "flicker", and blank patches wherever the player's tiles lost that frame's LRU race).
     private static volatile int capacity = 512;
     private static final int HARD_CEILING = 4096;
 
-    // Raising the cache ceiling alone only pushes the thrash further out — tile count still grows
-    // as (1/zoom)^2, so any fixed ceiling has a zoom level that breaks it again. LOD tiles cap the
-    // growth instead: past lod 0, a tile covers 2^lod times more world per texture pixel, so the
-    // on-screen tile count for a given screen size stays roughly constant across the whole zoom
-    // range instead of exploding. See lodForZoom below for how a zoom level picks its lod.
-    // A coarse tile costs the same to build regardless of how much world it covers (always a
-    // fixed 128x128 sample pass), so there's no real cost to a high ceiling here — only a low one
-    // is dangerous, since once zoom pushes past MAX_LOD the tile count starts growing again
-    // (capped at the coarsest level, same unbounded-tile-count problem LOD was built to avoid).
-    // 6 was too low: unlimited-zoom mode (down to 0.01) blew past it, which is what caused
-    // rendering delay/hitching at very far zoom-outs.
     public static final int MAX_LOD = 14;
 
     public record TileKey(ResourceLocation dimension, int tileX, int tileZ, int lod) {
 
-        // Keeps the pre-LOD 3-arg constructor callable for external mods compiled against the
-        // old API (phoenix_domains' SolarisClaimMapScreen calls this directly to align its claim
-        // overlay with our tile grid) — without it, adding the lod field is a binary break that
-        // crashes with NoSuchMethodError the moment such a mod tries to build a TileKey.
         public TileKey(ResourceLocation dimension, int tileX, int tileZ) {
             this(dimension, tileX, tileZ, 0);
         }
@@ -77,8 +59,6 @@ public final class MapTileCache {
         }
     }
 
-    // Blocks covered by a single texture pixel at a given lod: 1 at lod 0 (native, 1:1 with
-    // blocks), doubling each level. World size of a tile is TILE_PIXELS * that.
     public static int blocksPerPixel(int lod) {
         return 1 << lod;
     }
@@ -87,13 +67,6 @@ public final class MapTileCache {
         return TILE_PIXELS << lod;
     }
 
-    // Picks the coarsest lod whose texture pixels are still at least ~1 screen pixel, so tiles
-    // stay roughly TILE_PIXELS screen-pixels wide regardless of zoom instead of ballooning in
-    // count as you zoom out. ceil (not round) so we never undershoot into thrash territory.
-    // LOD_ZOOM_BIAS delays that switch by this many zoom-halvings. Tuned so lod 0 -> 1 happens
-    // around the scale bar reading ~150 blocks (scale bar shows 60/zoom blocks, so the threshold
-    // zoom is 60/150 = 0.4, and bias = -log2(0.4) ≈ 1.32) — sharper than the earlier ~240 block
-    // threshold, but not as trigger-happy as the unbiased ~60 block one.
     private static final double LOD_ZOOM_BIAS = 1.32;
 
     public static int lodForZoom(float zoom) {
@@ -104,8 +77,6 @@ public final class MapTileCache {
         return Math.max(0, Math.min(MAX_LOD, lod));
     }
 
-    // Helper for external callers (e.g. phoenix_domains) to get TileKey with correct LOD for zoom level.
-    // When zoom is available, use this instead of TileKey(dimension, tileX, tileZ) to get proper LOD.
     public static TileKey getTileKeyForZoom(ResourceLocation dimension, int tileX, int tileZ, float zoom) {
         int lod = lodForZoom(zoom);
         int scale = 1 << lod;
@@ -174,10 +145,6 @@ public final class MapTileCache {
         }
     }
 
-    // Pre-dates the per-frame build budget entirely (phoenix_domains' SolarisClaimMapScreen is
-    // still compiled against this no-budget signature) — kept as a compatibility overload so that
-    // mod doesn't crash with NoSuchMethodError. Effectively unlimited budget: the claim overlay
-    // calls this for its own, separately-bounded tile loop, not ours.
     public static MapTile getOrBuildTile(TileKey key) {
         return getOrBuildTile(key, new int[] { Integer.MAX_VALUE });
     }
@@ -213,7 +180,8 @@ public final class MapTileCache {
         } catch (Exception e) {
 
             DIRTY.add(key);
-            PhoenixSolaris.LOGGER.error("[Solaris] Failed to build map tile {} — will retry next frame", key, e);
+            PhoenixSolaris.LOGGER.error("[Solaris] Failed to build map tile {}. " +
+                    "Will retry next frame", key, e);
         }
         return tile;
     }
@@ -370,27 +338,13 @@ public final class MapTileCache {
         tile.texture.setFilter(false, false);
     }
 
-    // Coarse (lod > 0) tiles trade block-level precision for area coverage: each texture pixel
-    // represents a blocksPerPixel(lod)-sized block region, sampled by picking the one chunk that
-    // region's corner falls in (nearest-neighbor decimation — the same approach vanilla Minecraft
-    // uses for its own zoomed-out map levels) rather than averaging every block in between. That
-    // keeps the build cheap (one chunk-cache lookup per pixel, same order of work as a native
-    // tile) regardless of how much world area the tile covers. The -1..TILE_PIXELS loop bounds
-    // fold the halo ring into the same pass instead of a separate neighbor-chunk walk, since a
-    // halo pixel here is just one more sample on the same coarse grid.
     private static void buildTileLod(TileKey key, MapTile tile) {
         NativeImage image = tile.image;
         int[] heights = new int[HALO * HALO];
         boolean[] water = new boolean[HALO * HALO];
         int[] waterDepth = new int[HALO * HALO];
         boolean[] lightEmitting = new boolean[TILE_PIXELS * TILE_PIXELS];
-        // Tracks which halo-ring cells got real chunk data vs. fell back to DEFAULT_HEIGHT. A
-        // ring cell whose neighboring chunk hasn't been explored (common right past a tile edge
-        // at low detail) would otherwise sit at a flat default height next to real, often much
-        // different, interior terrain — hillshading reads that fake cliff as a hard shadow right
-        // along the tile boundary, i.e. a black box outlining every tile. The fixup pass below
-        // replaces those with the tile's own clamped edge value instead, exactly like native
-        // tiles' fillHaloEdge fallback already does.
+
         boolean[] haloHasData = new boolean[HALO * HALO];
 
         int blocksPerPixel = blocksPerPixel(key.lod());

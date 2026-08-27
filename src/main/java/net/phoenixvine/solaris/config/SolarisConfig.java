@@ -84,13 +84,13 @@ public final class SolarisConfig {
                         "arrow fixed pointing up), instead of the default fixed north-up orientation.")
                 .define("rotate", false);
         MINIMAP_SHAPE = builder
-                .comment("Outline shape of the corner minimap — square or circle. Cycled together with " +
+                .comment("Outline shape of the corner minimap. Square or circle. Cycled together with " +
                         "minimap size by the \"cycle minimap style\" keybind.")
                 .defineEnum("shape", net.phoenixvine.solaris.client.render.MinimapShape.SQUARE);
         MINIMAP_ZOOM = builder
                 .comment("How magnified the minimap view is. 1.0 shows the full sampled radius around " +
                         "you (minimapRadiusChunks); higher values crop that down to a smaller, more " +
-                        "zoomed-in area. Can't zoom out past 1.0 — there's no more sampled terrain beyond " +
+                        "zoomed-in area. Can't zoom out past 1.0. There's no more sampled terrain beyond " +
                         "the radius to show.")
                 .defineInRange("zoom", 1.0, 1.0, 8.0);
         MINIMAP_SHOW_TIME = builder
@@ -119,7 +119,7 @@ public final class SolarisConfig {
                 .define("showChunkGrid", false);
         MAP_SHAPE = builder
                 .comment("Clip the fullscreen map's visible terrain into this outline shape instead of a plain " +
-                        "rectangle — the same shape options the corner minimap already offers, applied to the " +
+                        "rectangle. The same shape options the corner minimap already offers, applied to the " +
                         "big map too. The clip is fixed to the panel's own frame; terrain still pans/zooms " +
                         "underneath it exactly as before.")
                 .defineEnum("mapShape", MinimapShape.SQUARE);
@@ -134,14 +134,14 @@ public final class SolarisConfig {
         SATURATION = builder
                 .comment("Saturation multiplier applied to sampled map colors. 1.0 = unchanged, " +
                         "0.0 = grayscale, above 1.0 = more vivid. Default lowered from a flat 1.0 per " +
-                        "community feedback comparing side-by-side against JourneyMap/Xaero — full vanilla-biome " +
+                        "community feedback comparing side-by-side against JourneyMap/Xaero. Full vanilla-biome " +
                         "saturation read as noticeably more vivid than either of those, and a value roughly " +
                         "halfway toward their look was the preferred middle ground.")
                 .defineInRange("saturation", 0.85, 0.0, 2.0);
         CONTRAST = builder
                 .comment("Contrast multiplier applied to sampled map colors, around a mid-gray pivot. 1.0 = " +
                         "unchanged, above 1.0 = more contrast (dark areas darker, light areas lighter). Added " +
-                        "alongside lowering the saturation default — per the same community comparison, " +
+                        "alongside lowering the saturation default. Per the same community comparison, " +
                         "Solaris's biggest gap next to JourneyMap/Xaero wasn't color intensity but flatness; a " +
                         "little extra contrast is what actually closes that gap.")
                 .defineInRange("contrast", 1.3, 0.0, 3.0);
@@ -149,36 +149,36 @@ public final class SolarisConfig {
                 .comment("Flat brightness multiplier applied to every sampled map color, on top of saturation/" +
                         "contrast. 1.0 = unchanged, below 1.0 = darker. Contrast alone (a mid-gray pivot) makes " +
                         "bright areas brighter along with dark areas darker, so it can't uniformly darken the " +
-                        "whole map on its own — this does that directly. Went 0.8 (too dark) -> 1.04 (still " +
+                        "whole map on its own. This does that directly. Went 0.8 (too dark) -> 1.04 (still " +
                         "reported too dark outside of foliage) -> 1.2, a more decisive jump since two small " +
                         "increments in a row both landed short. See foliageBrightness below for why foliage " +
                         "specifically doesn't just inherit this same increase.")
                 .defineInRange("brightness", 1.2, 0.0, 2.0);
         FOLIAGE_BRIGHTNESS = builder
                 .comment("Extra brightness multiplier applied only to foliage/tree-canopy pixels, on top of the " +
-                        "flat brightness above — 1.0 = no extra adjustment beyond that. Exists because raising " +
+                        "flat brightness above. 1.0 = no extra adjustment beyond that. Exists because raising " +
                         "brightness reads fine on ordinary terrain but makes foliage specifically look washed " +
                         "out/unnaturally light, so this cancels the flat increase back out for foliage only " +
                         "(default ~0.67, recomputed each time brightness moves so brightness * " +
-                        "foliageBrightness stays pinned at the same ~0.8 net foliage darkness throughout — " +
-                        "foliage was reported as already correct and shouldn't move when brightness does), " +
+                        "foliageBrightness stays pinned at the same ~0.8 net foliage darkness throughout. " +
+                        "Foliage was reported as already correct and shouldn't move when brightness does), " +
                         "while every other block still gets the full increase.")
                 .defineInRange("foliageBrightness", 0.67, 0.0, 2.0);
         TINT_RED = builder
                 .comment("Per-channel red multiplier applied to every sampled map color, on top of everything " +
                         "else above (saturation/contrast/brightness/foliageBrightness). 1.0 = unchanged. Unlike " +
                         "those, this and tintGreen/tintBlue let the whole map be pushed toward a custom hue " +
-                        "(warm/cool/sepia/etc.), not just intensity — file-only for now (no slider), since " +
+                        "(warm/cool/sepia/etc.), not just intensity. File-only for now (no slider), since " +
                         "per-channel tuning is fiddly and better suited to hand-editing this file directly.")
                 .defineInRange("tintRed", 1.0, 0.0, 2.0);
         TINT_GREEN = builder
-                .comment("Per-channel green multiplier — see tintRed's comment.")
+                .comment("Per-channel green multiplier. See tintRed's comment.")
                 .defineInRange("tintGreen", 1.0, 0.0, 2.0);
         TINT_BLUE = builder
-                .comment("Per-channel blue multiplier — see tintRed's comment.")
+                .comment("Per-channel blue multiplier. See tintRed's comment.")
                 .defineInRange("tintBlue", 1.0, 0.0, 2.0);
         VIGNETTE = builder
-                .comment("Darken the map toward its edges, like a photo vignette — a purely stylistic effect, " +
+                .comment("Darken the map toward its edges, like a photo vignette. A purely stylistic effect, " +
                         "independent of saturation/contrast/brightness/tint (stacks with any combination of " +
                         "them), same as Hillshading/Night Mode are already independent toggles.")
                 .define("vignette", false);
@@ -187,7 +187,7 @@ public final class SolarisConfig {
                         "vignette is on, 1.0 = strongest.")
                 .defineInRange("vignetteStrength", 0.5, 0.0, 1.0);
         BLACK_AND_WHITE = builder
-                .comment("Render the whole fullscreen/minimap in grayscale — a full luminance-only " +
+                .comment("Render the whole fullscreen/minimap in grayscale. A full luminance-only " +
                         "conversion, applied last (after every other color/lighting effect), independent of " +
                         "the Saturation slider (that just partially desaturates; this forces it all the way).")
                 .define("blackAndWhite", false);
@@ -212,7 +212,7 @@ public final class SolarisConfig {
         UNEXPLORED_IMAGE_PATH = builder
                 .comment("Image file to tile across unexplored areas when unexploredStyle is IMAGE, as a path " +
                         "relative to config/solaris/ (e.g. \"unexplored.png\"). Tiles seamlessly by wrapping " +
-                        "world coordinates against the image's own pixel size — a seamless/tileable source " +
+                        "world coordinates against the image's own pixel size. A seamless/tileable source " +
                         "image looks best. Empty or unreadable falls back to FOG.")
                 .define("unexploredImagePath", "");
         UNEXPLORED_IMAGE_COVER = builder
@@ -228,7 +228,7 @@ public final class SolarisConfig {
                 .define("showBlockTooltip", false);
         WATER_OPACITY = builder
                 .comment("How strongly water tints the real floor block color underneath it (a railway, " +
-                        "ruins, etc. still show through as their own shape, just tinted — this isn't a " +
+                        "ruins, etc. still show through as their own shape, just tinted. This isn't a " +
                         "flat water color painted over everything). 0.0 = mostly see-through the floor, " +
                         "1.0 = strong blue tint. Scales up with depth regardless of this setting, so deep " +
                         "water still reads as properly filled even at low values.")
@@ -240,7 +240,7 @@ public final class SolarisConfig {
         WATER_DEEP_ONLY = builder
                 .comment("If enabled, water at or above waterDeepYThreshold is pinned to the lightest tint " +
                         "regardless of actual depth (e.g. rivers/lakes at normal sea level show the floor " +
-                        "clearly) — only water whose surface is below that Y gets the full depth-based tint " +
+                        "clearly). Only water whose surface is below that Y gets the full depth-based tint " +
                         "curve. An alternative to the continuous depth curve above, not a replacement for it.")
                 .define("waterDeepOnly", false);
         WATER_DEEP_Y_THRESHOLD = builder
@@ -248,13 +248,13 @@ public final class SolarisConfig {
                 .defineInRange("waterDeepYThreshold", 50, -64, 320);
         WAYPOINT_ICON_SCALE = builder
                 .comment("Size multiplier for waypoint icons on the fullscreen map and waypoint list " +
-                        "(the corner minimap keeps its own small fixed dots regardless — too little screen " +
+                        "(the corner minimap keeps its own small fixed dots regardless. Too little screen " +
                         "space there for a real icon to read).")
                 .defineInRange("waypointIconScale", 1.0, 0.5, 3.0);
         SHOW_GT_ORE_VEINS = builder
                 .comment("Show GTCEu ore veins you've already had revealed to you (prospecting, surface " +
                         "indicators, etc.) as markers on the fullscreen map. No effect if GTCEu isn't " +
-                        "installed. Not a cheat/X-ray — only shows veins GTCEu itself already revealed.")
+                        "installed. Not a cheat/X-ray. Only shows veins GTCEu itself already revealed.")
                 .define("showGtOreVeins", true);
         SHOW_MOBS = builder
                 .comment("Show nearby living mobs (hostile and passive) as markers on the fullscreen map and " +
@@ -262,28 +262,28 @@ public final class SolarisConfig {
                 .define("showMobs", true);
         HILLSHADING = builder
                 .comment("Replace the flat map's simple north-neighbor relief shading with real " +
-                        "cartographic hillshading — a smooth slope-based light/dark gradient computed from " +
+                        "cartographic hillshading. A smooth slope-based light/dark gradient computed from " +
                         "each pixel's full surrounding neighborhood, applied to every pixel including water, " +
                         "not just the current single-comparison approximation. Noticeably more textured/alive " +
-                        "looking, at the cost of a full-map post-process pass on every rebuild — off by " +
+                        "looking, at the cost of a full-map post-process pass on every rebuild. Off by " +
                         "default since it's meaningfully more expensive than the default shading.")
                 .define("hillshading", false);
         HILLSHADING_STRENGTH = builder
                 .comment("How strong the hillshading light/dark gradient is. 0 = no effect (flat), " +
-                        "1 = full strength. Defaults below full strength — most of the effect reads clearly " +
+                        "1 = full strength. Defaults below full strength. Most of the effect reads clearly " +
                         "well under 100%, and full strength tends to look overdone/noisy rather than more " +
                         "detailed.")
                 .defineInRange("hillshadingStrength", 0.7, 0.0, 1.0);
         NIGHT_MODE_STRENGTH = builder
                 .comment("How dark the map gets at full night (except light-emitting blocks like lava, which " +
-                        "stay bright regardless of time of day) — always applied, no heavier than the normal " +
+                        "stay bright regardless of time of day). Always applied, no heavier than the normal " +
                         "day-mode render. 0 = no effect, 1 = fully black. No settings-screen slider for this " +
-                        "yet — edit the config directly to tune it.")
+                        "yet. Edit the config directly to tune it.")
                 .defineInRange("nightModeStrength", 0.55, 0.0, 1.0);
         LABEL_SIDE = builder
                 .comment("Which side of a marker (waypoint or GT ore vein) its name label draws on. With " +
                         "a lot of markers on screen at once, a label fixed to one side can run off the " +
-                        "map's edge or overlap a neighboring icon — pick whichever side fits your layout.")
+                        "map's edge or overlap a neighboring icon. Pick whichever side fits your layout.")
                 .defineEnum("labelSide", LabelSide.RIGHT);
         SHOW_RAIL_NETWORK = builder
                 .comment("Draw connected rail track as a clean line overlay (like a transit map), instead of " +
@@ -298,7 +298,7 @@ public final class SolarisConfig {
         builder.push("waypoints");
         WAYPOINT_BEAMS = builder
                 .comment("Show a thin vertical beam in the 3D world at each visible waypoint's location, " +
-                        "not just on the map — makes a waypoint findable by looking around, not just by " +
+                        "not just on the map. Makes a waypoint findable by looking around, not just by " +
                         "opening the map.")
                 .define("beams", true);
         WAYPOINT_BEAM_RANGE = builder
@@ -307,7 +307,7 @@ public final class SolarisConfig {
                 .defineInRange("beamRange", 384, 16, 2048);
         WAYPOINT_COMPASS = builder
                 .comment("Show a small HUD arrow + distance pointing toward the tracked waypoint (or the " +
-                        "nearest one, if none is explicitly tracked) — lets you navigate toward it without " +
+                        "nearest one, if none is explicitly tracked). Lets you navigate toward it without " +
                         "opening the map.")
                 .define("compass", true);
         DEATH_MARKERS = builder
@@ -318,8 +318,8 @@ public final class SolarisConfig {
 
         builder.push("planning");
         SHOW_PLAN_SHAPES = builder
-                .comment("Show planned build shapes (drawn on the map) as in-world wireframe outlines — " +
-                        "see a build's footprint/height before placing a single real block.")
+                .comment("Show planned build shapes (drawn on the map) as in-world wireframe outlines" +
+                        "See a build's footprint/height before placing a single real block.")
                 .define("showPlanShapes", true);
         PLAN_SHAPE_RANGE = builder
                 .comment("Plan shapes only render in-world within this many blocks, to avoid drawing dozens " +
@@ -339,14 +339,14 @@ public final class SolarisConfig {
         builder.push("featureRanges");
         MAX_MINIMAP_RANGE_CHUNKS = builder
                 .comment("Server-owner safety ceiling on the minimap's radius (minimapRadiusChunks), " +
-                        "independent of any per-player/team feature-state toggle — a static cap, not something " +
+                        "independent of any per-player/team feature-state toggle. A static cap, not something " +
                         "an event/progression system grants per player.")
                 .defineInRange("maxMinimapRangeChunks", 16, 1, 32);
         WORLD_MAP_WRITE_RANGE_CHUNKS = builder
                 .comment("Server-owner safety ceiling (in chunks, from the player) on how far the world map is " +
                         "allowed to actively sample/write new chunk data, when the per-player/team world-map " +
                         "feature state is ENABLED. Browsing already-cached data beyond this range is unaffected " +
-                        "— this only caps new writes.")
+                        "This only caps new writes.")
                 .defineInRange("worldMapWriteRangeChunks", 32, 2, 128);
         builder.pop();
 
@@ -354,7 +354,7 @@ public final class SolarisConfig {
         MAX_CACHED_CHUNKS = builder
                 .comment("Maximum number of sampled chunk color arrays kept in memory (LRU-evicted beyond " +
                         "this), shared across every open map/minimap. A single fullscreen map at the default " +
-                        "24-chunk radius alone needs ~2401 chunks in view at once — the old default of 4096 " +
+                        "24-chunk radius alone needs ~2401 chunks in view at once. The old default of 4096 " +
                         "left barely any headroom once the always-on minimap and normal panning/exploring " +
                         "were sharing the same bound, so already-explored chunks kept aging out and " +
                         "re-painting as unexplored fog the moment the view moved on. Raised well past the " +
@@ -365,7 +365,7 @@ public final class SolarisConfig {
         builder.push("performance");
         PERF_LOGGING = builder
                 .comment("Log a warning whenever a Solaris operation (texture rebuild, chunk sampling, water " +
-                        "blur, etc.) takes longer than perfLogThresholdMs, plus a periodic summary — a map " +
+                        "blur, etc.) takes longer than perfLogThresholdMs, plus a periodic summary. A map " +
                         "mod's cost is easy to miss otherwise, since a single slow rebuild just looks like a " +
                         "generic frame hitch with nothing pointing back at what caused it.")
                 .define("perfLogging", false);
@@ -373,8 +373,8 @@ public final class SolarisConfig {
                 .comment("An individual operation slower than this (in milliseconds) gets logged immediately.")
                 .defineInRange("perfLogThresholdMs", 50, 1, 5000);
         PERF_SUMMARY_INTERVAL_SECONDS = builder
-                .comment("How often (in seconds) a count/average/max summary per operation gets logged — " +
-                        "catches a cost that's individually too small to trip perfLogThresholdMs but adds up " +
+                .comment("How often (in seconds) a count/average/max summary per operation gets logged. " +
+                        "Catches a cost that's individually too small to trip perfLogThresholdMs but adds up " +
                         "from running very often (e.g. every chunk load).")
                 .defineInRange("perfSummaryIntervalSeconds", 300, 30, 3600);
         builder.pop();
@@ -382,9 +382,9 @@ public final class SolarisConfig {
         builder.push("persistence");
         MAX_PERSISTED_CHUNKS_PER_DIMENSION = builder
                 .comment("Explored chunks are remembered to disk so they still show on the map after leaving " +
-                        "render distance or restarting — but capped per dimension, oldest-visited-first, so " +
+                        "render distance or restarting. But capped per dimension, oldest-visited-first, so " +
                         "this can never grow without bound the way some other map mods' saved data does. At " +
-                        "the default, ~50000 chunks is roughly 30-60MB on disk (compressed) — comfortably " +
+                        "the default, ~50000 chunks is roughly 30-60MB on disk (compressed). Comfortably " +
                         "covers a large, actively-explored world while staying a known, fixed size rather " +
                         "than an ever-growing one.")
                 .defineInRange("maxPersistedChunksPerDimension", 50000, 1000, 500000);
@@ -392,7 +392,7 @@ public final class SolarisConfig {
 
         builder.push("experimental");
         GLOBE_VIEW_ENABLED = builder
-                .comment("EXPERIMENTAL — the 3D globe map view. Off by default and file-only (no in-game " +
+                .comment("EXPERIMENTAl. The 3D globe map view. Off by default and file-only (no in-game " +
                         "toggle): the Globe View button on the fullscreen map only appears at all when this is " +
                         "set to true here. Not exposed as a normal display setting because it isn't considered " +
                         "stable/finished yet.")

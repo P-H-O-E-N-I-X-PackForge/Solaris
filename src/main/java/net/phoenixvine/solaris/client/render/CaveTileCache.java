@@ -32,29 +32,15 @@ public final class CaveTileCache {
     public static final int TILE_CHUNKS = MapTileCache.TILE_CHUNKS;
     public static final int TILE_PIXELS = MapTileCache.TILE_PIXELS;
 
-    // A fixed 512 was far too small: the render loop touches every on-screen tile every frame,
-    // and a moderately zoomed-out view (e.g. default zoomMin=0.25 on a 1440p+ screen) needs
-    // several thousand 128-block tiles to cover it. Once the on-screen working set exceeds the
-    // cache size, tiles evict each other within a single frame's own iteration (early tiles get
-    // pushed out to fit later ones), then reverse next frame — that thrash is what read as
-    // panning "flicker" and as the area around the player going blank (whichever tiles lost the
-    // LRU race that frame). ensureCapacity grows the cap to fit whatever's actually on screen,
-    // bounded by HARD_CEILING so an extreme zoom-out can't balloon memory unboundedly.
     private static volatile int capacity = 512;
     private static final int HARD_CEILING = 4096;
     private static final int REVEAL_RADIUS_CHUNKS = 3;
     private static final long LIVE_REBUILD_THROTTLE_MS = 250L;
 
-    // See MapTileCache's matching comment/fields — same LOD approach, reusing its math so the two
-    // tile systems pick consistent levels for the same zoom. lod > 0 tiles here read only from
-    // PersistentCaveStore (no live re-sampling): at a zoom coarse enough to need an overview tile,
-    // the player's few-chunk live-reveal radius is well below one texture pixel anyway.
     public static final int MAX_LOD = MapTileCache.MAX_LOD;
 
     public record TileKey(ResourceLocation dimension, int tileX, int tileZ, int yBucket, int lod) {
 
-        // See the matching constructor in MapTileCache.TileKey — keeps the pre-LOD 4-arg
-        // constructor callable for external mods compiled against the old API.
         public TileKey(ResourceLocation dimension, int tileX, int tileZ, int yBucket) {
             this(dimension, tileX, tileZ, yBucket, 0);
         }
@@ -126,7 +112,6 @@ public final class CaveTileCache {
                 tileMinZ <= playerChunkZ + REVEAL_RADIUS_CHUNKS && tileMaxZ >= playerChunkZ - REVEAL_RADIUS_CHUNKS;
     }
 
-    // See the matching overload in MapTileCache — kept for the same pre-budget external callers.
     public static CaveTile getOrBuildTile(TileKey key, Level level, Player player) {
         return getOrBuildTile(key, level, player, new int[] { Integer.MAX_VALUE });
     }
@@ -137,9 +122,7 @@ public final class CaveTileCache {
 
         int playerChunkX = player != null ? Mth.floor(player.getX()) >> 4 : Integer.MAX_VALUE / 2;
         int playerChunkZ = player != null ? Mth.floor(player.getZ()) >> 4 : Integer.MAX_VALUE / 2;
-        // Live re-sampling only makes sense at lod 0: at any coarser lod the player's few-chunk
-        // reveal radius is smaller than a single texture pixel, so there's nothing meaningful to
-        // refresh live.
+
         boolean live = key.lod() == 0 && level != null && player != null &&
                 overlapsReveal(key, playerChunkX, playerChunkZ);
 
@@ -177,9 +160,6 @@ public final class CaveTileCache {
                 FastColor.ARGB32.green(argb), FastColor.ARGB32.red(argb));
     }
 
-    // See MapTileCache.buildTileLod for the reasoning — same nearest-neighbor decimation, reading
-    // straight from PersistentCaveStore instead of live block scanning since this only runs at a
-    // zoom coarse enough that per-block/per-chunk cave detail wouldn't be visible anyway.
     private static void buildTileLod(TileKey key, CaveTile tile) {
         NativeImage image = tile.image;
         String dimensionStr = key.dimension().toString();
