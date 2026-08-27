@@ -75,7 +75,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
         int maxRowH = ROW_H;
 
         for (AbstractWidget widget : widgets) {
-            
+
             if (xCursor + widget.getWidth() > startX + availableWidth && xCursor != startX) {
                 xCursor = startX;
                 currentY[0] += maxRowH;
@@ -86,7 +86,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
             xCursor += widget.getWidth() + gap;
         }
-        
+
         currentY[0] += maxRowH;
         return currentY[0];
     }
@@ -120,7 +120,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
         int tabBarYOffset = cursorY[0] + 6;
 
         boxH = tabBarYOffset + 18 + 24 + 18 + 8;
-        boxY = Math.max(10, (vh - boxH) / 2); 
+        boxY = Math.max(10, (vh - boxH) / 2);
 
         for (net.minecraft.client.gui.components.events.GuiEventListener widget : this.children()) {
             if (widget instanceof AbstractWidget aw) aw.setY(aw.getY() + boxY);

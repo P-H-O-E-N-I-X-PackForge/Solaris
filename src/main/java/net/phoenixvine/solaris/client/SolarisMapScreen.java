@@ -371,12 +371,12 @@ public class SolarisMapScreen extends Screen {
         int maxIdealWidth = buttonCount * (IDEAL_BUTTON_R * 2) + (buttonCount - 1) * MIN_BUTTON_GAP;
 
         if (availableWidth >= maxIdealWidth) {
-            
+
             buttonR = IDEAL_BUTTON_R;
             int maxGap = (availableWidth - (buttonCount * (buttonR * 2))) / Math.max(1, buttonCount - 1);
             buttonGap = Math.min(maxGap, 22);
         } else {
-            
+
             buttonGap = MIN_BUTTON_GAP;
             buttonR = Math.max(4, (availableWidth - (buttonCount - 1) * buttonGap) / (2 * buttonCount));
         }
