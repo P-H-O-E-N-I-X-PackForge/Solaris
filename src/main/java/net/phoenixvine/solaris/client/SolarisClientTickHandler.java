@@ -27,6 +27,17 @@ public class SolarisClientTickHandler {
     private static int reachCheckTickCounter = 0;
     private static final Set<String> NEAR_WAYPOINT_IDS = new HashSet<>();
 
+    // "gtceu" reporting as loaded only proves the mod jar is present, not that every class
+    // Solaris links against still exists at that path in the installed version — GtceuIntegration
+    // .init() creates a SolarisWaypointHandler implementing com.gregtechceu.gtceu.integration.map
+    // .IWaypointHandler, and if a GTCEu update renamed/removed/relocated that interface, resolving
+    // it throws NoClassDefFoundError the moment the JVM verifies init()'s bytecode to invoke it.
+    // That happens at method-resolution time on THIS call site, before init()'s own body (and its
+    // internal try/catch) ever runs, so the internal catch can't protect against it — only a
+    // try/catch wrapped around the call itself, here, can. Once broken, stop retrying every tick;
+    // it isn't going to start working mid-session.
+    private static boolean gtceuBroken = false;
+
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
@@ -36,7 +47,18 @@ public class SolarisClientTickHandler {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
 
-        if (GtceuIntegration.isAvailable()) GtceuIntegration.init();
+        if (!gtceuBroken && GtceuIntegration.isAvailable()) {
+            try {
+                GtceuIntegration.init();
+            } catch (Throwable t) {
+                gtceuBroken = true;
+                PhoenixSolaris.LOGGER.error(
+                        "GTCEu is present but its map API doesn't match what Solaris expects (likely a GTCEu " +
+                                "version mismatch) — disabling the GTCEu waypoint integration for the rest of " +
+                                "this session instead of crashing.",
+                        t);
+            }
+        }
 
         if (++reachCheckTickCounter >= WAYPOINT_REACH_CHECK_INTERVAL_TICKS) {
             reachCheckTickCounter = 0;
