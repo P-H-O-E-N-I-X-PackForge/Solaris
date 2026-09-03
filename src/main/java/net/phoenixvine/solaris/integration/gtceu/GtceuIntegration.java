@@ -7,17 +7,20 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.fml.ModList;
-import net.phoenixvine.solaris.PhoenixSolaris;
 
-import java.lang.reflect.Field;
 import java.util.List;
 
+// Deliberately free of any direct or fully-qualified reference to a com.gregtechceu.gtceu.* type
+// — see GtceuWaypointBridge's doc for why. isAvailable() runs unconditionally every client tick
+// from the moment the game starts, on instances with and without GTCEu installed alike, so this
+// class must stay loadable (and verifiable) with GTCEu completely absent. GtVeinRegistry (used
+// below by getVeinsInArea) DOES reference GTCEu types directly, same as GtceuWaypointBridge does —
+// but unlike this class, it's never touched by anything that runs unconditionally: it's only
+// reached from SolarisMapScreen's already-isAvailable()-gated, already-try/catch(Throwable)-wrapped
+// ore-vein rendering path, so loading it can't crash an instance that never gets that far.
 public final class GtceuIntegration {
 
     public static final String GTCEU_MOD_ID = "gtceu";
-
-    private static boolean initialized = false;
-    private static boolean initBroken = false;
 
     private GtceuIntegration() {}
 
@@ -26,22 +29,7 @@ public final class GtceuIntegration {
     }
 
     public static void init() {
-        if (initialized || initBroken) return;
-        try {
-            com.gregtechceu.gtceu.integration.map.WaypointManager
-                    .registerWaypointHandler(new SolarisWaypointHandler());
-            Field activeField = com.gregtechceu.gtceu.integration.map.WaypointManager.class
-                    .getDeclaredField("active");
-            activeField.setAccessible(true);
-            activeField.set(null, true);
-            initialized = true;
-        } catch (Throwable t) {
-            initBroken = true;
-            PhoenixSolaris.LOGGER.error(
-                    "GTCEu is present but registering Solaris as a prospector waypoint target failed. " +
-                            "Clicking veins in the prospector's map won't pin Solaris waypoints this session.",
-                    t);
-        }
+        GtceuWaypointBridge.init();
     }
 
     public static List<GtOreVein> getVeinsInArea(ResourceLocation dimension, int minX, int minZ, int width,
