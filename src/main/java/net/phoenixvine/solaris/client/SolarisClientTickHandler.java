@@ -27,15 +27,6 @@ public class SolarisClientTickHandler {
     private static int reachCheckTickCounter = 0;
     private static final Set<String> NEAR_WAYPOINT_IDS = new HashSet<>();
 
-    // "gtceu" reporting as loaded only proves the mod jar is present, not that every class
-    // Solaris links against still exists at that path in the installed version — GtceuIntegration
-    // .init() creates a SolarisWaypointHandler implementing com.gregtechceu.gtceu.integration.map
-    // .IWaypointHandler, and if a GTCEu update renamed/removed/relocated that interface, resolving
-    // it throws NoClassDefFoundError the moment the JVM verifies init()'s bytecode to invoke it.
-    // That happens at method-resolution time on THIS call site, before init()'s own body (and its
-    // internal try/catch) ever runs, so the internal catch can't protect against it — only a
-    // try/catch wrapped around the call itself, here, can. Once broken, stop retrying every tick;
-    // it isn't going to start working mid-session.
     private static boolean gtceuBroken = false;
 
     @SubscribeEvent
