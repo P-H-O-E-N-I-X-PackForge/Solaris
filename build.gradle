@@ -131,7 +131,7 @@ dependencies {
     modCompileOnly('curse.maven:phoenix-guilds-1612085:8743646')
     modRuntimeOnly('curse.maven:phoenix-guilds-1612085:8743646')
 
-    modImplementation("curse.maven:phoenixwiki-1647798:8735977")
+    modImplementation("curse.maven:phoenixwiki-1647798:8806638")
 
     modCompileOnly("maven.modrinth:framedblocks:9.4.3") { transitive = false }
     modRuntimeOnly("maven.modrinth:framedblocks:9.4.3") { transitive = false }
