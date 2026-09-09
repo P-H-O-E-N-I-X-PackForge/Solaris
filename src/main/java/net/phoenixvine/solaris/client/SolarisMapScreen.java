@@ -176,6 +176,13 @@ public class SolarisMapScreen extends Screen {
             centerKey = ChunkKey.of(mc.level, new ChunkPos(anchorChunkX, anchorChunkZ));
             tex.maybeRebuild(centerKey);
 
+            // Dimensions with a ceiling (the Nether) have no real "surface" to render a flat map
+            // of — ChunkColorEvents skips writing surface data for them entirely — so default to
+            // the cave/underground view on open instead of showing an empty flat map. Only applies
+            // on open, not every frame, so manually switching back to the flat view still works
+            // for the rest of the session.
+            undergroundView = mc.level.dimensionType().hasCeiling();
+
             hasPlayerMarker = true;
 
             viewport.setOffset(width / 2.0 - mc.player.getX() * viewport.getZoom(),
@@ -266,11 +273,17 @@ public class SolarisMapScreen extends Screen {
                 () -> runIfEnabled(SolarisAPI.FEATURE_GOTO_COORDINATE,
                         () -> Minecraft.getInstance().setScreen(new QuickGotoScreen(this)))));
 
-        specs.add(new IconSpec("Plan", cx -> (g, hover) -> drawItemIcon(g, cx, bottomY, PLAN_ICON),
-                () -> runIfEnabled(SolarisAPI.FEATURE_SHAPE_PLANNER, () -> {
-                    mode = ViewMode.FLAT;
-                    switchDrawTool(ToolMode.DRAW_RECTANGLE);
-                })));
+        specs.add(new IconSpec("Plan", cx -> (g, hover) -> {
+            if (toolMode != ToolMode.NAVIGATE) SmoothShapes.drawRing(g, cx, bottomY, this.buttonR - 1, C_ACCENT);
+            drawItemIcon(g, cx, bottomY, PLAN_ICON);
+        }, () -> runIfEnabled(SolarisAPI.FEATURE_SHAPE_PLANNER, () -> {
+            if (toolMode != ToolMode.NAVIGATE) {
+                cancelDrawing();
+            } else {
+                mode = ViewMode.FLAT;
+                switchDrawTool(ToolMode.DRAW_RECTANGLE);
+            }
+        })));
         specs.add(new IconSpec("Shapes", cx -> (g, hover) -> drawItemIcon(g, cx, bottomY, SHAPES_ICON),
                 () -> runIfEnabled(SolarisAPI.FEATURE_SHAPE_PLANNER,
                         () -> Minecraft.getInstance().setScreen(new PlanShapeListScreen(this)))));
@@ -651,7 +664,7 @@ public class SolarisMapScreen extends Screen {
     }
 
     private void drawChunkGridWorld(GuiGraphics g) {
-        if (viewport.getZoom() < 0.4f) return;
+        if (viewport.getZoom() > 200f) return;
 
         int frameLeft = MARGIN;
         int frameRight = width - MARGIN;
