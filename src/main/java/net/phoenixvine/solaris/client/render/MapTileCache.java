@@ -699,38 +699,111 @@ public final class MapTileCache {
         }
     }
 
-    private static int clampIdx(int v, int max) {
-        return Math.max(0, Math.min(max, v));
-    }
-
+    // Two-pass separable box blur (horizontal sliding-window sum, then vertical) instead of the
+    // previous full (2*radius+1)^2 convolution per water pixel — at radius 3 that was 49 samples
+    // (each a NativeImage read) per water pixel, and since an LOD change during zoom invalidates
+    // every visible tile's TileKey at once, every ocean-heavy tile among them paid that quadratic
+    // cost simultaneously on the render thread — read as "a lot of lag" while zooming. Same
+    // rolling-sum technique SolarisTexture.blurWater already uses for its own (larger) buffer;
+    // this just brings the per-tile version up to the same complexity. A 2D box sum decomposes
+    // exactly into a horizontal window-sum pass followed by a vertical window-sum pass over those
+    // row sums, so this produces the same averages as the old convolution (edge handling differs
+    // slightly: out-of-tile neighbors are now excluded from the count instead of clamp-sampling
+    // the boundary pixel repeatedly, which only affects the outermost `radius` pixels of a tile
+    // and was never anything but a same-tile clamp to begin with — neither version ever blurred
+    // using a neighboring tile's actual water color).
     private static void blurWater(NativeImage image, boolean[] water) {
         int radius = SolarisTexture.WATER_BLUR_RADIUS;
-        int[] blurred = new int[TILE_PIXELS * TILE_PIXELS];
+
+        int[] hSumR = new int[TILE_PIXELS * TILE_PIXELS];
+        int[] hSumG = new int[TILE_PIXELS * TILE_PIXELS];
+        int[] hSumB = new int[TILE_PIXELS * TILE_PIXELS];
+        int[] hCount = new int[TILE_PIXELS * TILE_PIXELS];
+
         for (int z = 0; z < TILE_PIXELS; z++) {
-            for (int x = 0; x < TILE_PIXELS; x++) {
+            int sumR = 0;
+            int sumG = 0;
+            int sumB = 0;
+            int count = 0;
+            for (int x = 0; x <= Math.min(radius, TILE_PIXELS - 1); x++) {
                 if (!water[haloIdx(x, z)]) continue;
-                long sumR = 0;
-                long sumG = 0;
-                long sumB = 0;
-                int count = 0;
-                for (int dz = -radius; dz <= radius; dz++) {
-                    int nz = clampIdx(z + dz, TILE_PIXELS - 1);
-                    for (int dx = -radius; dx <= radius; dx++) {
-                        int nx = clampIdx(x + dx, TILE_PIXELS - 1);
-                        if (!water[haloIdx(nx, nz)]) continue;
-                        int abgr = image.getPixelRGBA(nx, nz);
-                        sumR += FastColor.ABGR32.red(abgr);
-                        sumG += FastColor.ABGR32.green(abgr);
-                        sumB += FastColor.ABGR32.blue(abgr);
-                        count++;
-                    }
+                int abgr = image.getPixelRGBA(x, z);
+                sumR += FastColor.ABGR32.red(abgr);
+                sumG += FastColor.ABGR32.green(abgr);
+                sumB += FastColor.ABGR32.blue(abgr);
+                count++;
+            }
+            int rowBase = z * TILE_PIXELS;
+            hSumR[rowBase] = sumR;
+            hSumG[rowBase] = sumG;
+            hSumB[rowBase] = sumB;
+            hCount[rowBase] = count;
+
+            for (int x = 1; x < TILE_PIXELS; x++) {
+                int addX = x + radius;
+                int removeX = x - radius - 1;
+                if (addX < TILE_PIXELS && water[haloIdx(addX, z)]) {
+                    int abgr = image.getPixelRGBA(addX, z);
+                    sumR += FastColor.ABGR32.red(abgr);
+                    sumG += FastColor.ABGR32.green(abgr);
+                    sumB += FastColor.ABGR32.blue(abgr);
+                    count++;
                 }
-                if (count > 0) {
-                    blurred[z * TILE_PIXELS + x] = FastColor.ABGR32.color(255, (int) (sumB / count),
-                            (int) (sumG / count), (int) (sumR / count));
+                if (removeX >= 0 && water[haloIdx(removeX, z)]) {
+                    int abgr = image.getPixelRGBA(removeX, z);
+                    sumR -= FastColor.ABGR32.red(abgr);
+                    sumG -= FastColor.ABGR32.green(abgr);
+                    sumB -= FastColor.ABGR32.blue(abgr);
+                    count--;
+                }
+                hSumR[rowBase + x] = sumR;
+                hSumG[rowBase + x] = sumG;
+                hSumB[rowBase + x] = sumB;
+                hCount[rowBase + x] = count;
+            }
+        }
+
+        int[] blurred = new int[TILE_PIXELS * TILE_PIXELS];
+        for (int x = 0; x < TILE_PIXELS; x++) {
+            int sumR = 0;
+            int sumG = 0;
+            int sumB = 0;
+            int count = 0;
+            for (int z = 0; z <= Math.min(radius, TILE_PIXELS - 1); z++) {
+                int idx = z * TILE_PIXELS + x;
+                sumR += hSumR[idx];
+                sumG += hSumG[idx];
+                sumB += hSumB[idx];
+                count += hCount[idx];
+            }
+            if (water[haloIdx(x, 0)] && count > 0) {
+                blurred[x] = FastColor.ABGR32.color(255, sumB / count, sumG / count, sumR / count);
+            }
+
+            for (int z = 1; z < TILE_PIXELS; z++) {
+                int addZ = z + radius;
+                int removeZ = z - radius - 1;
+                if (addZ < TILE_PIXELS) {
+                    int idx = addZ * TILE_PIXELS + x;
+                    sumR += hSumR[idx];
+                    sumG += hSumG[idx];
+                    sumB += hSumB[idx];
+                    count += hCount[idx];
+                }
+                if (removeZ >= 0) {
+                    int idx = removeZ * TILE_PIXELS + x;
+                    sumR -= hSumR[idx];
+                    sumG -= hSumG[idx];
+                    sumB -= hSumB[idx];
+                    count -= hCount[idx];
+                }
+                if (water[haloIdx(x, z)] && count > 0) {
+                    blurred[z * TILE_PIXELS + x] = FastColor.ABGR32.color(255, sumB / count, sumG / count,
+                            sumR / count);
                 }
             }
         }
+
         for (int z = 0; z < TILE_PIXELS; z++) {
             for (int x = 0; x < TILE_PIXELS; x++) {
                 if (water[haloIdx(x, z)]) image.setPixelRGBA(x, z, blurred[z * TILE_PIXELS + x]);

@@ -158,12 +158,12 @@ public final class SolarisConfig {
                 .comment("Extra brightness multiplier applied only to foliage/tree-canopy pixels, on top of the " +
                         "flat brightness above. 1.0 = no extra adjustment beyond that. Exists because raising " +
                         "brightness reads fine on ordinary terrain but makes foliage specifically look washed " +
-                        "out/unnaturally light, so this cancels the flat increase back out for foliage only " +
-                        "(default ~0.67, recomputed each time brightness moves so brightness * " +
-                        "foliageBrightness stays pinned at the same ~0.8 net foliage darkness throughout. " +
-                        "Foliage was reported as already correct and shouldn't move when brightness does), " +
-                        "while every other block still gets the full increase.")
-                .defineInRange("foliageBrightness", 0.67, 0.0, 2.0);
+                        "out/unnaturally light, so this cancels the flat increase back out for foliage only. " +
+                        "Was 0.67 (net brightness*foliageBrightness ~0.8), but foliage was reported as still " +
+                        "reading too bright next to darkened terrain at night — dropped to 0.45 (net ~0.54) for " +
+                        "a decisively darker canopy, since the ~0.8 target from the previous round apparently " +
+                        "undershot what actually reads right in practice.")
+                .defineInRange("foliageBrightness", 0.45, 0.0, 2.0);
         TINT_RED = builder
                 .comment("Per-channel red multiplier applied to every sampled map color, on top of everything " +
                         "else above (saturation/contrast/brightness/foliageBrightness). 1.0 = unchanged. Unlike " +
@@ -277,9 +277,11 @@ public final class SolarisConfig {
         NIGHT_MODE_STRENGTH = builder
                 .comment("How dark the map gets at full night (except light-emitting blocks like lava, which " +
                         "stay bright regardless of time of day). Always applied, no heavier than the normal " +
-                        "day-mode render. 0 = no effect, 1 = fully black. No settings-screen slider for this " +
-                        "yet. Edit the config directly to tune it.")
-                .defineInRange("nightModeStrength", 0.55, 0.0, 1.0);
+                        "day-mode render. 0 = no effect, 1 = fully black. Was 0.55 (full night = 45% brightness), " +
+                        "reported as making the map too dark to read at night by default — dropped to 0.35 " +
+                        "(full night = 65% brightness) for a milder night effect. No settings-screen slider for " +
+                        "this yet. Edit the config directly to tune it.")
+                .defineInRange("nightModeStrength", 0.35, 0.0, 1.0);
         LABEL_SIDE = builder
                 .comment("Which side of a marker (waypoint or GT ore vein) its name label draws on. With " +
                         "a lot of markers on screen at once, a label fixed to one side can run off the " +

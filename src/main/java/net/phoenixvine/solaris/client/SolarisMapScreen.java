@@ -670,7 +670,7 @@ public class SolarisMapScreen extends Screen {
         int frameRight = width - MARGIN;
         int frameTop = MARGIN;
         int frameBottom = height - MARGIN;
-        int gridColor = 0x30000000;
+        int gridColor = 0x60000000;
 
         int chunkMinX = ((int) Math.floor(viewport.toWorldX(frameLeft, 0))) >> 4;
         int chunkMaxX = ((int) Math.floor(viewport.toWorldX(frameRight, 0))) >> 4;
