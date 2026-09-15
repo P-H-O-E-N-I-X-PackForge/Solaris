@@ -63,6 +63,11 @@ public final class SolarisConfig {
     public static final ForgeConfigSpec.DoubleValue MINIMAP_ZOOM;
     public static final ForgeConfigSpec.BooleanValue MINIMAP_SHOW_TIME;
     public static final ForgeConfigSpec.BooleanValue MINIMAP_SHOW_COORDS;
+    public static final ForgeConfigSpec.BooleanValue MINIMAP_SHOW_BORDER;
+    public static final ForgeConfigSpec.BooleanValue MINIMAP_SHOW_BIOME;
+    public static final ForgeConfigSpec.BooleanValue MINIMAP_SHOW_WAYPOINTS;
+    public static final ForgeConfigSpec.IntValue MINIMAP_MAX_WAYPOINTS;
+    public static final ForgeConfigSpec.BooleanValue MINIMAP_SHOW_WAYPOINT_DIRECTIONS;
     public static final ForgeConfigSpec.BooleanValue SHOW_CLAIMS_MINIMAP;
     public static final ForgeConfigSpec.BooleanValue SHOW_CHUNK_GRID;
     public static final ForgeConfigSpec.DoubleValue NIGHT_MODE_STRENGTH;
@@ -99,6 +104,27 @@ public final class SolarisConfig {
         MINIMAP_SHOW_COORDS = builder
                 .comment("Show your current X/Y/Z coordinates on the minimap.")
                 .define("showCoords", false);
+        MINIMAP_SHOW_BORDER = builder
+                .comment("Draw the minimap's outline/frame (square panel border, circle ring, or polygon " +
+                        "outline depending on minimapShape). On by default, matching prior behavior.")
+                .define("showBorder", true);
+        MINIMAP_SHOW_BIOME = builder
+                .comment("Show the current biome name under the minimap, below the time/coords lines if " +
+                        "those are also enabled.")
+                .define("showBiome", false);
+        MINIMAP_SHOW_WAYPOINTS = builder
+                .comment("Show waypoint markers on the minimap itself, within its current view radius. On " +
+                        "by default, matching prior behavior — previously always on with no way to disable it.")
+                .define("showWaypoints", true);
+        MINIMAP_MAX_WAYPOINTS = builder
+                .comment("Maximum number of waypoint markers drawn on the minimap at once, nearest first, " +
+                        "so a waypoint-heavy world doesn't clutter it. No effect on the fullscreen map, " +
+                        "which always shows every visible waypoint.")
+                .defineInRange("maxWaypoints", 16, 1, 64);
+        MINIMAP_SHOW_WAYPOINT_DIRECTIONS = builder
+                .comment("For waypoints outside the minimap's current view radius, draw a small arrow at " +
+                        "the minimap's edge pointing toward them instead of showing nothing.")
+                .define("showWaypointDirections", true);
         SHOW_CLAIMS_MINIMAP = builder
                 .comment("Show land-claim boundary overlays (e.g. from Phoenix Domains) on the corner " +
                         "minimap. Independent of the fullscreen map's own claims toggle. On by default, " +

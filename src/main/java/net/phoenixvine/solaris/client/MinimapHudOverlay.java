@@ -1,9 +1,11 @@
 package net.phoenixvine.solaris.client;
 
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraftforge.api.distmarker.Dist;
@@ -31,6 +33,8 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Axis;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_ACCENT;
@@ -124,7 +128,8 @@ public class MinimapHudOverlay {
         int cx = x + screenSize / 2;
         int cy = y + screenSize / 2;
 
-        if (shape == MinimapShape.SQUARE) {
+        boolean showBorder = SolarisConfig.MINIMAP_SHOW_BORDER.get();
+        if (shape == MinimapShape.SQUARE && showBorder) {
             ModernPanel.draw(g, x - 5, y - 5, screenSize + 10, screenSize + 10, C_BORDER);
         }
 
@@ -165,26 +170,50 @@ public class MinimapHudOverlay {
         }
 
         int radius = screenSize / 2;
-        List<Waypoint> waypoints = WaypointManager.getVisibleForDimension(mc.level.dimension().location());
-        for (Waypoint w : waypoints) {
-            double wPixelX = radiusPixels + (w.x - (chunkX << 4));
-            double wPixelZ = radiusPixels + (w.z - (chunkZ << 4));
-            if (wPixelX < u || wPixelX > u + viewPixels || wPixelZ < v || wPixelZ > v + viewPixels) continue;
-            int wx = x + (int) ((wPixelX - u) * scale);
-            int wy = y + (int) ((wPixelZ - v) * scale);
+        List<Waypoint> offScreenWaypoints = null;
+        if (SolarisConfig.MINIMAP_SHOW_WAYPOINTS.get()) {
+            List<Waypoint> waypoints = new ArrayList<>(
+                    WaypointManager.getVisibleForDimension(mc.level.dimension().location()));
+            waypoints.sort(Comparator.comparingDouble(
+                    w -> w.distanceSq(mc.player.getX(), mc.player.getY(), mc.player.getZ())));
+            int maxWaypoints = SolarisConfig.MINIMAP_MAX_WAYPOINTS.get();
+            if (waypoints.size() > maxWaypoints) waypoints = waypoints.subList(0, maxWaypoints);
 
-            if (shape != MinimapShape.SQUARE && !containsPoint(shape, wx - x, wy - y, screenSize)) continue;
-            g.fill(wx - 3, wy - 3, wx + 3, wy + 3, 0xFF000000);
-            g.fill(wx - 2, wy - 2, wx + 2, wy + 2, w.colorArgb());
+            boolean showDirections = SolarisConfig.MINIMAP_SHOW_WAYPOINT_DIRECTIONS.get();
+            for (Waypoint w : waypoints) {
+                double wPixelX = radiusPixels + (w.x - (chunkX << 4));
+                double wPixelZ = radiusPixels + (w.z - (chunkZ << 4));
+                if (wPixelX < u || wPixelX > u + viewPixels || wPixelZ < v || wPixelZ > v + viewPixels) {
+                    if (showDirections) {
+                        if (offScreenWaypoints == null) offScreenWaypoints = new ArrayList<>();
+                        offScreenWaypoints.add(w);
+                    }
+                    continue;
+                }
+                int wx = x + (int) ((wPixelX - u) * scale);
+                int wy = y + (int) ((wPixelZ - v) * scale);
+
+                if (shape != MinimapShape.SQUARE && !containsPoint(shape, wx - x, wy - y, screenSize)) continue;
+                g.fill(wx - 3, wy - 3, wx + 3, wy + 3, 0xFF000000);
+                g.fill(wx - 2, wy - 2, wx + 2, wy + 2, w.colorArgb());
+            }
         }
 
         g.pose().popPose();
         g.disableScissor();
 
-        if (shape == MinimapShape.CIRCLE) {
-            SmoothShapes.drawRing(g, cx, cy, radius + 3, C_BORDER);
-        } else if (shape.isPolygon()) {
-            drawPolygonOutline(g, shape, cx, cy, screenSize);
+        if (offScreenWaypoints != null) {
+            for (Waypoint w : offScreenWaypoints) {
+                drawWaypointDirection(g, w, mc, cx, cy, radius, rotate, contentAngle);
+            }
+        }
+
+        if (showBorder) {
+            if (shape == MinimapShape.CIRCLE) {
+                SmoothShapes.drawRing(g, cx, cy, radius + 3, C_BORDER);
+            } else if (shape.isPolygon()) {
+                drawPolygonOutline(g, shape, cx, cy, screenSize);
+            }
         }
 
         PlayerArrow.draw(g, cx, cy, 6, rotate ? 180f : mc.player.getYRot(), C_ACCENT,
@@ -193,21 +222,58 @@ public class MinimapHudOverlay {
         drawInfoText(g, mc, x, y, screenSize);
     }
 
+    /**
+     * Small colored marker at the minimap's edge, in the direction of a waypoint currently outside
+     * its view radius — drawn in plain screen space (after the content pose is popped), so unlike
+     * the on-map dots it has to apply the same rotation the content pose already baked into those
+     * (matching contentAngle from onRenderHud) by hand: rotate the world-space offset to the
+     * player by that same angle before converting to a screen angle, or the indicator would point
+     * the wrong way whenever minimapRotate has the content itself rotated off north-up.
+     */
+    private static void drawWaypointDirection(GuiGraphics g, Waypoint w, Minecraft mc, int cx, int cy, int radius,
+                                               boolean rotate, float contentAngle) {
+        double dx = w.x - mc.player.getX();
+        double dz = w.z - mc.player.getZ();
+        if (dx == 0 && dz == 0) return;
+
+        double angle;
+        if (rotate) {
+            double rad = Math.toRadians(contentAngle);
+            double rx = dx * Math.cos(rad) - dz * Math.sin(rad);
+            double rz = dx * Math.sin(rad) + dz * Math.cos(rad);
+            angle = Math.atan2(rz, rx);
+        } else {
+            angle = Math.atan2(dz, dx);
+        }
+
+        int edge = radius - 6;
+        int ex = cx + (int) Math.round(Math.cos(angle) * edge);
+        int ey = cy + (int) Math.round(Math.sin(angle) * edge);
+
+        g.fill(ex - 3, ey - 3, ex + 3, ey + 3, 0xFF000000);
+        g.fill(ex - 2, ey - 2, ex + 2, ey + 2, w.colorArgb());
+    }
+
     private static void drawInfoText(GuiGraphics g, Minecraft mc, int x, int y, int screenSize) {
         boolean showTime = SolarisConfig.MINIMAP_SHOW_TIME.get();
         boolean showCoords = SolarisConfig.MINIMAP_SHOW_COORDS.get();
-        if (!showTime && !showCoords) return;
+        boolean showBiome = SolarisConfig.MINIMAP_SHOW_BIOME.get();
+        if (!showTime && !showCoords && !showBiome) return;
 
         int textY = y + screenSize + 7;
         int cx = x + screenSize / 2;
         if (showTime) {
-            g.drawCenteredString(mc.font, formatTime(mc.level.getDayTime()), cx, textY, C_ACCENT);
+            g.drawCenteredString(mc.font, "Time: " + formatTime(mc.level.getDayTime()), cx, textY, C_ACCENT);
             textY += mc.font.lineHeight + 1;
         }
         if (showCoords) {
             BlockPos pos = mc.player.blockPosition();
-            String coords = pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
+            String coords = "x: " + pos.getX() + ", y: " + pos.getY() + ", z: " + pos.getZ();
             g.drawCenteredString(mc.font, coords, cx, textY, C_ACCENT);
+            textY += mc.font.lineHeight + 1;
+        }
+        if (showBiome) {
+            g.drawCenteredString(mc.font, biomeName(mc), cx, textY, C_ACCENT);
         }
     }
 
@@ -216,6 +282,12 @@ public class MinimapHudOverlay {
         int hour = (int) ((ticks / 1000 + 6) % 24);
         int minute = (int) (ticks % 1000 * 60 / 1000);
         return String.format("%02d:%02d", hour, minute);
+    }
+
+    private static String biomeName(Minecraft mc) {
+        return mc.level.getBiome(mc.player.blockPosition()).unwrapKey()
+                .map(key -> Component.translatable(Util.makeDescriptionId("biome", key.location())).getString())
+                .orElse("");
     }
 
     private static void drawClippedTerrain(GuiGraphics g, MinimapShape shape, SolarisTexture tex, int x, int y,
