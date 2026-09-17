@@ -48,9 +48,13 @@ public class MinimapHudOverlay {
     private static SolarisTexture texture;
 
     private static SolarisTexture texture() {
-        if (texture == null) {
-            int radius = Math.min(SolarisConfig.MINIMAP_RADIUS_CHUNKS.get(),
-                    SolarisConfig.MAX_MINIMAP_RANGE_CHUNKS.get());
+        int radius = Math.min(SolarisConfig.MINIMAP_RADIUS_CHUNKS.get(), SolarisConfig.MAX_MINIMAP_RANGE_CHUNKS.get());
+        // Rebuild whenever the configured radius no longer matches the live texture, not just on
+        // first use — otherwise a settings-screen change to minimapRadiusChunks would silently do
+        // nothing until the next game restart, since the old texture instance was already sized
+        // for the previous radius.
+        if (texture == null || texture.getRadiusChunks() != radius) {
+            if (texture != null) texture.close();
             texture = new SolarisTexture("minimap", radius);
         }
         return texture;

@@ -221,6 +221,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
         placeWidgetsFluidly(startX, cursorY[0], availableW, cursorY, gap,
                 new MinimapZoomSlider(0, 0, colW, 20),
                 new MinimapSizeSlider(0, 0, colW, 20),
+                new MinimapRangeSlider(0, 0, colW, 20),
                 Button.builder(mapShapeLabel(), b -> {
                     SolarisConfig.MAP_SHAPE.set(SolarisConfig.MAP_SHAPE.get().next());
                     SolarisConfig.MAP_SHAPE.save();
@@ -263,6 +264,11 @@ public class SolarisDisplaySettingsScreen extends Screen {
                     b.setMessage(minimapWaypointDirectionsLabel());
                 }).size(colW, 18).build(),
                 new MinimapMaxWaypointsSlider(0, 0, colW, 20),
+                Button.builder(minimapAutoUndergroundLabel(), b -> {
+                    SolarisConfig.MINIMAP_AUTO_UNDERGROUND.set(!SolarisConfig.MINIMAP_AUTO_UNDERGROUND.get());
+                    SolarisConfig.MINIMAP_AUTO_UNDERGROUND.save();
+                    b.setMessage(minimapAutoUndergroundLabel());
+                }).size(colW, 18).build(),
                 Button.builder(claimsMapLabel(), b -> {
                     SolarisConfig.SHOW_CLAIMS_MAP.set(!SolarisConfig.SHOW_CLAIMS_MAP.get());
                     SolarisConfig.SHOW_CLAIMS_MAP.save();
@@ -379,6 +385,11 @@ public class SolarisDisplaySettingsScreen extends Screen {
     private Component minimapWaypointDirectionsLabel() {
         boolean on = SolarisConfig.MINIMAP_SHOW_WAYPOINT_DIRECTIONS.get();
         return Component.literal("Waypoint Directions: " + (on ? "ON" : "OFF"));
+    }
+
+    private Component minimapAutoUndergroundLabel() {
+        boolean on = SolarisConfig.MINIMAP_AUTO_UNDERGROUND.get();
+        return Component.literal("Auto Underground: " + (on ? "ON" : "OFF"));
     }
 
     private Component railNetworkLabel() {
@@ -512,7 +523,9 @@ public class SolarisDisplaySettingsScreen extends Screen {
         SolarisConfig.MINIMAP_SHOW_WAYPOINTS.save();
         SolarisConfig.MINIMAP_MAX_WAYPOINTS.save();
         SolarisConfig.MINIMAP_SHOW_WAYPOINT_DIRECTIONS.save();
+        SolarisConfig.MINIMAP_AUTO_UNDERGROUND.save();
         SolarisConfig.MINIMAP_SIZE.save();
+        SolarisConfig.MINIMAP_RADIUS_CHUNKS.save();
         SolarisConfig.UNEXPLORED_STYLE.save();
         SolarisConfig.UNEXPLORED_DENSITY.save();
         SolarisConfig.UNEXPLORED_BRIGHTNESS.save();
@@ -756,6 +769,25 @@ public class SolarisDisplaySettingsScreen extends Screen {
         @Override
         protected void applyValue() {
             SolarisConfig.MINIMAP_SIZE.set(32 + (int) Math.round(value * 480.0));
+        }
+    }
+
+    private static class MinimapRangeSlider extends AbstractSliderButton {
+
+        MinimapRangeSlider(int x, int y, int w, int h) {
+            super(x, y, w, h, Component.empty(), (SolarisConfig.MINIMAP_RADIUS_CHUNKS.get() - 1.0) / 23.0);
+            updateMessage();
+        }
+
+        @Override
+        protected void updateMessage() {
+            int chunks = 1 + (int) Math.round(value * 23.0);
+            setMessage(Component.literal("Minimap Range: " + chunks + " chunks"));
+        }
+
+        @Override
+        protected void applyValue() {
+            SolarisConfig.MINIMAP_RADIUS_CHUNKS.set(1 + (int) Math.round(value * 23.0));
         }
     }
 

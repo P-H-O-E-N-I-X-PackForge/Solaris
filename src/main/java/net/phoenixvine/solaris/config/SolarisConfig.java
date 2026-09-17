@@ -68,6 +68,7 @@ public final class SolarisConfig {
     public static final ForgeConfigSpec.BooleanValue MINIMAP_SHOW_WAYPOINTS;
     public static final ForgeConfigSpec.IntValue MINIMAP_MAX_WAYPOINTS;
     public static final ForgeConfigSpec.BooleanValue MINIMAP_SHOW_WAYPOINT_DIRECTIONS;
+    public static final ForgeConfigSpec.BooleanValue MINIMAP_AUTO_UNDERGROUND;
     public static final ForgeConfigSpec.BooleanValue SHOW_CLAIMS_MINIMAP;
     public static final ForgeConfigSpec.BooleanValue SHOW_CHUNK_GRID;
     public static final ForgeConfigSpec.DoubleValue NIGHT_MODE_STRENGTH;
@@ -82,8 +83,13 @@ public final class SolarisConfig {
         MINIMAP_SIZE = builder.comment("On-screen size, in pixels, of the corner minimap.")
                 .defineInRange("size", 96, 32, 512);
         MINIMAP_RADIUS_CHUNKS = builder
-                .comment("How many chunks in each direction the minimap's backing texture covers.")
-                .defineInRange("radiusChunks", 4, 1, 16);
+                .comment("How many chunks in each direction the minimap's backing texture covers — this is " +
+                        "the real lever for how far \"zoomed out\" the minimap can go; minimapZoom only crops " +
+                        "into a smaller portion of whatever this already sampled, it can't show more than " +
+                        "this. Higher values cost more to rebuild each time you cross a chunk boundary (or " +
+                        "surface/go underground), so this is capped well below what the texture format could " +
+                        "technically support.")
+                .defineInRange("radiusChunks", 4, 1, 24);
         MINIMAP_ROTATE = builder
                 .comment("Rotate the minimap so it always faces the direction you're looking (player " +
                         "arrow fixed pointing up), instead of the default fixed north-up orientation.")
@@ -125,6 +131,12 @@ public final class SolarisConfig {
                 .comment("For waypoints outside the minimap's current view radius, draw a small arrow at " +
                         "the minimap's edge pointing toward them instead of showing nothing.")
                 .define("showWaypointDirections", true);
+        MINIMAP_AUTO_UNDERGROUND = builder
+                .comment("Automatically switch the minimap (and globe view) to cave/underground rendering " +
+                        "when you can't see the sky from where you're standing (caves, mines, under a roof), " +
+                        "same as it already does unconditionally in ceilinged dimensions like the Nether. " +
+                        "Turn off to keep the minimap on the surface render even while underground.")
+                .define("autoUnderground", true);
         SHOW_CLAIMS_MINIMAP = builder
                 .comment("Show land-claim boundary overlays (e.g. from Phoenix Domains) on the corner " +
                         "minimap. Independent of the fullscreen map's own claims toggle. On by default, " +
@@ -368,8 +380,9 @@ public final class SolarisConfig {
         MAX_MINIMAP_RANGE_CHUNKS = builder
                 .comment("Server-owner safety ceiling on the minimap's radius (minimapRadiusChunks), " +
                         "independent of any per-player/team feature-state toggle. A static cap, not something " +
-                        "an event/progression system grants per player.")
-                .defineInRange("maxMinimapRangeChunks", 16, 1, 32);
+                        "an event/progression system grants per player. Raised alongside minimapRadiusChunks's " +
+                        "own max (16 -> 24) so that range is actually reachable without also editing this.")
+                .defineInRange("maxMinimapRangeChunks", 24, 1, 32);
         WORLD_MAP_WRITE_RANGE_CHUNKS = builder
                 .comment("Server-owner safety ceiling (in chunks, from the player) on how far the world map is " +
                         "allowed to actively sample/write new chunk data, when the per-player/team world-map " +
