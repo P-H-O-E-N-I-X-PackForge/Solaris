@@ -5,6 +5,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraftforge.api.distmarker.Dist;
@@ -90,6 +91,15 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
         currentY[0] += maxRowH;
         return currentY[0];
+    }
+
+    // AbstractWidget.setTooltip renders automatically on hover once set (Screen already forwards
+    // mouseX/mouseY to every renderable widget each frame) — no extra render-loop code needed.
+    // Returns the widget so it can wrap a Button.builder(...).build() call inline in the
+    // placeWidgetsFluidly(...) varargs lists below instead of needing a local variable per button.
+    private static AbstractWidget tooltip(AbstractWidget widget, String text) {
+        widget.setTooltip(Tooltip.create(Component.literal(text)));
+        return widget;
     }
 
     @Override
@@ -233,7 +243,9 @@ public class SolarisDisplaySettingsScreen extends Screen {
         placeWidgetsFluidly(startX, cursorY[0], availableW, cursorY, gap,
                 new MinimapZoomSlider(0, 0, colW, 20),
                 new MinimapSizeSlider(0, 0, colW, 20),
-                new MinimapRangeSlider(0, 0, colW, 20),
+                tooltip(new MinimapRangeSlider(0, 0, colW, 20),
+                        "How many chunks the minimap's backing texture covers — the real zoom-out limit; " +
+                                "Minimap Zoom only crops into whatever this already sampled."),
                 Button.builder(mapShapeLabel(), b -> {
                     SolarisConfig.MAP_SHAPE.set(SolarisConfig.MAP_SHAPE.get().next());
                     SolarisConfig.MAP_SHAPE.save();
@@ -249,16 +261,17 @@ public class SolarisDisplaySettingsScreen extends Screen {
                     SolarisConfig.MINIMAP_SHOW_COORDS.save();
                     b.setMessage(minimapCoordsLabel());
                 }).size(colW, 18).build(),
-                Button.builder(minimapTextLabelsLabel(), b -> {
+                tooltip(Button.builder(minimapTextLabelsLabel(), b -> {
                     SolarisConfig.MINIMAP_SHOW_TEXT_LABELS.set(!SolarisConfig.MINIMAP_SHOW_TEXT_LABELS.get());
                     SolarisConfig.MINIMAP_SHOW_TEXT_LABELS.save();
                     b.setMessage(minimapTextLabelsLabel());
-                }).size(colW, 18).build(),
-                Button.builder(minimapBiomeLabel(), b -> {
+                }).size(colW, 18).build(), "\"Time: 20:13\" vs plain \"20:13\" — only affects formatting, " +
+                        "not whether time/coords show at all."),
+                tooltip(Button.builder(minimapBiomeLabel(), b -> {
                     SolarisConfig.MINIMAP_SHOW_BIOME.set(!SolarisConfig.MINIMAP_SHOW_BIOME.get());
                     SolarisConfig.MINIMAP_SHOW_BIOME.save();
                     b.setMessage(minimapBiomeLabel());
-                }).size(colW, 18).build(),
+                }).size(colW, 18).build(), "Show the current biome's name under the minimap."),
                 Button.builder(minimapRotateLabel(), b -> {
                     SolarisConfig.MINIMAP_ROTATE.set(!SolarisConfig.MINIMAP_ROTATE.get());
                     SolarisConfig.MINIMAP_ROTATE.save();
@@ -274,18 +287,22 @@ public class SolarisDisplaySettingsScreen extends Screen {
                     SolarisConfig.MINIMAP_SHOW_WAYPOINTS.save();
                     b.setMessage(minimapWaypointsLabel());
                 }).size(colW, 18).build(),
-                Button.builder(minimapWaypointDirectionsLabel(), b -> {
+                tooltip(Button.builder(minimapWaypointDirectionsLabel(), b -> {
                     SolarisConfig.MINIMAP_SHOW_WAYPOINT_DIRECTIONS
                             .set(!SolarisConfig.MINIMAP_SHOW_WAYPOINT_DIRECTIONS.get());
                     SolarisConfig.MINIMAP_SHOW_WAYPOINT_DIRECTIONS.save();
                     b.setMessage(minimapWaypointDirectionsLabel());
-                }).size(colW, 18).build(),
-                new MinimapMaxWaypointsSlider(0, 0, colW, 20),
-                Button.builder(minimapAutoUndergroundLabel(), b -> {
+                }).size(colW, 18).build(), "For waypoints outside the minimap's view, show a small edge " +
+                        "marker pointing toward them instead of nothing."),
+                tooltip(new MinimapMaxWaypointsSlider(0, 0, colW, 20),
+                        "Caps on-map waypoint dots to the nearest N, so a waypoint-heavy world doesn't " +
+                                "clutter the minimap."),
+                tooltip(Button.builder(minimapAutoUndergroundLabel(), b -> {
                     SolarisConfig.MINIMAP_AUTO_UNDERGROUND.set(!SolarisConfig.MINIMAP_AUTO_UNDERGROUND.get());
                     SolarisConfig.MINIMAP_AUTO_UNDERGROUND.save();
                     b.setMessage(minimapAutoUndergroundLabel());
-                }).size(colW, 18).build(),
+                }).size(colW, 18).build(), "Switch the minimap to cave rendering automatically once you " +
+                        "can't see the sky (caves, mines, under a roof) — not just in the Nether."),
                 Button.builder(claimsMapLabel(), b -> {
                     SolarisConfig.SHOW_CLAIMS_MAP.set(!SolarisConfig.SHOW_CLAIMS_MAP.get());
                     SolarisConfig.SHOW_CLAIMS_MAP.save();
