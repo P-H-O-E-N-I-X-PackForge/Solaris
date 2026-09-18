@@ -663,8 +663,16 @@ public class SolarisMapScreen extends Screen {
         g.drawString(font, label, x, y + 7, C_TEXT, true);
     }
 
+    // "Show up to 200, die past that" refers to the scale bar's own reading (drawScaleBar: blocks
+    // = 60/zoom), not the raw zoom multiplier — the scale bar's number goes UP as you zoom OUT, so
+    // "die past 200" means hide once you're zoomed out far enough that the scale bar would read
+    // more than 200 blocks, i.e. zoom < 60/200. The previous version of this check used a literal
+    // zoom > 200 (basically unreachable at any normal zoom level, so the grid never actually died)
+    // in the opposite direction entirely — dying at extreme zoom-IN instead of extreme zoom-OUT.
+    private static final float CHUNK_GRID_MIN_ZOOM = 60f / 200f;
+
     private void drawChunkGridWorld(GuiGraphics g) {
-        if (viewport.getZoom() > 200f) return;
+        if (viewport.getZoom() < CHUNK_GRID_MIN_ZOOM) return;
 
         int frameLeft = MARGIN;
         int frameRight = width - MARGIN;

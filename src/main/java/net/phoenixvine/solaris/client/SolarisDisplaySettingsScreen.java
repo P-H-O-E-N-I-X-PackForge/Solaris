@@ -34,8 +34,8 @@ public class SolarisDisplaySettingsScreen extends Screen {
     private static final int ROW_H = 24;
     private static final int HEADER_H = 24;
     private static final int HEADING_H = 12;
-    private static final int GROUP_COUNT = 4;
-    private static final String[] GROUP_HEADINGS = { "TERRAIN & WATER", "ICONS & LABELS", "EFFECTS", "MINIMAP & GRID" };
+    private static final int GROUP_COUNT = 3;
+    private static final String[] GROUP_HEADINGS = { "TERRAIN & WATER", "ICONS & LABELS", "EFFECTS" };
 
     private static final int MIN_W = 460;
     private static final int MIN_H = 520;
@@ -51,6 +51,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
     private enum Tab {
 
         DISPLAY("Display"),
+        MINIMAP("Minimap"),
         WAYPOINTS("Waypoints"),
         INTEGRATIONS("Integrations");
 
@@ -112,6 +113,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
         switch (activeTab) {
             case DISPLAY -> initDisplayTab(boxX, cursorY);
+            case MINIMAP -> initMinimapTab(boxX, cursorY);
             case WAYPOINTS -> initWaypointsTab(boxX, cursorY);
             case INTEGRATIONS -> initIntegrationsTab(boxX, cursorY);
         }
@@ -133,6 +135,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
         List<Tab> tabs = new ArrayList<>();
         tabs.add(Tab.DISPLAY);
+        tabs.add(Tab.MINIMAP);
         tabs.add(Tab.WAYPOINTS);
         if (showIntegrationsTab) tabs.add(Tab.INTEGRATIONS);
         else if (activeTab == Tab.INTEGRATIONS) activeTab = Tab.DISPLAY;
@@ -214,8 +217,17 @@ public class SolarisDisplaySettingsScreen extends Screen {
                 new VignetteStrengthSlider(0, 0, colW, 20),
                 new UnexploredDensitySlider(0, 0, colW, 20),
                 new UnexploredBrightnessSlider(0, 0, colW, 20));
+    }
 
-        headingY[3] = cursorY[0];
+    private void initMinimapTab(int x, int[] cursorY) {
+        int padding = 10;
+        int gap = 6;
+        int availableW = boxW - (padding * 2);
+        int startX = x + padding;
+
+        int colW = availableW > 250 ? (availableW - gap) / 2 : availableW;
+
+        // See initWaypointsTab's matching comment — same missing breathing room under the header.
         cursorY[0] += HEADING_H;
 
         placeWidgetsFluidly(startX, cursorY[0], availableW, cursorY, gap,
@@ -291,6 +303,9 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
         int colW = availableW > 250 ? (availableW - gap) / 2 : availableW;
 
+        // See initWaypointsTab's matching comment — same missing breathing room under the header.
+        cursorY[0] += HEADING_H;
+
         placeWidgetsFluidly(startX, cursorY[0], availableW, cursorY, gap,
                 Button.builder(gtVeinsLabel(), b -> {
                     SolarisConfig.SHOW_GT_ORE_VEINS.set(!SolarisConfig.SHOW_GT_ORE_VEINS.get());
@@ -306,6 +321,11 @@ public class SolarisDisplaySettingsScreen extends Screen {
         int startX = x + padding;
 
         int colW = availableW > 250 ? (availableW - gap) / 2 : availableW;
+
+        // initDisplayTab reserves HEADING_H before its first row too, but for its own group
+        // heading text — this tab has no heading to draw, yet still needs that same breathing
+        // room under the header's bottom divider line, or its first row sits right up against it.
+        cursorY[0] += HEADING_H;
 
         placeWidgetsFluidly(startX, cursorY[0], availableW, cursorY, gap,
                 Button.builder(beamsLabel(), b -> {
