@@ -8,7 +8,7 @@ public final class ModernPanel {
 
     // How far each edge's channel shifts toward white (top/left) or black (bottom/right), giving
     // the thick flat border a subtle raised bevel instead of reading as a single flat-color block.
-    private static final int SHADE_AMOUNT = 28;
+    public static final int SHADE_AMOUNT = 28;
 
     private ModernPanel() {}
 
@@ -22,7 +22,7 @@ public final class ModernPanel {
         g.fill(x + w - t, y + t, x + w, y + h - t, dark);
     }
 
-    private static int shade(int argb, int amount) {
+    public static int shade(int argb, int amount) {
         int a = argb >>> 24;
         int r = clampChannel(((argb >> 16) & 0xFF) + amount);
         int gCh = clampChannel(((argb >> 8) & 0xFF) + amount);

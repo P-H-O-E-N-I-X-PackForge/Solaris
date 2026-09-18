@@ -132,6 +132,10 @@ public class MinimapHudOverlay {
         int cx = x + screenSize / 2;
         int cy = y + screenSize / 2;
 
+        double mouseX = mc.mouseHandler.xpos() * mc.getWindow().getGuiScaledWidth() / mc.getWindow().getScreenWidth();
+        double mouseY = mc.mouseHandler.ypos() * mc.getWindow().getGuiScaledHeight() / mc.getWindow().getScreenHeight();
+        Waypoint hoveredWaypoint = null;
+
         boolean showBorder = SolarisConfig.MINIMAP_SHOW_BORDER.get();
         if (shape == MinimapShape.SQUARE && showBorder) {
             ModernPanel.draw(g, x - 5, y - 5, screenSize + 10, screenSize + 10, C_BORDER);
@@ -200,6 +204,15 @@ public class MinimapHudOverlay {
                 if (shape != MinimapShape.SQUARE && !containsPoint(shape, wx - x, wy - y, screenSize)) continue;
                 g.fill(wx - 3, wy - 3, wx + 3, wy + 3, 0xFF000000);
                 g.fill(wx - 2, wy - 2, wx + 2, wy + 2, w.colorArgb());
+
+                // Hit-test against the dot's true on-screen position, not (wx, wy) as drawn here —
+                // those coordinates are inside the pose block above, so when minimapRotate is on
+                // the GPU transform rotates the actual fill around (cx, cy) after the fact. Redo
+                // that same rotation by hand to know where the dot really lands on screen.
+                int[] finalPos = rotate ? rotateAroundCenter(wx, wy, cx, cy, contentAngle) : new int[] { wx, wy };
+                double hdx = finalPos[0] - mouseX;
+                double hdy = finalPos[1] - mouseY;
+                if (hdx * hdx + hdy * hdy <= HOVER_RADIUS_SQ) hoveredWaypoint = w;
             }
         }
 
@@ -209,12 +222,22 @@ public class MinimapHudOverlay {
         if (offScreenWaypoints != null) {
             for (Waypoint w : offScreenWaypoints) {
                 drawWaypointDirection(g, w, mc, cx, cy, radius, rotate, contentAngle);
+                int[] pos = waypointEdgePosition(w, mc, cx, cy, radius, rotate, contentAngle);
+                if (pos == null) continue;
+                double hdx = pos[0] - mouseX;
+                double hdy = pos[1] - mouseY;
+                if (hdx * hdx + hdy * hdy <= HOVER_RADIUS_SQ) hoveredWaypoint = w;
             }
         }
 
         if (showBorder) {
             if (shape == MinimapShape.CIRCLE) {
-                SmoothShapes.drawRing(g, cx, cy, radius + 3, C_BORDER);
+                // A single-color ring reads flat no matter how thick it is — approximate the same
+                // "light top/left, dark bottom/right" bevel ModernPanel.draw uses for the square
+                // border with two concentric rings instead, since a ring has no straight edges to
+                // shade individually.
+                SmoothShapes.drawRing(g, cx, cy, radius + 4, ModernPanel.shade(C_BORDER, -ModernPanel.SHADE_AMOUNT));
+                SmoothShapes.drawRing(g, cx, cy, radius + 2, ModernPanel.shade(C_BORDER, ModernPanel.SHADE_AMOUNT));
             } else if (shape.isPolygon()) {
                 drawPolygonOutline(g, shape, cx, cy, screenSize);
             }
@@ -224,6 +247,19 @@ public class MinimapHudOverlay {
                 mc.player.getSkinTextureLocation());
 
         drawInfoText(g, mc, x, y, screenSize);
+
+        // The minimap's dots/edge markers otherwise carry no indication of what they are beyond a
+        // colored square — this is the only thing on the minimap itself that names a waypoint, as
+        // opposed to the fullscreen map, which already labels every waypoint with a persistent
+        // text label next to its icon.
+        if (hoveredWaypoint != null) {
+            String name = hoveredWaypoint.name;
+            int tw = mc.font.width(name);
+            int tx = (int) mouseX + 10;
+            int ty = (int) mouseY - 4;
+            g.fill(tx - 2, ty - 2, tx + tw + 2, ty + mc.font.lineHeight + 2, 0xCC000000);
+            g.drawString(mc.font, name, tx, ty, 0xFFFFFFFF, false);
+        }
     }
 
     /**
@@ -235,10 +271,19 @@ public class MinimapHudOverlay {
      * the wrong way whenever minimapRotate has the content itself rotated off north-up.
      */
     private static void drawWaypointDirection(GuiGraphics g, Waypoint w, Minecraft mc, int cx, int cy, int radius,
-                                               boolean rotate, float contentAngle) {
+                                              boolean rotate, float contentAngle) {
+        int[] pos = waypointEdgePosition(w, mc, cx, cy, radius, rotate, contentAngle);
+        if (pos == null) return;
+        g.fill(pos[0] - 3, pos[1] - 3, pos[0] + 3, pos[1] + 3, 0xFF000000);
+        g.fill(pos[0] - 2, pos[1] - 2, pos[0] + 2, pos[1] + 2, w.colorArgb());
+    }
+
+    /** Screen position of an off-screen waypoint's edge marker — shared by draw and hover-test. */
+    private static int[] waypointEdgePosition(Waypoint w, Minecraft mc, int cx, int cy, int radius, boolean rotate,
+                                              float contentAngle) {
         double dx = w.x - mc.player.getX();
         double dz = w.z - mc.player.getZ();
-        if (dx == 0 && dz == 0) return;
+        if (dx == 0 && dz == 0) return null;
 
         double angle;
         if (rotate) {
@@ -253,9 +298,19 @@ public class MinimapHudOverlay {
         int edge = radius - 6;
         int ex = cx + (int) Math.round(Math.cos(angle) * edge);
         int ey = cy + (int) Math.round(Math.sin(angle) * edge);
+        return new int[] { ex, ey };
+    }
 
-        g.fill(ex - 3, ey - 3, ex + 3, ey + 3, 0xFF000000);
-        g.fill(ex - 2, ey - 2, ex + 2, ey + 2, w.colorArgb());
+    private static final int HOVER_RADIUS_SQ = 5 * 5;
+
+    /** Reproduces the pose block's Axis.ZP rotation around (cx, cy) for hit-testing purposes. */
+    private static int[] rotateAroundCenter(int px, int py, int cx, int cy, float angleDeg) {
+        double rad = Math.toRadians(angleDeg);
+        double dx = px - cx;
+        double dy = py - cy;
+        double rx = dx * Math.cos(rad) - dy * Math.sin(rad);
+        double ry = dx * Math.sin(rad) + dy * Math.cos(rad);
+        return new int[] { cx + (int) Math.round(rx), cy + (int) Math.round(ry) };
     }
 
     private static void drawInfoText(GuiGraphics g, Minecraft mc, int x, int y, int screenSize) {
@@ -348,7 +403,14 @@ public class MinimapHudOverlay {
             int y1 = cy + Math.round((a[1] - 0.5f) * outlineSize);
             int x2 = cx + Math.round((b[0] - 0.5f) * outlineSize);
             int y2 = cy + Math.round((b[1] - 0.5f) * outlineSize);
-            LineRenderer.drawLine(g, x1, y1, x2, y2, 2, C_BORDER);
+            // No straight top/bottom edge to shade the way ModernPanel.draw does for a square, so
+            // approximate the same "lit from upper-left" bevel per-edge instead: an edge whose
+            // midpoint sits in the upper half of the shape gets the light shade, lower half gets
+            // the dark one.
+            float midY = (a[1] + b[1]) / 2f;
+            int edgeColor = midY < 0.5f ? ModernPanel.shade(C_BORDER, ModernPanel.SHADE_AMOUNT) :
+                    ModernPanel.shade(C_BORDER, -ModernPanel.SHADE_AMOUNT);
+            LineRenderer.drawLine(g, x1, y1, x2, y2, 2, edgeColor);
         }
     }
 }

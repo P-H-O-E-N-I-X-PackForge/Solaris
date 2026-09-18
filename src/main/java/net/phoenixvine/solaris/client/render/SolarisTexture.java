@@ -199,7 +199,8 @@ public class SolarisTexture implements AutoCloseable {
         // terrain most of the time, so this can't be unconditional the way the ceiling check above
         // is — only flip to cave rendering once the player is actually somewhere the surface view
         // wouldn't show anything useful anyway (a mine, a cave, standing under a roof).
-        if (player != null && SolarisConfig.MINIMAP_AUTO_UNDERGROUND.get() && !level.canSeeSky(player.blockPosition())) {
+        if (player != null && SolarisConfig.MINIMAP_AUTO_UNDERGROUND.get() &&
+                !level.canSeeSky(player.blockPosition())) {
             return true;
         }
 

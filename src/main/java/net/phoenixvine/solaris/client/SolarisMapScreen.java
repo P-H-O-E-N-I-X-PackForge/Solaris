@@ -670,12 +670,16 @@ public class SolarisMapScreen extends Screen {
         int frameRight = width - MARGIN;
         int frameTop = MARGIN;
         int frameBottom = height - MARGIN;
-        int gridColor = 0x60000000;
+        int gridColor = 0x80000000;
 
         int chunkMinX = ((int) Math.floor(viewport.toWorldX(frameLeft, 0))) >> 4;
         int chunkMaxX = ((int) Math.floor(viewport.toWorldX(frameRight, 0))) >> 4;
         for (int cx = chunkMinX; cx <= chunkMaxX + 1; cx++) {
-            int sx = (int) viewport.toScreenX(cx << 4, 0);
+            // Round, don't truncate — tile blits elsewhere round the same toScreenX/Y to place
+            // terrain, so truncating just this one layer let it drift up to 1px out of sync with
+            // the terrain underneath it frame-to-frame while panning, reading as the grid
+            // "jiggling" independently of the map instead of panning smoothly together with it.
+            int sx = (int) Math.round(viewport.toScreenX(cx << 4, 0));
             if (sx < frameLeft || sx > frameRight) continue;
             g.fill(sx, frameTop, sx + 1, frameBottom, gridColor);
         }
@@ -683,7 +687,7 @@ public class SolarisMapScreen extends Screen {
         int chunkMinZ = ((int) Math.floor(viewport.toWorldZ(frameTop, 0))) >> 4;
         int chunkMaxZ = ((int) Math.floor(viewport.toWorldZ(frameBottom, 0))) >> 4;
         for (int cz = chunkMinZ; cz <= chunkMaxZ + 1; cz++) {
-            int sy = (int) viewport.toScreenY(cz << 4, 0);
+            int sy = (int) Math.round(viewport.toScreenY(cz << 4, 0));
             if (sy < frameTop || sy > frameBottom) continue;
             g.fill(frameLeft, sy, frameRight, sy + 1, gridColor);
         }
