@@ -249,6 +249,11 @@ public class SolarisDisplaySettingsScreen extends Screen {
                     SolarisConfig.MINIMAP_SHOW_COORDS.save();
                     b.setMessage(minimapCoordsLabel());
                 }).size(colW, 18).build(),
+                Button.builder(minimapTextLabelsLabel(), b -> {
+                    SolarisConfig.MINIMAP_SHOW_TEXT_LABELS.set(!SolarisConfig.MINIMAP_SHOW_TEXT_LABELS.get());
+                    SolarisConfig.MINIMAP_SHOW_TEXT_LABELS.save();
+                    b.setMessage(minimapTextLabelsLabel());
+                }).size(colW, 18).build(),
                 Button.builder(minimapBiomeLabel(), b -> {
                     SolarisConfig.MINIMAP_SHOW_BIOME.set(!SolarisConfig.MINIMAP_SHOW_BIOME.get());
                     SolarisConfig.MINIMAP_SHOW_BIOME.save();
@@ -412,6 +417,11 @@ public class SolarisDisplaySettingsScreen extends Screen {
         return Component.literal("Auto Underground: " + (on ? "ON" : "OFF"));
     }
 
+    private Component minimapTextLabelsLabel() {
+        boolean on = SolarisConfig.MINIMAP_SHOW_TEXT_LABELS.get();
+        return Component.literal(on ? "Text Style: Labeled" : "Text Style: Plain");
+    }
+
     private Component railNetworkLabel() {
         boolean on = SolarisConfig.SHOW_RAIL_NETWORK.get();
         return Component.literal("Rail Lines: " + (on ? "ON" : "OFF"));
@@ -544,6 +554,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
         SolarisConfig.MINIMAP_MAX_WAYPOINTS.save();
         SolarisConfig.MINIMAP_SHOW_WAYPOINT_DIRECTIONS.save();
         SolarisConfig.MINIMAP_AUTO_UNDERGROUND.save();
+        SolarisConfig.MINIMAP_SHOW_TEXT_LABELS.save();
         SolarisConfig.MINIMAP_SIZE.save();
         SolarisConfig.MINIMAP_RADIUS_CHUNKS.save();
         SolarisConfig.UNEXPLORED_STYLE.save();

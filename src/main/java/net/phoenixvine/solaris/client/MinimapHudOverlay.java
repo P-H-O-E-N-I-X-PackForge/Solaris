@@ -319,15 +319,18 @@ public class MinimapHudOverlay {
         boolean showBiome = SolarisConfig.MINIMAP_SHOW_BIOME.get();
         if (!showTime && !showCoords && !showBiome) return;
 
+        boolean withLabels = SolarisConfig.MINIMAP_SHOW_TEXT_LABELS.get();
         int textY = y + screenSize + 7;
         int cx = x + screenSize / 2;
         if (showTime) {
-            g.drawCenteredString(mc.font, "Time: " + formatTime(mc.level.getDayTime()), cx, textY, C_ACCENT);
+            String time = formatTime(mc.level.getDayTime());
+            g.drawCenteredString(mc.font, withLabels ? "Time: " + time : time, cx, textY, C_ACCENT);
             textY += mc.font.lineHeight + 1;
         }
         if (showCoords) {
             BlockPos pos = mc.player.blockPosition();
-            String coords = "x: " + pos.getX() + ", y: " + pos.getY() + ", z: " + pos.getZ();
+            String coords = withLabels ? "x: " + pos.getX() + ", y: " + pos.getY() + ", z: " + pos.getZ() :
+                    pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
             g.drawCenteredString(mc.font, coords, cx, textY, C_ACCENT);
             textY += mc.font.lineHeight + 1;
         }

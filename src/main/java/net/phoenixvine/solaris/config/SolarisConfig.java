@@ -69,6 +69,7 @@ public final class SolarisConfig {
     public static final ForgeConfigSpec.IntValue MINIMAP_MAX_WAYPOINTS;
     public static final ForgeConfigSpec.BooleanValue MINIMAP_SHOW_WAYPOINT_DIRECTIONS;
     public static final ForgeConfigSpec.BooleanValue MINIMAP_AUTO_UNDERGROUND;
+    public static final ForgeConfigSpec.BooleanValue MINIMAP_SHOW_TEXT_LABELS;
     public static final ForgeConfigSpec.BooleanValue SHOW_CLAIMS_MINIMAP;
     public static final ForgeConfigSpec.BooleanValue SHOW_CHUNK_GRID;
     public static final ForgeConfigSpec.DoubleValue NIGHT_MODE_STRENGTH;
@@ -137,6 +138,12 @@ public final class SolarisConfig {
                         "same as it already does unconditionally in ceilinged dimensions like the Nether. " +
                         "Turn off to keep the minimap on the surface render even while underground.")
                 .define("autoUnderground", true);
+        MINIMAP_SHOW_TEXT_LABELS = builder
+                .comment("Prefix the minimap's time/coords lines with their labels (\"Time: 20:13\", " +
+                        "\"x: -219, y: 116, z: -488\") instead of showing just the bare values (\"20:13\", " +
+                        "\"-219, 116, -488\"). Independent of whether time/coords are shown at all " +
+                        "(showTime/showCoords) — this only controls how they're formatted once visible.")
+                .define("showTextLabels", true);
         SHOW_CLAIMS_MINIMAP = builder
                 .comment("Show land-claim boundary overlays (e.g. from Phoenix Domains) on the corner " +
                         "minimap. Independent of the fullscreen map's own claims toggle. On by default, " +
