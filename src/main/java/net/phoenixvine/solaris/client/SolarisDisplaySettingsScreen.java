@@ -368,6 +368,13 @@ public class SolarisDisplaySettingsScreen extends Screen {
                     b.setMessage(deathMarkersLabel());
                 }).size(colW, 18).build(),
 
+                tooltip(Button.builder(structureWaypointsLabel(), b -> {
+                    SolarisConfig.AUTO_STRUCTURE_WAYPOINTS.set(!SolarisConfig.AUTO_STRUCTURE_WAYPOINTS.get());
+                    SolarisConfig.AUTO_STRUCTURE_WAYPOINTS.save();
+                    b.setMessage(structureWaypointsLabel());
+                }).size(colW, 18).build(), "Auto-add a waypoint the first time you enter a generated " +
+                        "structure (village, mineshaft, stronghold, etc.)."),
+
                 Button.builder(planShapesLabel(), b -> {
                     SolarisConfig.SHOW_PLAN_SHAPES.set(!SolarisConfig.SHOW_PLAN_SHAPES.get());
                     SolarisConfig.SHOW_PLAN_SHAPES.save();
@@ -479,6 +486,11 @@ public class SolarisDisplaySettingsScreen extends Screen {
         return Component.literal("Death Markers: " + (on ? "ON" : "OFF"));
     }
 
+    private Component structureWaypointsLabel() {
+        boolean on = SolarisConfig.AUTO_STRUCTURE_WAYPOINTS.get();
+        return Component.literal("Structure Waypoints: " + (on ? "ON" : "OFF"));
+    }
+
     @Override
     public void render(GuiGraphics g, int rawMx, int rawMy, float pt) {
         int mx = Math.round(rawMx / uiScale);
@@ -554,6 +566,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
         SolarisConfig.WAYPOINT_BEAMS.save();
         SolarisConfig.WAYPOINT_COMPASS.save();
         SolarisConfig.DEATH_MARKERS.save();
+        SolarisConfig.AUTO_STRUCTURE_WAYPOINTS.save();
         SolarisConfig.SHOW_PLAN_SHAPES.save();
         SolarisConfig.HILLSHADING.save();
         SolarisConfig.HILLSHADING_STRENGTH.save();
