@@ -432,6 +432,29 @@ public class SolarisMapScreen extends Screen {
         g.pose().popPose();
     }
 
+    /**
+     * Shared by the flat and globe views. GT ore vein markers without a custom icon fall back to
+     * WaypointIconManager's "STAR" shape, which already draws a black outline behind its fill like
+     * every other WaypointIcon shape does — but veins WITH a real item icon rendered straight via
+     * g.renderItem have no outline of their own at all, so a brown ore icon can disappear entirely
+     * against brown/dirt terrain with no way to tell it's even there. The dark backdrop circle here
+     * gives it the same guaranteed contrast regardless of what's underneath, matching the treatment
+     * every other marker on this map already gets.
+     */
+    private static void drawVeinMarker(GuiGraphics g, GtceuIntegration.GtOreVein vein, int vx, int vy, int iconR) {
+        if (vein.icon().isEmpty()) {
+            WaypointIconManager.draw(g, "STAR", vx, vy, iconR, vein.colorArgb());
+            return;
+        }
+        SmoothShapes.drawCircle(g, vx, vy, iconR + 2, 0xE0000000);
+        int itemSize = Math.max(8, iconR * 2);
+        g.pose().pushPose();
+        g.pose().translate(vx - itemSize / 2.0, vy - itemSize / 2.0, 0);
+        g.pose().scale(itemSize / 16f, itemSize / 16f, 1f);
+        g.renderItem(vein.icon(), 0, 0);
+        g.pose().popPose();
+    }
+
     private static final int MOB_ICON_COLOR_HOSTILE = 0xFFCC4444;
     private static final int MOB_ICON_COLOR_PASSIVE = 0xFF55AA55;
 
@@ -834,17 +857,7 @@ public class SolarisMapScreen extends Screen {
                             !insideMapShape(vx, vy)) {
                         continue;
                     }
-                    if (vein.icon().isEmpty()) {
-
-                        WaypointIconManager.draw(g, "STAR", vx, vy, iconR, vein.colorArgb());
-                    } else {
-                        int itemSize = Math.max(8, iconR * 2);
-                        g.pose().pushPose();
-                        g.pose().translate(vx - itemSize / 2.0, vy - itemSize / 2.0, 0);
-                        g.pose().scale(itemSize / 16f, itemSize / 16f, 1f);
-                        g.renderItem(vein.icon(), 0, 0);
-                        g.pose().popPose();
-                    }
+                    drawVeinMarker(g, vein, vx, vy, iconR);
                     if (mx >= vx - iconR && mx <= vx + iconR && my >= vy - iconR && my <= vy + iconR) {
                         hoveredVeinName = vein.name();
                     }
@@ -1182,16 +1195,7 @@ public class SolarisMapScreen extends Screen {
                     GlobeCamera.Projection p = globeCamera.sphereToScreen((float) (vpx / size), (float) (vpz / size),
                             cx, cy);
                     if (!p.frontFacing) continue;
-                    if (vein.icon().isEmpty()) {
-                        WaypointIconManager.draw(g, "STAR", p.screenX, p.screenY, iconR, vein.colorArgb());
-                    } else {
-                        int itemSize = Math.max(8, iconR * 2);
-                        g.pose().pushPose();
-                        g.pose().translate(p.screenX - itemSize / 2.0, p.screenY - itemSize / 2.0, 0);
-                        g.pose().scale(itemSize / 16f, itemSize / 16f, 1f);
-                        g.renderItem(vein.icon(), 0, 0);
-                        g.pose().popPose();
-                    }
+                    drawVeinMarker(g, vein, p.screenX, p.screenY, iconR);
                     if (mx >= p.screenX - iconR && mx <= p.screenX + iconR && my >= p.screenY - iconR &&
                             my <= p.screenY + iconR) {
                         hoveredVeinName = vein.name();

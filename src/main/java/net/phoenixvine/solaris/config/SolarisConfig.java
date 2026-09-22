@@ -46,6 +46,7 @@ public final class SolarisConfig {
     public static final ForgeConfigSpec.IntValue WAYPOINT_BEAM_RANGE;
     public static final ForgeConfigSpec.BooleanValue WAYPOINT_COMPASS;
     public static final ForgeConfigSpec.BooleanValue DEATH_MARKERS;
+    public static final ForgeConfigSpec.BooleanValue AUTO_STRUCTURE_WAYPOINTS;
     public static final ForgeConfigSpec.BooleanValue SHOW_PLAN_SHAPES;
     public static final ForgeConfigSpec.IntValue PLAN_SHAPE_RANGE;
     public static final ForgeConfigSpec.IntValue LIVE_REFRESH_INTERVAL_SECONDS;
@@ -361,6 +362,11 @@ public final class SolarisConfig {
                 .comment("Automatically add a waypoint at your position whenever you die, so you can find " +
                         "your way back to lost items.")
                 .define("deathMarkers", true);
+        AUTO_STRUCTURE_WAYPOINTS = builder
+                .comment("Automatically add a waypoint the first time you set foot in a generated structure " +
+                        "(village, mineshaft, stronghold, etc.). One waypoint per structure instance — " +
+                        "wandering back through the same one later won't add another.")
+                .define("autoStructureWaypoints", true);
         builder.pop();
 
         builder.push("planning");

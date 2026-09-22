@@ -59,5 +59,12 @@ public final class SolarisNetwork {
                 S2CRemoveWaypointPacket::new,
                 S2CRemoveWaypointPacket::handle,
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+
+        CHANNEL.registerMessage(id++,
+                S2CStructureDiscoveredPacket.class,
+                S2CStructureDiscoveredPacket::encode,
+                S2CStructureDiscoveredPacket::new,
+                S2CStructureDiscoveredPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
     }
 }

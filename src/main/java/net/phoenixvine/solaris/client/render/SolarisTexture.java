@@ -92,6 +92,8 @@ public class SolarisTexture implements AutoCloseable {
     private ChunkKey lastCenter;
     private int lastPlayerY = Integer.MIN_VALUE;
     private boolean lastUnderground = false;
+    private boolean pendingUnderground = false;
+    private long pendingUndergroundSince = 0L;
 
     private int seamX;
     private int seamZ;
@@ -208,6 +210,29 @@ public class SolarisTexture implements AutoCloseable {
     }
 
     private static final double NIGHT_FACTOR_BUCKET = 0.05;
+    private static final long UNDERGROUND_DEBOUNCE_MS = 500L;
+
+    // isCaveSliceMode's canSeeSky() check genuinely flickers frame-to-frame for a player moving
+    // under partial cover — tree canopy, machine rooms, scaffolding, glass roofing, all common in
+    // built bases — and maybeRebuild() runs every rendered frame. Without debouncing, each flicker
+    // triggered a full texture rebuild (a spanChunks^2 resample), which is what read as "constant
+    // hitches" using the main map or minimap. Only commit to an underground/surface switch once
+    // the raw value has held steady for UNDERGROUND_DEBOUNCE_MS — same idea as SolarisMapScreen's
+    // stableCaveYBucket hysteresis for the Y-bucket, applied here to the underground/surface flag.
+    private boolean stableUnderground(Level level, Player player) {
+        boolean raw = isCaveSliceMode(level, player);
+        if (raw == lastUnderground) {
+            pendingUnderground = raw;
+            return lastUnderground;
+        }
+        long now = System.currentTimeMillis();
+        if (raw != pendingUnderground) {
+            pendingUnderground = raw;
+            pendingUndergroundSince = now;
+            return lastUnderground;
+        }
+        return now - pendingUndergroundSince >= UNDERGROUND_DEBOUNCE_MS ? raw : lastUnderground;
+    }
 
     public void maybeRebuild(ChunkKey center) {
         Minecraft mc = Minecraft.getInstance();
@@ -215,7 +240,7 @@ public class SolarisTexture implements AutoCloseable {
         Level level = mc.level;
 
         int playerY = player != null ? Mth.floor(player.getY()) : 0;
-        boolean underground = isCaveSliceMode(level, player);
+        boolean underground = stableUnderground(level, player);
 
         boolean centerChanged = !center.equals(lastCenter);
         boolean caveStale = underground &&
