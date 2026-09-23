@@ -27,6 +27,8 @@ public class PhoenixSolarisClient {
         modEventBus.addListener((ModConfigEvent.Loading event) -> onConfigChanged(event));
         modEventBus.addListener(PhoenixSolarisClient::clientSetup);
 
+        PhoenixTheme.registerMod("net.phoenixvine.solaris", PhoenixSolaris.MOD_ID);
+
         PhoenixTheme.addChangeListener(PhoenixSolarisClient::onThemeChanged);
     }
 

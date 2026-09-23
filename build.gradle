@@ -60,6 +60,10 @@ repositories {
         }
     }
     maven {
+        name = "Repsy"
+        url = uri("https://repo.repsy.io/mvn/user75142941/phoenixsuite")
+    }
+    maven {
 
         name = 'LatvianModder'
         url = 'https://maven.latvian.dev/releases'
@@ -128,10 +132,10 @@ dependencies {
     modCompileOnly("com.gregtechceu.gtceu:gtceu-${minecraft_version}:${gtceu_version}:slim") { transitive = false }
     modRuntimeOnly("com.gregtechceu.gtceu:gtceu-${minecraft_version}:${gtceu_version}:slim") { transitive = false }
 
-    modCompileOnly('curse.maven:phoenix-guilds-1612085:8743646')
-    modRuntimeOnly('curse.maven:phoenix-guilds-1612085:8743646')
+    modCompileOnly('net.phoenixvine.guilds:phoenix_guilds:1.6.3')
+    modRuntimeOnly('net.phoenixvine.guilds:phoenix_guilds:1.6.3')
 
-    modImplementation("curse.maven:phoenixwiki-1647798:8806638")
+    jarJar(modImplementation("net.phoenixvine.wiki:phoenix_wiki:0.4.8"))
 
     modCompileOnly("maven.modrinth:framedblocks:9.4.3") { transitive = false }
     modRuntimeOnly("maven.modrinth:framedblocks:9.4.3") { transitive = false }
@@ -182,4 +186,24 @@ tasks.register('publishToDomains', Copy) {
         exclude '*-sources.jar'
     }
     into '../Phoenix-Domains/libs'
+}
+
+
+publishing {
+    publications {
+        create('mavenJava', MavenPublication) {
+            artifactId = base.archivesName.get()
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            name = "Repsy"
+            url = uri("https://repo.repsy.io/mvn/user75142941/phoenixsuite")
+            credentials {
+                username = project.findProperty("repsyUsername") ?: System.getenv("REPSY_USERNAME")
+                password = project.findProperty("repsyPassword") ?: System.getenv("REPSY_PASSWORD")
+            }
+        }
+    }
 }
