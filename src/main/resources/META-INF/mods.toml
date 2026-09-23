@@ -28,12 +28,6 @@ issueTrackerURL="https://github.com/Omicron-Industries/Solaris/issues" #optional
         ordering = "NONE"
         side = "BOTH"
     [[dependencies.${mod_id}]]
-        modId = "phoenix_wiki"
-        mandatory = true
-        versionRange = "[0,)"
-        ordering = "AFTER"
-        side = "CLIENT"
-    [[dependencies.${mod_id}]]
         modId = "gtceu"
         mandatory = false
         versionRange = "[0,)"
@@ -63,3 +57,9 @@ issueTrackerURL="https://github.com/Omicron-Industries/Solaris/issues" #optional
         versionRange = "[0,)"
         ordering = "AFTER"
         side = "CLIENT"
+    [[dependencies.${mod_id}]]
+        modId="phoenix_wiki"
+        mandatory=true
+        versionRange="[0.4.7,)"
+        ordering="NONE"
+        side="BOTH"
