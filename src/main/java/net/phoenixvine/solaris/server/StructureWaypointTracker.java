@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -59,28 +60,34 @@ public final class StructureWaypointTracker {
         LAST_CHECKED_CHUNK.put(id, chunkPos);
 
         StructureManager structureManager = player.serverLevel().structureManager();
-        Map<Structure, LongSet> structures = structureManager.getAllStructuresAt(pos);
-        if (structures.isEmpty()) return;
+        // getAllStructuresAt is chunk-reference based — it flags every chunk Minecraft recorded as
+        // "belonging to" a structure during generation, which is a coarser area than where the
+        // structure's pieces were actually placed (can include chunks alongside/between pieces
+        // with nothing in them). Used here only as a cheap pre-filter; getStructureWithPieceAt
+        // below does the real check, confirming pos falls inside one of the structure's actual
+        // generated piece bounding boxes before anything gets announced.
+        Map<Structure, LongSet> candidates = structureManager.getAllStructuresAt(pos);
+        if (candidates.isEmpty()) return;
 
         StructureWaypointData data = StructureWaypointData.get(player.getServer().overworld());
         ResourceLocation dimension = player.level().dimension().location();
 
-        for (Map.Entry<Structure, LongSet> entry : structures.entrySet()) {
-            LongSet chunks = entry.getValue();
-            if (chunks.isEmpty()) continue;
+        for (Structure structure : candidates.keySet()) {
+            StructureStart start = structureManager.getStructureWithPieceAt(pos, structure);
+            if (!start.isValid()) continue;
 
-            long instanceChunk = chunks.longStream().min().orElseThrow();
             ResourceLocation structureId = player.level().registryAccess().registryOrThrow(Registries.STRUCTURE)
-                    .getKey(entry.getKey());
+                    .getKey(structure);
             if (structureId == null) continue;
 
-            String key = dimension + "|" + structureId + "|" + instanceChunk;
+            ChunkPos originChunk = start.getChunkPos();
+            String key = dimension + "|" + structureId + "|" + originChunk.toLong();
             if (!data.markDiscovered(id, key)) continue;
 
-            ChunkPos originChunk = new ChunkPos(instanceChunk);
+            BlockPos center = start.getBoundingBox().getCenter();
             SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
                     new S2CStructureDiscoveredPacket(displayName(structureId), dimension.toString(),
-                            originChunk.getMiddleBlockX(), pos.getY(), originChunk.getMiddleBlockZ()));
+                            center.getX(), pos.getY(), center.getZ()));
         }
     }
 
