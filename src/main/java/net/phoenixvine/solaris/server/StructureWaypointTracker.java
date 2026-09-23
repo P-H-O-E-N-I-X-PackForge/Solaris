@@ -19,7 +19,6 @@ import net.phoenixvine.solaris.network.SolarisNetwork;
 import it.unimi.dsi.fastutil.longs.LongSet;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -29,10 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * this only ever runs on a logical server; single-player still goes through here via the
  * integrated server.
  * <p>
- * Discovery state is in-memory only, not persisted — a server restart (or the player relogging
- * after one) resets what's "already seen", so a structure could get re-announced once. Chosen
- * over adding a new persistence layer to keep this feature's first version reasonably scoped;
- * worth revisiting if that turns out to matter in practice.
+ * Discovery state persists via StructureWaypointData (a SavedData attached to the overworld), so
+ * a server restart or the player relogging doesn't re-announce a structure they've already found.
  */
 @Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class StructureWaypointTracker {
@@ -41,9 +38,10 @@ public final class StructureWaypointTracker {
 
     // Structure lookups (reading each overlapping chunk's structure references) aren't free, so
     // this only re-checks when the player has actually moved to a different chunk since the last
-    // check, on top of the tick-interval throttle below.
+    // check, on top of the tick-interval throttle below. Fine to keep this part in-memory only —
+    // worst case after a restart is one redundant re-check, not a re-announced waypoint (that's
+    // what StructureWaypointData's persisted dedup actually guards against).
     private static final Map<UUID, ChunkPos> LAST_CHECKED_CHUNK = new ConcurrentHashMap<>();
-    private static final Map<UUID, Set<String>> DISCOVERED = new ConcurrentHashMap<>();
 
     private StructureWaypointTracker() {}
 
@@ -64,7 +62,7 @@ public final class StructureWaypointTracker {
         Map<Structure, LongSet> structures = structureManager.getAllStructuresAt(pos);
         if (structures.isEmpty()) return;
 
-        Set<String> seen = DISCOVERED.computeIfAbsent(id, k -> ConcurrentHashMap.newKeySet());
+        StructureWaypointData data = StructureWaypointData.get(player.getServer().overworld());
         ResourceLocation dimension = player.level().dimension().location();
 
         for (Map.Entry<Structure, LongSet> entry : structures.entrySet()) {
@@ -77,7 +75,7 @@ public final class StructureWaypointTracker {
             if (structureId == null) continue;
 
             String key = dimension + "|" + structureId + "|" + instanceChunk;
-            if (!seen.add(key)) continue;
+            if (!data.markDiscovered(id, key)) continue;
 
             ChunkPos originChunk = new ChunkPos(instanceChunk);
             SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
