@@ -135,7 +135,7 @@ dependencies {
     modCompileOnly('net.phoenixvine.guilds:phoenix_guilds:1.6.3')
     modRuntimeOnly('net.phoenixvine.guilds:phoenix_guilds:1.6.3')
 
-    jarJar(modImplementation("net.phoenixvine.wiki:phoenix_wiki:0.4.8"))
+    modImplementation("net.phoenixvine.wiki:phoenix_wiki:0.4.8")
 
     modCompileOnly("maven.modrinth:framedblocks:9.4.3") { transitive = false }
     modRuntimeOnly("maven.modrinth:framedblocks:9.4.3") { transitive = false }
