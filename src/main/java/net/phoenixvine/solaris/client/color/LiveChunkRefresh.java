@@ -42,6 +42,16 @@ public final class LiveChunkRefresh {
     private static final Deque<ChunkKey> PENDING_SWEEP = new ArrayDeque<>();
     private static boolean sweepRefreshedAny = false;
 
+    // saveDirtyAsync() re-serializes and gzips every persisted chunk for a dimension (thousands
+    // of entries, not just the ones that changed) whenever any dimension is dirty. While
+    // actively exploring, new chunks get marked dirty faster than that finishes, so calling it
+    // every tick meant a full-dataset resave landing back-to-back every 1-3 seconds in practice
+    // (confirmed via repeated "Saved N persisted chunk(s)" log lines) — real CPU/GC cost that
+    // was showing up as renderFlatMapTiles spikes on the render thread. Flushing on an interval
+    // instead of every tick cuts that from "almost continuous" to a bounded cadence.
+    private static final int SAVE_INTERVAL_TICKS = 200;
+    private static int saveTickCounter = 0;
+
     private LiveChunkRefresh() {}
 
     @SubscribeEvent
@@ -74,8 +84,11 @@ public final class LiveChunkRefresh {
             }
         }
 
-        PersistentChunkStore.saveDirtyAsync();
-        PersistentCaveStore.saveDirtyAsync();
+        if (++saveTickCounter >= SAVE_INTERVAL_TICKS) {
+            saveTickCounter = 0;
+            PersistentChunkStore.saveDirtyAsync();
+            PersistentCaveStore.saveDirtyAsync();
+        }
     }
 
     private static void enqueueSweep(Level level, LocalPlayer player) {
