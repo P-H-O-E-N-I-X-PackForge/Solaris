@@ -32,12 +32,6 @@ public class PhoenixSolaris {
 
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> PhoenixSolarisClient.init(modEventBus));
 
-        // Everything that actually needs the server (structure waypoints, waypoint sharing, the
-        // feature-state gating system) just silently does nothing without it — getFeatureState
-        // defaults to ENABLED when no sync has ever been received, so the map/minimap/waypoints
-        // all work normally. Without this, Forge's default mod-list handshake would refuse to let
-        // a Solaris client even connect to a server that doesn't have Solaris installed at all,
-        // which defeats the entire point of being usable as "just a client-side map mod."
         ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class,
                 () -> new IExtensionPoint.DisplayTest(() -> NetworkConstants.IGNORESERVERONLY,
                         (remote, isServer) -> true));

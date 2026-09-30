@@ -701,19 +701,6 @@ public final class MapTileCache {
         }
     }
 
-    // Two-pass separable box blur (horizontal sliding-window sum, then vertical) instead of the
-    // previous full (2*radius+1)^2 convolution per water pixel — at radius 3 that was 49 samples
-    // (each a NativeImage read) per water pixel, and since an LOD change during zoom invalidates
-    // every visible tile's TileKey at once, every ocean-heavy tile among them paid that quadratic
-    // cost simultaneously on the render thread — read as "a lot of lag" while zooming. Same
-    // rolling-sum technique SolarisTexture.blurWater already uses for its own (larger) buffer;
-    // this just brings the per-tile version up to the same complexity. A 2D box sum decomposes
-    // exactly into a horizontal window-sum pass followed by a vertical window-sum pass over those
-    // row sums, so this produces the same averages as the old convolution (edge handling differs
-    // slightly: out-of-tile neighbors are now excluded from the count instead of clamp-sampling
-    // the boundary pixel repeatedly, which only affects the outermost `radius` pixels of a tile
-    // and was never anything but a same-tile clamp to begin with — neither version ever blurred
-    // using a neighboring tile's actual water color).
     private static void blurWater(NativeImage image, boolean[] water) {
         int radius = SolarisTexture.WATER_BLUR_RADIUS;
 

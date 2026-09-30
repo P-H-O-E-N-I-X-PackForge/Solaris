@@ -6,8 +6,6 @@ public final class ModernPanel {
 
     private static final int THICKNESS = 2;
 
-    // How far each edge's channel shifts toward white (top/left) or black (bottom/right), giving
-    // the thick flat border a subtle raised bevel instead of reading as a single flat-color block.
     public static final int SHADE_AMOUNT = 28;
 
     private ModernPanel() {}

@@ -13,12 +13,6 @@ import net.phoenixvine.solaris.client.waypoint.WaypointManager;
 
 import java.util.function.Supplier;
 
-/**
- * Sent when the server (StructureWaypointTracker) detects a player has entered a generated
- * structure it hasn't already flagged a waypoint for. Client just needs to drop a Waypoint and
- * announce it — structure detection/dedup is entirely server-side, this is a fire-and-forget
- * "here's a discovery, make a waypoint" instruction with no reply expected.
- */
 public class S2CStructureDiscoveredPacket {
 
     private static final String STRUCTURE_COLOR = "FFC880";

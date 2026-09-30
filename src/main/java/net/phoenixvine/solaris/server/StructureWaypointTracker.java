@@ -23,25 +23,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Auto-waypoints structures as players walk into them. Detection lives server-side (structure
- * reference data isn't synced to the client at all — ClientLevel has no structure manager), so
- * this only ever runs on a logical server; single-player still goes through here via the
- * integrated server.
- * <p>
- * Discovery state persists via StructureWaypointData (a SavedData attached to the overworld), so
- * a server restart or the player relogging doesn't re-announce a structure they've already found.
- */
 @Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class StructureWaypointTracker {
 
     private static final int CHECK_INTERVAL_TICKS = 20;
 
-    // Structure lookups (reading each overlapping chunk's structure references) aren't free, so
-    // this only re-checks when the player has actually moved to a different chunk since the last
-    // check, on top of the tick-interval throttle below. Fine to keep this part in-memory only —
-    // worst case after a restart is one redundant re-check, not a re-announced waypoint (that's
-    // what StructureWaypointData's persisted dedup actually guards against).
     private static final Map<UUID, ChunkPos> LAST_CHECKED_CHUNK = new ConcurrentHashMap<>();
 
     private StructureWaypointTracker() {}
@@ -60,12 +46,7 @@ public final class StructureWaypointTracker {
         LAST_CHECKED_CHUNK.put(id, chunkPos);
 
         StructureManager structureManager = player.serverLevel().structureManager();
-        // getAllStructuresAt is chunk-reference based — it flags every chunk Minecraft recorded as
-        // "belonging to" a structure during generation, which is a coarser area than where the
-        // structure's pieces were actually placed (can include chunks alongside/between pieces
-        // with nothing in them). Used here only as a cheap pre-filter; getStructureWithPieceAt
-        // below does the real check, confirming pos falls inside one of the structure's actual
-        // generated piece bounding boxes before anything gets announced.
+
         Map<Structure, LongSet> candidates = structureManager.getAllStructuresAt(pos);
         if (candidates.isEmpty()) return;
 
@@ -91,7 +72,6 @@ public final class StructureWaypointTracker {
         }
     }
 
-    /** "village_plains" -> "Village Plains" — structures have no standard translation namespace. */
     private static String displayName(ResourceLocation structureId) {
         String[] words = structureId.getPath().split("_");
         StringBuilder sb = new StringBuilder();

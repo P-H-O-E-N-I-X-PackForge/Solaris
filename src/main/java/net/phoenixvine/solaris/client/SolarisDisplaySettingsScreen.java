@@ -93,10 +93,6 @@ public class SolarisDisplaySettingsScreen extends Screen {
         return currentY[0];
     }
 
-    // AbstractWidget.setTooltip renders automatically on hover once set (Screen already forwards
-    // mouseX/mouseY to every renderable widget each frame) — no extra render-loop code needed.
-    // Returns the widget so it can wrap a Button.builder(...).build() call inline in the
-    // placeWidgetsFluidly(...) varargs lists below instead of needing a local variable per button.
     private static AbstractWidget tooltip(AbstractWidget widget, String text) {
         widget.setTooltip(Tooltip.create(Component.literal(text)));
         return widget;
@@ -237,7 +233,6 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
         int colW = availableW > 250 ? (availableW - gap) / 2 : availableW;
 
-        // See initWaypointsTab's matching comment — same missing breathing room under the header.
         cursorY[0] += HEADING_H;
 
         placeWidgetsFluidly(startX, cursorY[0], availableW, cursorY, gap,
@@ -325,7 +320,6 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
         int colW = availableW > 250 ? (availableW - gap) / 2 : availableW;
 
-        // See initWaypointsTab's matching comment — same missing breathing room under the header.
         cursorY[0] += HEADING_H;
 
         placeWidgetsFluidly(startX, cursorY[0], availableW, cursorY, gap,
@@ -344,9 +338,6 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
         int colW = availableW > 250 ? (availableW - gap) / 2 : availableW;
 
-        // initDisplayTab reserves HEADING_H before its first row too, but for its own group
-        // heading text — this tab has no heading to draw, yet still needs that same breathing
-        // room under the header's bottom divider line, or its first row sits right up against it.
         cursorY[0] += HEADING_H;
 
         placeWidgetsFluidly(startX, cursorY[0], availableW, cursorY, gap,

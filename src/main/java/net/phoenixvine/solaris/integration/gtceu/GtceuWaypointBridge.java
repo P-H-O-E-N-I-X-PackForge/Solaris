@@ -29,10 +29,6 @@ final class GtceuWaypointBridge {
         }
     }
 
-    // WaypointManager.active is private with no setter. A mixin-based static @Accessor was tried
-    // here previously but its transform never actually landed (the interface's placeholder body
-    // kept executing at runtime, throwing AssertionError) - reflection is the reliable option for
-    // a single private static field.
     private static void setActive(boolean active) throws ReflectiveOperationException {
         Field field = WaypointManager.class.getDeclaredField("active");
         field.setAccessible(true);

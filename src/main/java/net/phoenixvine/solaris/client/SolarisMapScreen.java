@@ -114,12 +114,6 @@ public class SolarisMapScreen extends Screen {
     private final List<int[]> lineDrawPoints = new ArrayList<>();
     private boolean hasPlayerMarker = false;
 
-    // entitiesForRendering() and GtceuIntegration.getVeinsInArea() were both being called fresh on
-    // every render() call (i.e. every rendered frame, not every game tick) with no caching, even
-    // though what's actually nearby doesn't change meaningfully at anything close to render
-    // framerate. Screen positions still get recomputed every frame from these cached lists (below,
-    // in renderFlatMap/renderGlobeMap), so panning/zooming and mob movement stay smooth — only the
-    // "what mobs/veins currently exist nearby" scan itself is throttled.
     private static final long WORLD_MARKER_REFRESH_MS = 150L;
     private long lastWorldMarkerRefreshMillis = 0L;
     private final List<Mob> cachedMobs = new ArrayList<>();
@@ -185,17 +179,7 @@ public class SolarisMapScreen extends Screen {
             anchorChunkX = blockPos.getX() >> 4;
             anchorChunkZ = blockPos.getZ() >> 4;
             centerKey = ChunkKey.of(mc.level, new ChunkPos(anchorChunkX, anchorChunkZ));
-            // tex ("map") backs the globe view only — rebuilding it here ran unconditionally on
-            // every fullscreen map open regardless of flat/globe mode, a 95ms+ synchronous stall
-            // (2401 chunks at the default map radius) entirely wasted on anyone who never opens
-            // globe view. renderGlobeMap already calls maybeRebuild itself the moment globe mode
-            // is actually used, so this eager call just duplicated that lazily-paid cost for free.
 
-            // Dimensions with a ceiling (the Nether) have no real "surface" to render a flat map
-            // of — ChunkColorEvents skips writing surface data for them entirely — so default to
-            // the cave/underground view on open instead of showing an empty flat map. Only applies
-            // on open, not every frame, so manually switching back to the flat view still works
-            // for the rest of the session.
             undergroundView = mc.level.dimensionType().hasCeiling();
 
             hasPlayerMarker = true;
@@ -447,15 +431,6 @@ public class SolarisMapScreen extends Screen {
         g.pose().popPose();
     }
 
-    /**
-     * Shared by the flat and globe views. GT ore vein markers without a custom icon fall back to
-     * WaypointIconManager's "STAR" shape, which already draws a black outline behind its fill like
-     * every other WaypointIcon shape does — but veins WITH a real item icon rendered straight via
-     * g.renderItem have no outline of their own at all, so a brown ore icon can disappear entirely
-     * against brown/dirt terrain with no way to tell it's even there. The dark backdrop circle here
-     * gives it the same guaranteed contrast regardless of what's underneath, matching the treatment
-     * every other marker on this map already gets.
-     */
     private static void drawVeinMarker(GuiGraphics g, GtceuIntegration.GtOreVein vein, int vx, int vy, int iconR) {
         if (vein.icon().isEmpty()) {
             WaypointIconManager.draw(g, "STAR", vx, vy, iconR, vein.colorArgb());
@@ -738,12 +713,6 @@ public class SolarisMapScreen extends Screen {
         g.drawString(font, label, x, y + 7, C_TEXT, true);
     }
 
-    // "Show up to 200, die past that" refers to the scale bar's own reading (drawScaleBar: blocks
-    // = 60/zoom), not the raw zoom multiplier — the scale bar's number goes UP as you zoom OUT, so
-    // "die past 200" means hide once you're zoomed out far enough that the scale bar would read
-    // more than 200 blocks, i.e. zoom < 60/200. The previous version of this check used a literal
-    // zoom > 200 (basically unreachable at any normal zoom level, so the grid never actually died)
-    // in the opposite direction entirely — dying at extreme zoom-IN instead of extreme zoom-OUT.
     private static final float CHUNK_GRID_MIN_ZOOM = 60f / 200f;
 
     private void drawChunkGridWorld(GuiGraphics g) {
@@ -758,10 +727,7 @@ public class SolarisMapScreen extends Screen {
         int chunkMinX = ((int) Math.floor(viewport.toWorldX(frameLeft, 0))) >> 4;
         int chunkMaxX = ((int) Math.floor(viewport.toWorldX(frameRight, 0))) >> 4;
         for (int cx = chunkMinX; cx <= chunkMaxX + 1; cx++) {
-            // Round, don't truncate — tile blits elsewhere round the same toScreenX/Y to place
-            // terrain, so truncating just this one layer let it drift up to 1px out of sync with
-            // the terrain underneath it frame-to-frame while panning, reading as the grid
-            // "jiggling" independently of the map instead of panning smoothly together with it.
+
             int sx = (int) Math.round(viewport.toScreenX(cx << 4, 0));
             if (sx < frameLeft || sx > frameRight) continue;
             g.fill(sx, frameTop, sx + 1, frameBottom, gridColor);

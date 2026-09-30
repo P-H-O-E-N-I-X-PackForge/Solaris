@@ -134,19 +134,9 @@ public final class PersistentChunkStore {
         String worldKey = WaypointManager.currentWorldKey();
         if (worldKey == null || DIRTY_DIMENSIONS.isEmpty()) return;
 
-        // A dimension stays dirty (and is simply retried next tick) if a write for it is
-        // already in flight, rather than being resubmitted immediately. Without this guard,
-        // continuous dirtying (e.g. during a live chunk resample sweep) queues a fresh
-        // writeDimension task every tick faster than the io pool can finish them, and since
-        // they all target the same "<dimension>.dat.tmp" path, overlapping writers race on
-        // that file and move/rename each other's temp files out from under themselves
-        // (AccessDeniedException/NoSuchFileException), while the pile-up of concurrent
-        // full-dimension serializations also drives heavy allocation/GC pressure.
         List<String> toSave = new ArrayList<>(DIRTY_DIMENSIONS);
         for (String dimension : toSave) {
-            // Also wait out an in-flight initial load: readDimension holds the file open for
-            // its whole read, and a concurrent move-onto-target from writeDimension can lose
-            // that race on Windows (AccessDeniedException/NoSuchFileException).
+
             if (LOADING.contains(dimension)) continue;
             if (!SAVING.add(dimension)) continue;
             DIRTY_DIMENSIONS.remove(dimension);
@@ -181,11 +171,7 @@ public final class PersistentChunkStore {
 
         Util.ioPool().execute(() -> {
             ConcurrentHashMap<ChunkKey, Entry> loaded = readDimension(worldKey, dimension);
-            // put() below can create a placeholder map for this dimension (via computeIfAbsent)
-            // and start accumulating freshly-resampled chunks into it before this disk read
-            // finishes. Merge instead of overwriting so those chunks aren't silently discarded
-            // once the read completes - they're strictly fresher than whatever's on disk, so
-            // they win on key collisions.
+
             DIMENSIONS.merge(dimension, loaded, (existing, justLoaded) -> {
                 for (Map.Entry<ChunkKey, Entry> e : justLoaded.entrySet()) {
                     existing.putIfAbsent(e.getKey(), e.getValue());

@@ -10,14 +10,6 @@ import net.minecraftforge.fml.ModList;
 
 import java.util.List;
 
-// Deliberately free of any direct or fully-qualified reference to a com.gregtechceu.gtceu.* type
-// — see GtceuWaypointBridge's doc for why. isAvailable() runs unconditionally every client tick
-// from the moment the game starts, on instances with and without GTCEu installed alike, so this
-// class must stay loadable (and verifiable) with GTCEu completely absent. GtVeinRegistry (used
-// below by getVeinsInArea) DOES reference GTCEu types directly, same as GtceuWaypointBridge does —
-// but unlike this class, it's never touched by anything that runs unconditionally: it's only
-// reached from SolarisMapScreen's already-isAvailable()-gated, already-try/catch(Throwable)-wrapped
-// ore-vein rendering path, so loading it can't crash an instance that never gets that far.
 public final class GtceuIntegration {
 
     public static final String GTCEU_MOD_ID = "gtceu";

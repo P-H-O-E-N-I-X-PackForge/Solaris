@@ -198,10 +198,6 @@ public class SolarisTexture implements AutoCloseable {
 
         if (level.dimensionType().hasCeiling()) return true;
 
-        // Dimensions without a ceiling (the overworld, most modded dims) still have real "surface"
-        // terrain most of the time, so this can't be unconditional the way the ceiling check above
-        // is — only flip to cave rendering once the player is actually somewhere the surface view
-        // wouldn't show anything useful anyway (a mine, a cave, standing under a roof).
         if (player != null && SolarisConfig.MINIMAP_AUTO_UNDERGROUND.get() &&
                 !level.canSeeSky(player.blockPosition())) {
             return true;
@@ -213,13 +209,6 @@ public class SolarisTexture implements AutoCloseable {
     private static final double NIGHT_FACTOR_BUCKET = 0.05;
     private static final long UNDERGROUND_DEBOUNCE_MS = 500L;
 
-    // isCaveSliceMode's canSeeSky() check genuinely flickers frame-to-frame for a player moving
-    // under partial cover — tree canopy, machine rooms, scaffolding, glass roofing, all common in
-    // built bases — and maybeRebuild() runs every rendered frame. Without debouncing, each flicker
-    // triggered a full texture rebuild (a spanChunks^2 resample), which is what read as "constant
-    // hitches" using the main map or minimap. Only commit to an underground/surface switch once
-    // the raw value has held steady for UNDERGROUND_DEBOUNCE_MS — same idea as SolarisMapScreen's
-    // stableCaveYBucket hysteresis for the Y-bucket, applied here to the underground/surface flag.
     private boolean stableUnderground(Level level, Player player) {
         boolean raw = isCaveSliceMode(level, player);
         if (raw == lastUnderground) {
@@ -235,12 +224,6 @@ public class SolarisTexture implements AutoCloseable {
         return now - pendingUndergroundSince >= UNDERGROUND_DEBOUNCE_MS ? raw : lastUnderground;
     }
 
-    // maybeRebuild is called from a render callback (onRenderHud), which fires every rendered
-    // frame — at 100-500fps that's the same "should I rebuild?" check running far more often than
-    // it could ever produce a different answer, since world state (chunk position, sky visibility,
-    // day time) only actually changes at tick rate (20/sec). canSeeSky() specifically is a real
-    // light-engine query, not free. Gate the whole check to at most once per tick so a high
-    // framerate doesn't multiply this cost for no benefit.
     private static final long MAYBE_REBUILD_CHECK_INTERVAL_MS = 50L;
 
     public void maybeRebuild(ChunkKey center) {

@@ -13,12 +13,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Persists which structure instances StructureWaypointTracker has already announced to each
- * player, so a server restart (or the player relogging after one) doesn't re-announce a village
- * they found a week ago. Same SavedData pattern as SolarisFeatureStateData — attached to the
- * overworld, saves/loads automatically with the world.
- */
 public class StructureWaypointData extends SavedData {
 
     private static final String SAVE_KEY = "solaris_structure_waypoints";
@@ -65,7 +59,6 @@ public class StructureWaypointData extends SavedData {
         return discovered != null && discovered.contains(structureInstanceKey);
     }
 
-    /** Returns true if this was newly recorded (false if the player had already discovered it). */
     public boolean markDiscovered(UUID player, String structureInstanceKey) {
         boolean added = discoveredByPlayer.computeIfAbsent(player, p -> new LinkedHashSet<>())
                 .add(structureInstanceKey);
