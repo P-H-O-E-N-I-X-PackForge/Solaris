@@ -5,8 +5,7 @@
   "minVersion": "0.8",
   "plugin": "net.phoenixvine.solaris.mixin.SolarisMixinPlugin",
   "mixins": [
-    "DummyMixin",
-    "gtceu.WaypointManagerAccessor"
+    "DummyMixin"
   ],
   "client": [
     "gtceu.GTClientCacheMixin"
