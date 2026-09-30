@@ -33,16 +33,11 @@ repositories {
         }
     }
     maven {
-        // Curse Forge File
-        url "https://cursemaven.com/"
+        name = 'ModMaven (AE2)'
+        url = 'https://modmaven.dev'
         content {
-            includeGroup "curse.maven"
+            includeGroup 'appeng'
         }
-    }
-
-    flatDir {
-
-        dir 'libs'
     }
     maven {
         name = 'Modrinth Maven'
@@ -52,7 +47,36 @@ repositories {
         }
     }
     maven {
-
+        name = 'TerraformersMC'
+        url = 'https://maven.terraformersmc.com/'
+    }
+    maven {
+        name = 'FirstDarkDev'
+        url = 'https://maven.firstdark.dev/snapshots/'
+    }
+    maven {
+        name = 'tterrag'
+        url = 'https://maven.tterrag.com/'
+        content {
+            includeGroup 'com.tterrag.registrate'
+        }
+    }
+    maven {
+        name = 'BlameJared'
+        url = 'https://maven.blamejared.com/'
+    }
+    maven {
+        name = 'IllusiveC4'
+        url = 'https://maven.theillusivec4.top/'
+    }
+    maven {
+        name = 'CurseMaven'
+        url = 'https://cursemaven.com/'
+        content {
+            includeGroup 'curse.maven'
+        }
+    }
+    maven {
         name = 'LDTTeam Maven'
         url = 'https://ldtteam.jfrog.io/ldtteam/mods-maven'
         content {
@@ -60,16 +84,26 @@ repositories {
         }
     }
     maven {
-        name = "Repsy"
-        url = uri("https://repo.repsy.io/mvn/user75142941/phoenixsuite")
+        name = 'Repsy'
+        url = uri('https://repo.repsy.io/mvn/user75142941/phoenixsuite')
     }
     maven {
-
         name = 'LatvianModder'
         url = 'https://maven.latvian.dev/releases'
         content {
             includeGroup 'dev.latvian.mods'
         }
+    }
+    maven {
+        name = 'KotlinForForge'
+        url = 'https://thedarkcolour.github.io/KotlinForForge/'
+    }
+    maven {
+        name = 'GeckoLib'
+        url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+    }
+    flatDir {
+        dir 'libs'
     }
 }
 
@@ -129,13 +163,23 @@ dependencies {
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
+
+    modCompileOnly("com.lowdragmc.ldlib:ldlib-forge-${minecraft_version}:${ldlib_version}") { transitive = false }
+    modRuntimeOnly("com.lowdragmc.ldlib:ldlib-forge-${minecraft_version}:${ldlib_version}") { transitive = false }
     modCompileOnly("com.gregtechceu.gtceu:gtceu-${minecraft_version}:${gtceu_version}:slim") { transitive = false }
+    modCompileOnly("com.tterrag.registrate:Registrate:${registrate_version}")
+    modCompileOnly("dev.toma.configuration:configuration-forge-${minecraft_version}:${configuration_version}")
     modRuntimeOnly("com.gregtechceu.gtceu:gtceu-${minecraft_version}:${gtceu_version}:slim") { transitive = false }
+    modRuntimeOnly("com.tterrag.registrate:Registrate:${registrate_version}")
+    modRuntimeOnly("dev.toma.configuration:configuration-forge-${minecraft_version}:${configuration_version}")
+
+    modCompileOnly("curse.maven:create-328085:${create_file_id}") { transitive = false }
+    modRuntimeOnly("curse.maven:create-328085:${create_file_id}") { transitive = false }
 
     modCompileOnly('net.phoenixvine.guilds:phoenix_guilds:1.6.3')
     modRuntimeOnly('net.phoenixvine.guilds:phoenix_guilds:1.6.3')
 
-    modImplementation("net.phoenixvine.wiki:phoenix_wiki:0.4.8")
+    modImplementation("net.phoenixvine.wiki:phoenix_wiki:0.5.5")
 
     modCompileOnly("maven.modrinth:framedblocks:9.4.3") { transitive = false }
     modRuntimeOnly("maven.modrinth:framedblocks:9.4.3") { transitive = false }
