@@ -82,6 +82,8 @@ public final class PersistentCaveStore {
         // "<dimension>.dat.tmp" path.
         List<String> toSave = new ArrayList<>(DIRTY_DIMENSIONS);
         for (String dimension : toSave) {
+            // See PersistentChunkStore.saveDirtyAsync: wait out an in-flight initial load too.
+            if (LOADING.contains(dimension)) continue;
             if (!SAVING.add(dimension)) continue;
             DIRTY_DIMENSIONS.remove(dimension);
             ConcurrentHashMap<CaveKey, Entry> chunks = DIMENSIONS.get(dimension);
@@ -115,7 +117,14 @@ public final class PersistentCaveStore {
 
         Util.ioPool().execute(() -> {
             ConcurrentHashMap<CaveKey, Entry> loaded = readDimension(worldKey, dimension);
-            DIMENSIONS.put(dimension, loaded);
+            // See PersistentChunkStore.ensureLoading: merge instead of overwriting so chunks
+            // resampled into the placeholder map while this disk read was in flight aren't lost.
+            DIMENSIONS.merge(dimension, loaded, (existing, justLoaded) -> {
+                for (Map.Entry<CaveKey, Entry> e : justLoaded.entrySet()) {
+                    existing.putIfAbsent(e.getKey(), e.getValue());
+                }
+                return existing;
+            });
             LOADING.remove(dimension);
         });
     }

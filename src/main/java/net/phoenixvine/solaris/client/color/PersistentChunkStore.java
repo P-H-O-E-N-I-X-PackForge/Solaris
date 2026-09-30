@@ -144,6 +144,10 @@ public final class PersistentChunkStore {
         // full-dimension serializations also drives heavy allocation/GC pressure.
         List<String> toSave = new ArrayList<>(DIRTY_DIMENSIONS);
         for (String dimension : toSave) {
+            // Also wait out an in-flight initial load: readDimension holds the file open for
+            // its whole read, and a concurrent move-onto-target from writeDimension can lose
+            // that race on Windows (AccessDeniedException/NoSuchFileException).
+            if (LOADING.contains(dimension)) continue;
             if (!SAVING.add(dimension)) continue;
             DIRTY_DIMENSIONS.remove(dimension);
             ConcurrentHashMap<ChunkKey, Entry> chunks = DIMENSIONS.get(dimension);
@@ -177,7 +181,17 @@ public final class PersistentChunkStore {
 
         Util.ioPool().execute(() -> {
             ConcurrentHashMap<ChunkKey, Entry> loaded = readDimension(worldKey, dimension);
-            DIMENSIONS.put(dimension, loaded);
+            // put() below can create a placeholder map for this dimension (via computeIfAbsent)
+            // and start accumulating freshly-resampled chunks into it before this disk read
+            // finishes. Merge instead of overwriting so those chunks aren't silently discarded
+            // once the read completes - they're strictly fresher than whatever's on disk, so
+            // they win on key collisions.
+            DIMENSIONS.merge(dimension, loaded, (existing, justLoaded) -> {
+                for (Map.Entry<ChunkKey, Entry> e : justLoaded.entrySet()) {
+                    existing.putIfAbsent(e.getKey(), e.getValue());
+                }
+                return existing;
+            });
             LOADING.remove(dimension);
             if (!loaded.isEmpty()) SolarisTexture.invalidateAll();
         });
