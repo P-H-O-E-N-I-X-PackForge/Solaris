@@ -22,6 +22,7 @@ import net.phoenixvine.solaris.client.color.ChunkWaterTintCache;
 import net.phoenixvine.solaris.client.color.PersistentChunkStore;
 import net.phoenixvine.solaris.client.overlay.SolarisOverlay;
 import net.phoenixvine.solaris.client.overlay.SolarisOverlayRegistry;
+import net.phoenixvine.solaris.client.perf.SolarisProfiler;
 import net.phoenixvine.solaris.config.SolarisConfig;
 
 import com.mojang.blaze3d.platform.NativeImage;
@@ -171,11 +172,12 @@ public final class MapTileCache {
             tile = new MapTile(id);
             TILES.put(key, tile);
         }
+        MapTile builtTile = tile;
         try {
             if (key.lod() == 0) {
-                buildTile(key, tile);
+                SolarisProfiler.time("mapTile:build:lod0", () -> buildTile(key, builtTile));
             } else {
-                buildTileLod(key, tile);
+                SolarisProfiler.time("mapTile:build:lodN", () -> buildTileLod(key, builtTile));
             }
         } catch (Exception e) {
 

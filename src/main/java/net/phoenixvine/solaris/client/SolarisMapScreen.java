@@ -641,20 +641,24 @@ public class SolarisMapScreen extends Screen {
 
         cachedMobs.clear();
         if (SolarisConfig.SHOW_MOBS.get() && mc.level != null) {
-            for (Entity entity : mc.level.entitiesForRendering()) {
-                if (entity instanceof Mob mob && mob.isAlive()) cachedMobs.add(mob);
-            }
+            SolarisProfiler.time("worldMarkers:mobScan", () -> {
+                for (Entity entity : mc.level.entitiesForRendering()) {
+                    if (entity instanceof Mob mob && mob.isAlive()) cachedMobs.add(mob);
+                }
+            });
         }
 
         cachedVeins.clear();
         if (SolarisConfig.SHOW_GT_ORE_VEINS.get() && !gtceuBroken && mc.level != null &&
                 GtceuIntegration.isAvailable()) {
             try {
-                int minX = (anchorChunkX << 4) - radiusPixels;
-                int minZ = (anchorChunkZ << 4) - radiusPixels;
-                int span = radiusPixels * 2;
-                cachedVeins.addAll(GtceuIntegration.getVeinsInArea(mc.level.dimension().location(), minX, minZ, span,
-                        span));
+                SolarisProfiler.time("worldMarkers:veinScan", () -> {
+                    int minX = (anchorChunkX << 4) - radiusPixels;
+                    int minZ = (anchorChunkZ << 4) - radiusPixels;
+                    int span = radiusPixels * 2;
+                    cachedVeins.addAll(GtceuIntegration.getVeinsInArea(mc.level.dimension().location(), minX, minZ,
+                            span, span));
+                });
             } catch (Throwable t) {
                 gtceuBroken = true;
                 PhoenixSolaris.LOGGER.error(
@@ -964,6 +968,10 @@ public class SolarisMapScreen extends Screen {
     }
 
     private void renderCaveMapTiles(GuiGraphics g) {
+        SolarisProfiler.time("renderCaveMapTiles", () -> renderCaveMapTilesImpl(g));
+    }
+
+    private void renderCaveMapTilesImpl(GuiGraphics g) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
         ResourceLocation dimension = mc.level.dimension().location();
@@ -1016,6 +1024,10 @@ public class SolarisMapScreen extends Screen {
     }
 
     private void renderFlatMapTiles(GuiGraphics g) {
+        SolarisProfiler.time("renderFlatMapTiles", () -> renderFlatMapTilesImpl(g));
+    }
+
+    private void renderFlatMapTilesImpl(GuiGraphics g) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
         ResourceLocation dimension = mc.level.dimension().location();

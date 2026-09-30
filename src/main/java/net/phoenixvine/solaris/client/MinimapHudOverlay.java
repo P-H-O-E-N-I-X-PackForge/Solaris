@@ -18,6 +18,7 @@ import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 import net.phoenixvine.solaris.client.color.ChunkKey;
+import net.phoenixvine.solaris.client.perf.SolarisProfiler;
 import net.phoenixvine.solaris.client.render.LineRenderer;
 import net.phoenixvine.solaris.client.render.MinimapShape;
 import net.phoenixvine.solaris.client.render.ModernPanel;
@@ -99,6 +100,10 @@ public class MinimapHudOverlay {
         Minecraft mc = Minecraft.getInstance();
         if (!isVisible(mc)) return;
 
+        SolarisProfiler.time("minimapRender", () -> onRenderHudImpl(event, mc));
+    }
+
+    private static void onRenderHudImpl(RenderGuiOverlayEvent.Post event, Minecraft mc) {
         SolarisTexture tex = texture();
         int screenSize = SolarisConfig.MINIMAP_SIZE.get();
 

@@ -15,6 +15,7 @@ import net.phoenixvine.solaris.client.color.CaveColorSampler;
 import net.phoenixvine.solaris.client.color.PersistentCaveStore;
 import net.phoenixvine.solaris.client.overlay.SolarisOverlay;
 import net.phoenixvine.solaris.client.overlay.SolarisOverlayRegistry;
+import net.phoenixvine.solaris.client.perf.SolarisProfiler;
 import net.phoenixvine.solaris.config.SolarisConfig;
 
 import com.mojang.blaze3d.platform.NativeImage;
@@ -146,10 +147,12 @@ public final class CaveTileCache {
             TILES.put(key, tile);
         }
 
+        CaveTile builtTile = tile;
         if (key.lod() == 0) {
-            buildTile(key, tile, level, player, playerChunkX, playerChunkZ);
+            SolarisProfiler.time("caveTile:build:lod0", () -> buildTile(key, builtTile, level, player, playerChunkX,
+                    playerChunkZ));
         } else {
-            buildTileLod(key, tile);
+            SolarisProfiler.time("caveTile:build:lodN", () -> buildTileLod(key, builtTile));
         }
         if (live) tile.lastLiveRebuildMillis = System.currentTimeMillis();
         return tile;
