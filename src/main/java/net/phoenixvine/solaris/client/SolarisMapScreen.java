@@ -113,6 +113,17 @@ public class SolarisMapScreen extends Screen {
 
     private final List<int[]> lineDrawPoints = new ArrayList<>();
     private boolean hasPlayerMarker = false;
+
+    // entitiesForRendering() and GtceuIntegration.getVeinsInArea() were both being called fresh on
+    // every render() call (i.e. every rendered frame, not every game tick) with no caching, even
+    // though what's actually nearby doesn't change meaningfully at anything close to render
+    // framerate. Screen positions still get recomputed every frame from these cached lists (below,
+    // in renderFlatMap/renderGlobeMap), so panning/zooming and mob movement stay smooth — only the
+    // "what mobs/veins currently exist nearby" scan itself is throttled.
+    private static final long WORLD_MARKER_REFRESH_MS = 150L;
+    private long lastWorldMarkerRefreshMillis = 0L;
+    private final List<Mob> cachedMobs = new ArrayList<>();
+    private final List<GtceuIntegration.GtOreVein> cachedVeins = new ArrayList<>();
     private int anchorChunkX;
     private int anchorChunkZ;
     private int radiusPixels;
@@ -621,8 +632,41 @@ public class SolarisMapScreen extends Screen {
         g.disableScissor();
     }
 
+    private void refreshWorldMarkersIfNeeded() {
+        long now = System.currentTimeMillis();
+        if (now - lastWorldMarkerRefreshMillis < WORLD_MARKER_REFRESH_MS) return;
+        lastWorldMarkerRefreshMillis = now;
+
+        Minecraft mc = Minecraft.getInstance();
+
+        cachedMobs.clear();
+        if (SolarisConfig.SHOW_MOBS.get() && mc.level != null) {
+            for (Entity entity : mc.level.entitiesForRendering()) {
+                if (entity instanceof Mob mob && mob.isAlive()) cachedMobs.add(mob);
+            }
+        }
+
+        cachedVeins.clear();
+        if (SolarisConfig.SHOW_GT_ORE_VEINS.get() && !gtceuBroken && mc.level != null &&
+                GtceuIntegration.isAvailable()) {
+            try {
+                int minX = (anchorChunkX << 4) - radiusPixels;
+                int minZ = (anchorChunkZ << 4) - radiusPixels;
+                int span = radiusPixels * 2;
+                cachedVeins.addAll(GtceuIntegration.getVeinsInArea(mc.level.dimension().location(), minX, minZ, span,
+                        span));
+            } catch (Throwable t) {
+                gtceuBroken = true;
+                PhoenixSolaris.LOGGER.error(
+                        "GTCEu is present but its integration failed. Disabling ore vein markers for the rest of this session.",
+                        t);
+            }
+        }
+    }
+
     @Override
     public void render(GuiGraphics g, int mx, int my, float partialTick) {
+        refreshWorldMarkersIfNeeded();
         renderBackground(g);
 
         ModernPanel.draw(g, MARGIN - 4, MARGIN - 4, width - 2 * (MARGIN - 4), height - 2 * (MARGIN - 4), C_BORDER);
@@ -841,32 +885,18 @@ public class SolarisMapScreen extends Screen {
 
         hoveredVeinName = null;
 
-        if (SolarisConfig.SHOW_GT_ORE_VEINS.get() && !gtceuBroken && mc.level != null &&
-                GtceuIntegration.isAvailable()) {
-            try {
-                int minX = (int) Math.floor(viewport.toWorldX(MARGIN, 0));
-                int minZ = (int) Math.floor(viewport.toWorldZ(MARGIN, 0));
-                int spanX = (int) Math.ceil(viewport.toWorldX(width - MARGIN, 0)) - minX;
-                int spanZ = (int) Math.ceil(viewport.toWorldZ(height - MARGIN, 0)) - minZ;
-                List<GtceuIntegration.GtOreVein> veins = GtceuIntegration.getVeinsInArea(
-                        mc.level.dimension().location(), minX, minZ, spanX, spanZ);
-                for (GtceuIntegration.GtOreVein vein : veins) {
-                    int vx = (int) viewport.toScreenX(vein.center().getX(), 0);
-                    int vy = (int) viewport.toScreenY(vein.center().getZ(), 0);
-                    if (vx < texScreenMinX || vx > texScreenMaxX || vy < texScreenMinY || vy > texScreenMaxY ||
-                            !insideMapShape(vx, vy)) {
-                        continue;
-                    }
-                    drawVeinMarker(g, vein, vx, vy, iconR);
-                    if (mx >= vx - iconR && mx <= vx + iconR && my >= vy - iconR && my <= vy + iconR) {
-                        hoveredVeinName = vein.name();
-                    }
+        if (SolarisConfig.SHOW_GT_ORE_VEINS.get()) {
+            for (GtceuIntegration.GtOreVein vein : cachedVeins) {
+                int vx = (int) viewport.toScreenX(vein.center().getX(), 0);
+                int vy = (int) viewport.toScreenY(vein.center().getZ(), 0);
+                if (vx < texScreenMinX || vx > texScreenMaxX || vy < texScreenMinY || vy > texScreenMaxY ||
+                        !insideMapShape(vx, vy)) {
+                    continue;
                 }
-            } catch (Throwable t) {
-                gtceuBroken = true;
-                PhoenixSolaris.LOGGER.error(
-                        "GTCEu is present but its integration failed. Disabling ore vein markers for the rest of this session.",
-                        t);
+                drawVeinMarker(g, vein, vx, vy, iconR);
+                if (mx >= vx - iconR && mx <= vx + iconR && my >= vy - iconR && my <= vy + iconR) {
+                    hoveredVeinName = vein.name();
+                }
             }
         }
 
@@ -888,9 +918,9 @@ public class SolarisMapScreen extends Screen {
         }
 
         hoveredMobName = null;
-        if (SolarisConfig.SHOW_MOBS.get() && mc.level != null) {
-            for (Entity entity : mc.level.entitiesForRendering()) {
-                if (!(entity instanceof Mob mob) || !mob.isAlive()) continue;
+        if (SolarisConfig.SHOW_MOBS.get()) {
+            for (Mob mob : cachedMobs) {
+                if (!mob.isAlive()) continue;
                 int mobX = (int) viewport.toScreenX(mob.getX(), 0);
                 int mobY = (int) viewport.toScreenY(mob.getZ(), 0);
                 if (mobX < texScreenMinX || mobX > texScreenMaxX || mobY < texScreenMinY || mobY > texScreenMaxY ||
@@ -1181,31 +1211,18 @@ public class SolarisMapScreen extends Screen {
         }
 
         hoveredVeinName = null;
-        if (SolarisConfig.SHOW_GT_ORE_VEINS.get() && !gtceuBroken && mc.level != null &&
-                GtceuIntegration.isAvailable()) {
-            try {
-                int minX = (anchorChunkX << 4) - radiusPixels;
-                int minZ = (anchorChunkZ << 4) - radiusPixels;
-                int span = radiusPixels * 2;
-                List<GtceuIntegration.GtOreVein> veins = GtceuIntegration.getVeinsInArea(
-                        mc.level.dimension().location(), minX, minZ, span, span);
-                for (GtceuIntegration.GtOreVein vein : veins) {
-                    double vpx = radiusPixels + (vein.center().getX() - (anchorChunkX << 4));
-                    double vpz = radiusPixels + (vein.center().getZ() - (anchorChunkZ << 4));
-                    GlobeCamera.Projection p = globeCamera.sphereToScreen((float) (vpx / size), (float) (vpz / size),
-                            cx, cy);
-                    if (!p.frontFacing) continue;
-                    drawVeinMarker(g, vein, p.screenX, p.screenY, iconR);
-                    if (mx >= p.screenX - iconR && mx <= p.screenX + iconR && my >= p.screenY - iconR &&
-                            my <= p.screenY + iconR) {
-                        hoveredVeinName = vein.name();
-                    }
+        if (SolarisConfig.SHOW_GT_ORE_VEINS.get()) {
+            for (GtceuIntegration.GtOreVein vein : cachedVeins) {
+                double vpx = radiusPixels + (vein.center().getX() - (anchorChunkX << 4));
+                double vpz = radiusPixels + (vein.center().getZ() - (anchorChunkZ << 4));
+                GlobeCamera.Projection p = globeCamera.sphereToScreen((float) (vpx / size), (float) (vpz / size), cx,
+                        cy);
+                if (!p.frontFacing) continue;
+                drawVeinMarker(g, vein, p.screenX, p.screenY, iconR);
+                if (mx >= p.screenX - iconR && mx <= p.screenX + iconR && my >= p.screenY - iconR &&
+                        my <= p.screenY + iconR) {
+                    hoveredVeinName = vein.name();
                 }
-            } catch (Throwable t) {
-                gtceuBroken = true;
-                PhoenixSolaris.LOGGER.error(
-                        "GTCEu is present but its integration failed. Disabling ore vein markers for the rest of this session.",
-                        t);
             }
         }
 
@@ -1228,9 +1245,9 @@ public class SolarisMapScreen extends Screen {
         }
 
         hoveredMobName = null;
-        if (SolarisConfig.SHOW_MOBS.get() && mc.level != null) {
-            for (Entity entity : mc.level.entitiesForRendering()) {
-                if (!(entity instanceof Mob mob) || !mob.isAlive()) continue;
+        if (SolarisConfig.SHOW_MOBS.get()) {
+            for (Mob mob : cachedMobs) {
+                if (!mob.isAlive()) continue;
                 double mpx = radiusPixels + (mob.getX() - (anchorChunkX << 4));
                 double mpz = radiusPixels + (mob.getZ() - (anchorChunkZ << 4));
                 GlobeCamera.Projection p = globeCamera.sphereToScreen((float) (mpx / size), (float) (mpz / size), cx,

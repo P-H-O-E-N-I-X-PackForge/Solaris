@@ -94,6 +94,7 @@ public class SolarisTexture implements AutoCloseable {
     private boolean lastUnderground = false;
     private boolean pendingUnderground = false;
     private long pendingUndergroundSince = 0L;
+    private long lastMaybeRebuildCheckMillis = 0L;
 
     private int seamX;
     private int seamZ;
@@ -234,7 +235,19 @@ public class SolarisTexture implements AutoCloseable {
         return now - pendingUndergroundSince >= UNDERGROUND_DEBOUNCE_MS ? raw : lastUnderground;
     }
 
+    // maybeRebuild is called from a render callback (onRenderHud), which fires every rendered
+    // frame — at 100-500fps that's the same "should I rebuild?" check running far more often than
+    // it could ever produce a different answer, since world state (chunk position, sky visibility,
+    // day time) only actually changes at tick rate (20/sec). canSeeSky() specifically is a real
+    // light-engine query, not free. Gate the whole check to at most once per tick so a high
+    // framerate doesn't multiply this cost for no benefit.
+    private static final long MAYBE_REBUILD_CHECK_INTERVAL_MS = 50L;
+
     public void maybeRebuild(ChunkKey center) {
+        long nowMillis = System.currentTimeMillis();
+        if (nowMillis - lastMaybeRebuildCheckMillis < MAYBE_REBUILD_CHECK_INTERVAL_MS) return;
+        lastMaybeRebuildCheckMillis = nowMillis;
+
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
         Level level = mc.level;
