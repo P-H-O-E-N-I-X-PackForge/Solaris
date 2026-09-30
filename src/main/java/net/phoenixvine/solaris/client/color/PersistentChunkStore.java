@@ -91,6 +91,7 @@ public final class PersistentChunkStore {
     private static final Map<String, ConcurrentHashMap<ChunkKey, Entry>> DIMENSIONS = new ConcurrentHashMap<>();
     private static final Set<String> LOADING = ConcurrentHashMap.newKeySet();
     private static final Set<String> DIRTY_DIMENSIONS = ConcurrentHashMap.newKeySet();
+    private static final Set<String> SAVING = ConcurrentHashMap.newKeySet();
     private static String loadedWorldKey = null;
 
     public static Entry get(ChunkKey key) {
@@ -133,12 +134,30 @@ public final class PersistentChunkStore {
         String worldKey = WaypointManager.currentWorldKey();
         if (worldKey == null || DIRTY_DIMENSIONS.isEmpty()) return;
 
+        // A dimension stays dirty (and is simply retried next tick) if a write for it is
+        // already in flight, rather than being resubmitted immediately. Without this guard,
+        // continuous dirtying (e.g. during a live chunk resample sweep) queues a fresh
+        // writeDimension task every tick faster than the io pool can finish them, and since
+        // they all target the same "<dimension>.dat.tmp" path, overlapping writers race on
+        // that file and move/rename each other's temp files out from under themselves
+        // (AccessDeniedException/NoSuchFileException), while the pile-up of concurrent
+        // full-dimension serializations also drives heavy allocation/GC pressure.
         List<String> toSave = new ArrayList<>(DIRTY_DIMENSIONS);
-        DIRTY_DIMENSIONS.removeAll(toSave);
         for (String dimension : toSave) {
+            if (!SAVING.add(dimension)) continue;
+            DIRTY_DIMENSIONS.remove(dimension);
             ConcurrentHashMap<ChunkKey, Entry> chunks = DIMENSIONS.get(dimension);
-            if (chunks == null) continue;
-            Util.ioPool().execute(() -> writeDimension(worldKey, dimension, chunks));
+            if (chunks == null) {
+                SAVING.remove(dimension);
+                continue;
+            }
+            Util.ioPool().execute(() -> {
+                try {
+                    writeDimension(worldKey, dimension, chunks);
+                } finally {
+                    SAVING.remove(dimension);
+                }
+            });
         }
     }
 
@@ -150,6 +169,7 @@ public final class PersistentChunkStore {
             DIMENSIONS.clear();
             LOADING.clear();
             DIRTY_DIMENSIONS.clear();
+            SAVING.clear();
             loadedWorldKey = worldKey;
         }
 

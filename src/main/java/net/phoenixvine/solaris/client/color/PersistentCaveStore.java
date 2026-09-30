@@ -48,6 +48,7 @@ public final class PersistentCaveStore {
     private static final Map<String, ConcurrentHashMap<CaveKey, Entry>> DIMENSIONS = new ConcurrentHashMap<>();
     private static final Set<String> LOADING = ConcurrentHashMap.newKeySet();
     private static final Set<String> DIRTY_DIMENSIONS = ConcurrentHashMap.newKeySet();
+    private static final Set<String> SAVING = ConcurrentHashMap.newKeySet();
     private static String loadedWorldKey = null;
 
     public static int yBucket(int y) {
@@ -76,12 +77,25 @@ public final class PersistentCaveStore {
         String worldKey = WaypointManager.currentWorldKey();
         if (worldKey == null || DIRTY_DIMENSIONS.isEmpty()) return;
 
+        // See PersistentChunkStore.saveDirtyAsync: skip a dimension that's already being
+        // written instead of resubmitting, so overlapping writers never race on the same
+        // "<dimension>.dat.tmp" path.
         List<String> toSave = new ArrayList<>(DIRTY_DIMENSIONS);
-        DIRTY_DIMENSIONS.removeAll(toSave);
         for (String dimension : toSave) {
+            if (!SAVING.add(dimension)) continue;
+            DIRTY_DIMENSIONS.remove(dimension);
             ConcurrentHashMap<CaveKey, Entry> chunks = DIMENSIONS.get(dimension);
-            if (chunks == null) continue;
-            Util.ioPool().execute(() -> writeDimension(worldKey, dimension, chunks));
+            if (chunks == null) {
+                SAVING.remove(dimension);
+                continue;
+            }
+            Util.ioPool().execute(() -> {
+                try {
+                    writeDimension(worldKey, dimension, chunks);
+                } finally {
+                    SAVING.remove(dimension);
+                }
+            });
         }
     }
 
@@ -93,6 +107,7 @@ public final class PersistentCaveStore {
             DIMENSIONS.clear();
             LOADING.clear();
             DIRTY_DIMENSIONS.clear();
+            SAVING.clear();
             loadedWorldKey = worldKey;
         }
 
