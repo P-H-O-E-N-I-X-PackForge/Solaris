@@ -185,7 +185,11 @@ public class SolarisMapScreen extends Screen {
             anchorChunkX = blockPos.getX() >> 4;
             anchorChunkZ = blockPos.getZ() >> 4;
             centerKey = ChunkKey.of(mc.level, new ChunkPos(anchorChunkX, anchorChunkZ));
-            tex.maybeRebuild(centerKey);
+            // tex ("map") backs the globe view only — rebuilding it here ran unconditionally on
+            // every fullscreen map open regardless of flat/globe mode, a 95ms+ synchronous stall
+            // (2401 chunks at the default map radius) entirely wasted on anyone who never opens
+            // globe view. renderGlobeMap already calls maybeRebuild itself the moment globe mode
+            // is actually used, so this eager call just duplicated that lazily-paid cost for free.
 
             // Dimensions with a ceiling (the Nether) have no real "surface" to render a flat map
             // of — ChunkColorEvents skips writing surface data for them entirely — so default to

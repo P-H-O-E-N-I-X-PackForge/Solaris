@@ -16,6 +16,8 @@ import net.phoenixvine.solaris.client.render.MapTileCache;
 import net.phoenixvine.solaris.client.render.SolarisTexture;
 import net.phoenixvine.solaris.config.SolarisConfig;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 
 @Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
@@ -27,6 +29,18 @@ public final class LiveChunkRefresh {
     private static final int TAINTED_RETRY_INTERVAL_TICKS = 20;
 
     private static final int MAX_FALLBACK_RETRIES = 10;
+
+    // The sweep used to resample every chunk in radius (up to (2*radius+1)^2 = 289 at the default
+    // radius of 8) plus the write-range ring's cache misses, all synchronously in one tick — a
+    // single call that measured at 283-906ms in practice, a dead-stop render-thread freeze once a
+    // minute. Enumerating which chunks need resampling is cheap (hasChunk/contains checks only);
+    // it's ChunkColorSampler.sample() itself, called once per chunk, that's the real cost. Queue
+    // the enumerated positions instead and drain a bounded number per tick, same budgeting idea
+    // MapTileCache already uses for tile builds (MAX_TILE_BUILDS_PER_FRAME) — trades a full sweep
+    // finishing in under a second instead of instantly, for never blocking a single tick at all.
+    private static final int CHUNKS_PER_TICK_BUDGET = 16;
+    private static final Deque<ChunkKey> PENDING_SWEEP = new ArrayDeque<>();
+    private static boolean sweepRefreshedAny = false;
 
     private LiveChunkRefresh() {}
 
@@ -50,55 +64,65 @@ public final class LiveChunkRefresh {
             retryTaintedChunks(level);
         }
 
-        int intervalTicks = SolarisConfig.LIVE_REFRESH_INTERVAL_SECONDS.get() * 20;
-        if (++tickCounter < intervalTicks) return;
-        tickCounter = 0;
-
-        if (surfaceMap) {
-            long sweepStart = SolarisProfiler.start();
-            int radius = Math.min(SolarisConfig.LIVE_REFRESH_RADIUS_CHUNKS.get(),
-                    SolarisConfig.WORLD_MAP_WRITE_RANGE_CHUNKS.get());
-            int centerX = player.chunkPosition().x;
-            int centerZ = player.chunkPosition().z;
-
-            boolean refreshedAny = false;
-            for (int dz = -radius; dz <= radius; dz++) {
-                for (int dx = -radius; dx <= radius; dx++) {
-                    int chunkX = centerX + dx;
-                    int chunkZ = centerZ + dz;
-
-                    if (!level.hasChunk(chunkX, chunkZ)) continue;
-
-                    ChunkKey key = ChunkKey.of(level, new ChunkPos(chunkX, chunkZ));
-                    SolarisProfiler.time("chunkSample",
-                            () -> ChunkColorEvents.resample(level, key, key.toChunkPos()));
-                    refreshedAny = true;
-                }
+        if (surfaceMap && !PENDING_SWEEP.isEmpty()) {
+            drainSweepBudget(level);
+        } else {
+            int intervalTicks = SolarisConfig.LIVE_REFRESH_INTERVAL_SECONDS.get() * 20;
+            if (++tickCounter >= intervalTicks) {
+                tickCounter = 0;
+                if (surfaceMap) enqueueSweep(level, player);
             }
-
-            int writeRange = SolarisConfig.WORLD_MAP_WRITE_RANGE_CHUNKS.get();
-            for (int dz = -writeRange; dz <= writeRange; dz++) {
-                for (int dx = -writeRange; dx <= writeRange; dx++) {
-                    int chunkX = centerX + dx;
-                    int chunkZ = centerZ + dz;
-                    if (Math.max(Math.abs(dx), Math.abs(dz)) <= radius) continue;
-                    if (!level.hasChunk(chunkX, chunkZ)) continue;
-
-                    ChunkKey key = ChunkKey.of(level, new ChunkPos(chunkX, chunkZ));
-                    if (ChunkColorCache.contains(key)) continue;
-
-                    ChunkColorEvents.resample(level, key, key.toChunkPos());
-                    refreshedAny = true;
-                }
-            }
-
-            SolarisProfiler.end("liveRefreshSweep", sweepStart);
-
-            if (refreshedAny) SolarisTexture.invalidateAll();
         }
 
         PersistentChunkStore.saveDirtyAsync();
         PersistentCaveStore.saveDirtyAsync();
+    }
+
+    private static void enqueueSweep(Level level, LocalPlayer player) {
+        int radius = Math.min(SolarisConfig.LIVE_REFRESH_RADIUS_CHUNKS.get(),
+                SolarisConfig.WORLD_MAP_WRITE_RANGE_CHUNKS.get());
+        int centerX = player.chunkPosition().x;
+        int centerZ = player.chunkPosition().z;
+
+        for (int dz = -radius; dz <= radius; dz++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                int chunkX = centerX + dx;
+                int chunkZ = centerZ + dz;
+                if (!level.hasChunk(chunkX, chunkZ)) continue;
+                PENDING_SWEEP.add(ChunkKey.of(level, new ChunkPos(chunkX, chunkZ)));
+            }
+        }
+
+        int writeRange = SolarisConfig.WORLD_MAP_WRITE_RANGE_CHUNKS.get();
+        for (int dz = -writeRange; dz <= writeRange; dz++) {
+            for (int dx = -writeRange; dx <= writeRange; dx++) {
+                int chunkX = centerX + dx;
+                int chunkZ = centerZ + dz;
+                if (Math.max(Math.abs(dx), Math.abs(dz)) <= radius) continue;
+                if (!level.hasChunk(chunkX, chunkZ)) continue;
+
+                ChunkKey key = ChunkKey.of(level, new ChunkPos(chunkX, chunkZ));
+                if (ChunkColorCache.contains(key)) continue;
+                PENDING_SWEEP.add(key);
+            }
+        }
+
+        sweepRefreshedAny = false;
+    }
+
+    private static void drainSweepBudget(Level level) {
+        long sweepStart = SolarisProfiler.start();
+        for (int i = 0; i < CHUNKS_PER_TICK_BUDGET && !PENDING_SWEEP.isEmpty(); i++) {
+            ChunkKey key = PENDING_SWEEP.poll();
+            SolarisProfiler.time("chunkSample", () -> ChunkColorEvents.resample(level, key, key.toChunkPos()));
+            sweepRefreshedAny = true;
+        }
+        SolarisProfiler.end("liveRefreshSweep:batch", sweepStart);
+
+        if (PENDING_SWEEP.isEmpty() && sweepRefreshedAny) {
+            SolarisTexture.invalidateAll();
+            sweepRefreshedAny = false;
+        }
     }
 
     private static void retryTaintedChunks(Level level) {
