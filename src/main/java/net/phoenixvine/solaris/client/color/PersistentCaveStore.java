@@ -178,8 +178,13 @@ public final class PersistentCaveStore {
         Path tempFile = file.resolveSibling(file.getFileName() + ".tmp");
         try {
             Files.createDirectories(file.getParent());
-            try (DataOutputStream out = new DataOutputStream(
-                    new GZIPOutputStream(new BufferedOutputStream(Files.newOutputStream(tempFile))))) {
+            try (DataOutputStream out = new DataOutputStream(new GZIPOutputStream(
+                    new BufferedOutputStream(Files.newOutputStream(tempFile))) {
+
+                {
+                    def.setLevel(java.util.zip.Deflater.BEST_SPEED);
+                }
+            })) {
                 out.writeInt(MAGIC);
                 out.writeInt(VERSION);
                 out.writeInt(entries.size());
