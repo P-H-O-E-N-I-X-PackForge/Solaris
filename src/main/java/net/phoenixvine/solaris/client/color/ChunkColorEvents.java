@@ -80,6 +80,8 @@ public class ChunkColorEvents {
             FALLBACK_TAINTED.remove(key);
         }
 
+        if (!ChunkColorCache.contains(key)) SolarisTexture.markChunkDataChanged();
+
         ChunkColorCache.put(key, colorSample.pixels);
         ChunkLightCache.put(key, colorSample.lightEmitting);
         ChunkHeightCache.put(key, heightSample.heights);
