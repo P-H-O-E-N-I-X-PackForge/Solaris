@@ -200,6 +200,7 @@ public final class WaypointManager {
 
     private static String cachedWorldKey = null;
     private static boolean cachedWorldKeyValid = false;
+    private static Object cachedWorldKeyOwner = null;
 
     public static String currentWorldKey() {
         Minecraft mc = Minecraft.getInstance();
@@ -207,7 +208,12 @@ public final class WaypointManager {
             cachedWorldKeyValid = false;
             return null;
         }
-        if (cachedWorldKeyValid) return cachedWorldKey;
+        // Quitting one world and joining another without anything observing level == null in
+        // between left the previous world's key cached, so a brand-new world loaded (and then
+        // overwrote) the old world's map data. The owner is the server/connection instance the
+        // key was derived from, which is always a different object for a different world.
+        Object owner = mc.getCurrentServer() != null ? mc.getCurrentServer() : mc.getSingleplayerServer();
+        if (cachedWorldKeyValid && owner == cachedWorldKeyOwner) return cachedWorldKey;
 
         ServerData server = mc.getCurrentServer();
         String key;
@@ -222,6 +228,7 @@ public final class WaypointManager {
         }
 
         cachedWorldKey = key;
+        cachedWorldKeyOwner = owner;
         cachedWorldKeyValid = true;
         return key;
     }
