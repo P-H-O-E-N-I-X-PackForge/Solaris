@@ -386,7 +386,7 @@ public final class SolarisConfig {
                 .defineInRange("liveRefreshIntervalSeconds", 60, 10, 600);
         LIVE_REFRESH_RADIUS_CHUNKS = builder
                 .comment("How many chunks around the player get re-sampled on each live refresh pass.")
-                .defineInRange("liveRefreshRadiusChunks", 8, 2, 32);
+                .defineInRange("liveRefreshRadiusChunks", 5, 2, 32);
         builder.pop();
 
         builder.push("featureRanges");
