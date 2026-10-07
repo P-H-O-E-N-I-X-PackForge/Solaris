@@ -31,6 +31,7 @@ public final class LiveChunkRefresh {
     private static final int MAX_FALLBACK_RETRIES = 10;
 
     private static final int CHUNKS_PER_TICK_BUDGET = 16;
+    private static final int NEIGHBOR_RESAMPLES_PER_TICK = 4;
     private static final Deque<ChunkKey> PENDING_SWEEP = new ArrayDeque<>();
     private static boolean sweepRefreshedAny = false;
 
@@ -58,6 +59,8 @@ public final class LiveChunkRefresh {
             taintedRetryTickCounter = 0;
             retryTaintedChunks(level);
         }
+
+        if (surfaceMap) ChunkColorEvents.drainNeighborResamples(level, NEIGHBOR_RESAMPLES_PER_TICK);
 
         if (surfaceMap && !PENDING_SWEEP.isEmpty()) {
             drainSweepBudget(level);

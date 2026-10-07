@@ -13,6 +13,8 @@ import net.phoenixvine.solaris.client.perf.SolarisProfiler;
 import net.phoenixvine.solaris.client.render.MapTileCache;
 import net.phoenixvine.solaris.client.render.SolarisTexture;
 
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,6 +41,7 @@ public class ChunkColorEvents {
         ChunkFoliageCache.clear();
         FALLBACK_TAINTED.clear();
         FALLBACK_RETRY_COUNT.clear();
+        PENDING_NEIGHBORS.clear();
         MapTileCache.clearAll();
         SolarisTexture.invalidateAll();
     }
@@ -60,11 +63,25 @@ public class ChunkColorEvents {
         ChunkKey key = ChunkKey.of(level, pos);
         SolarisProfiler.time("chunkSample", () -> resample(level, key, pos));
 
+        // Neighbours only need a re-sample for edge relief shading. Doing all four synchronously
+        // made every chunk load cost up to 5 samples on the render thread (3% in a spark profile);
+        // queuing them dedupes the overlap when chunks stream in as a block and spreads the rest.
         for (int[] d : new int[][] { { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 } }) {
             ChunkKey neighborKey = new ChunkKey(key.dimension(), key.x() + d[0], key.z() + d[1]);
-            if (ChunkColorCache.contains(neighborKey)) {
-                SolarisProfiler.time("chunkSample", () -> resample(level, neighborKey, neighborKey.toChunkPos()));
-            }
+            if (ChunkColorCache.contains(neighborKey)) PENDING_NEIGHBORS.add(neighborKey);
+        }
+    }
+
+    private static final Set<ChunkKey> PENDING_NEIGHBORS = new LinkedHashSet<>();
+
+    static void drainNeighborResamples(Level level, int budget) {
+        Iterator<ChunkKey> it = PENDING_NEIGHBORS.iterator();
+        while (budget > 0 && it.hasNext()) {
+            ChunkKey key = it.next();
+            it.remove();
+            if (!key.dimension().equals(level.dimension().location()) || !level.hasChunk(key.x(), key.z())) continue;
+            budget--;
+            SolarisProfiler.time("chunkSample", () -> resample(level, key, key.toChunkPos()));
         }
     }
 
