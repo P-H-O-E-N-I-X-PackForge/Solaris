@@ -5,6 +5,8 @@ import net.minecraftforge.network.PacketDistributor;
 import net.phoenixvine.solaris.config.SolarisServerConfig;
 import net.phoenixvine.solaris.network.S2CServerCapabilitiesPacket;
 import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.server.guild.GuildWaypointService;
+import net.phoenixvine.solaris.server.waypoint.DeathMarkerService;
 
 public final class CapabilityService {
 

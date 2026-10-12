@@ -4,7 +4,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.phoenixvine.solaris.api.gates.GateCondition;
-import net.phoenixvine.solaris.server.ProgressionGates;
+import net.phoenixvine.solaris.server.features.ProgressionGates;
+
 
 import java.util.ArrayList;
 import java.util.List;

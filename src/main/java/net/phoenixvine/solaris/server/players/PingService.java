@@ -1,4 +1,4 @@
-package net.phoenixvine.solaris.server;
+package net.phoenixvine.solaris.server.players;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -13,6 +13,8 @@ import net.phoenixvine.solaris.config.SolarisServerConfig.PingAudience;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
 import net.phoenixvine.solaris.network.S2CPingPacket;
 import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.server.SolarisServerAPI;
+import net.phoenixvine.solaris.server.SolarisServerUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;

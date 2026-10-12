@@ -1,4 +1,4 @@
-package net.phoenixvine.solaris.server;
+package net.phoenixvine.solaris.server.claims;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -20,6 +20,8 @@ import net.phoenixvine.solaris.network.S2CClaimsPacket;
 import net.phoenixvine.solaris.network.SolarisNetwork;
 
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import net.phoenixvine.solaris.server.SolarisServerAPI;
+import net.phoenixvine.solaris.server.SolarisServerUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;

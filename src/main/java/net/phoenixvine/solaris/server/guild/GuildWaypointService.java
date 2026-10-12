@@ -1,4 +1,4 @@
-package net.phoenixvine.solaris.server;
+package net.phoenixvine.solaris.server.guild;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.Registries;
@@ -22,6 +22,10 @@ import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
 import net.phoenixvine.solaris.network.S2CGuildWaypointsPacket;
 import net.phoenixvine.solaris.network.S2CServerWaypointsPacket;
 import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.server.*;
+import net.phoenixvine.solaris.server.GuildWaypointData;
+import net.phoenixvine.solaris.server.exploration.SharedVeinService;
+import net.phoenixvine.solaris.server.waypoint.ServerWaypointService;
 
 import java.util.ArrayList;
 import java.util.HashMap;

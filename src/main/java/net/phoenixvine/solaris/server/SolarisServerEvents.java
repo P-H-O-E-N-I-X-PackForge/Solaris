@@ -7,6 +7,13 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisMarkerSyncEvent;
+import net.phoenixvine.solaris.server.claims.ClaimSyncService;
+import net.phoenixvine.solaris.server.exploration.SharedExplorationService;
+import net.phoenixvine.solaris.server.exploration.SharedVeinService;
+import net.phoenixvine.solaris.server.features.ProgressionGates;
+import net.phoenixvine.solaris.server.guild.GuildWaypointService;
+import net.phoenixvine.solaris.server.players.PingService;
+import net.phoenixvine.solaris.server.waypoint.ServerWaypointService;
 
 @Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class SolarisServerEvents {

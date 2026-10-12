@@ -3,7 +3,8 @@ package net.phoenixvine.solaris.network;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
-import net.phoenixvine.solaris.server.PingService;
+import net.phoenixvine.solaris.server.players.PingService;
+
 
 import java.util.function.Supplier;
 

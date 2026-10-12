@@ -1,4 +1,4 @@
-package net.phoenixvine.solaris.server;
+package net.phoenixvine.solaris.server.features;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.Advancement;
@@ -19,6 +19,9 @@ import net.phoenixvine.solaris.api.SolarisGatesAPI;
 import net.phoenixvine.solaris.api.gates.GateCondition;
 import net.phoenixvine.solaris.config.SolarisServerConfig;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
+import net.phoenixvine.solaris.server.ManualGateData;
+import net.phoenixvine.solaris.server.SolarisFeatureStateData;
+import net.phoenixvine.solaris.server.SolarisServerAPI;
 
 import java.util.ArrayList;
 import java.util.HashMap;

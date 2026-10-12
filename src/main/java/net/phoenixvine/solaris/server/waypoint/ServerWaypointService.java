@@ -1,10 +1,12 @@
-package net.phoenixvine.solaris.server;
+package net.phoenixvine.solaris.server.waypoint;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.PacketDistributor;
 import net.phoenixvine.solaris.network.S2CServerWaypointsPacket;
 import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.server.ServerWaypointData;
+import net.phoenixvine.solaris.server.SolarisServerUtil;
 
 import java.util.ArrayList;
 import java.util.List;
