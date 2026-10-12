@@ -1,4 +1,4 @@
-package net.phoenixvine.solaris.sharing;
+package net.phoenixvine.solaris.common;
 
 public record SharedVeinEntry(String dimension, int x, int y, int z, String name, int argb, String itemId) {
 

@@ -16,11 +16,11 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.client.waypoint.WaypointManager;
 import net.phoenixvine.solaris.common.SharedVeinClient;
-import net.phoenixvine.solaris.sharing.SharedVeinEntry;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import net.phoenixvine.solaris.common.SharedVeinEntry;
 
 import java.lang.reflect.Type;
 import java.nio.file.Files;

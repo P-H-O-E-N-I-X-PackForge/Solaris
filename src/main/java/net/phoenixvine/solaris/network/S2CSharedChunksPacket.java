@@ -3,10 +3,10 @@ package net.phoenixvine.solaris.network;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
-import net.phoenixvine.solaris.client.networker f.ClientPacketHandlers;
 import net.minecraftforge.network.NetworkEvent;
-import net.phoenixvine.solaris.sharing.SharedChunkBlob;
-import net.phoenixvine.solaris.sharing.SharedChunkFormat;
+import net.phoenixvine.solaris.common.SharedChunkBlob;
+import net.phoenixvine.solaris.common.SharedChunkFormat;
+
 
 import java.util.ArrayList;
 import java.util.List;

@@ -17,15 +17,17 @@ import net.phoenixvine.solaris.client.waypoint.TransientMarkers;
 import net.phoenixvine.solaris.client.waypoint.Waypoint;
 import net.phoenixvine.solaris.client.waypoint.WaypointIcon;
 import net.phoenixvine.solaris.client.waypoint.WaypointManager;
+import net.phoenixvine.solaris.common.SharedChunkBlob;
 import net.phoenixvine.solaris.common.SharedExplorationClient;
 import net.phoenixvine.solaris.common.SharedVeinClient;
+import net.phoenixvine.solaris.common.SharedVeinEntry;
 import net.phoenixvine.solaris.config.SolarisConfig;
 import net.phoenixvine.solaris.network.S2CClaimsPacket;
 import net.phoenixvine.solaris.network.S2CMarkerPacket;
 import net.phoenixvine.solaris.network.S2CServerWaypointsPacket;
 import net.phoenixvine.solaris.server.ServerCapabilities;
-import net.phoenixvine.solaris.sharing.SharedChunkBlob;
-import net.phoenixvine.solaris.sharing.SharedVeinEntry;
+
+
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -161,14 +163,14 @@ public final class ClientPacketHandlers {
 
     public static void claims(String dimension, int centerX, int centerZ, int radius,
                               List<S2CClaimsPacket.Owner> owners) {
-        ClaimOverlay.INSTANCE.apply(new ResourceLocation(dimension), centerX, centerZ, radius, owners);
+        ClaimOverlay.INSTANCE.apply(ResourceLocation.parse(dimension), centerX, centerZ, radius, owners);
     }
 
     public static void ping(String sender, String dimension, int x, int y, int z, int durationTicks) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
-        PingTracker.add(sender, new ResourceLocation(dimension), x, y, z, durationTicks * 50L);
+        PingTracker.add(sender, ResourceLocation.parse(dimension), x, y, z, durationTicks * 50L);
         if (!sender.equals(mc.player.getGameProfile().getName())) {
             mc.player.displayClientMessage(Component.literal(sender + " pinged a location"), true);
         }

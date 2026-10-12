@@ -35,17 +35,17 @@ public final class PersistentChunkStore {
 
     public static final class Entry {
 
-        final int[] pixels;
-        final int[] heights;
-        final boolean[] water;
-        final int[] waterTint;
-        final int[] waterDepth;
-        final boolean[] waterOcean;
-        final boolean[] foliage;
+        public final int[] pixels;
+        public final int[] heights;
+        public final boolean[] water;
+        public final int[] waterTint;
+        public final int[] waterDepth;
+        public final boolean[] waterOcean;
+        public final boolean[] foliage;
         volatile long lastAccessMillis;
 
-        Entry(int[] pixels, int[] heights, boolean[] water, int[] waterTint, int[] waterDepth,
-              boolean[] waterOcean, boolean[] foliage, long lastAccessMillis) {
+        public Entry(int[] pixels, int[] heights, boolean[] water, int[] waterTint, int[] waterDepth,
+                     boolean[] waterOcean, boolean[] foliage, long lastAccessMillis) {
             this.pixels = pixels;
             this.heights = heights;
             this.water = water;

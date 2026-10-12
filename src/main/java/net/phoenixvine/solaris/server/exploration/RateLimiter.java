@@ -1,4 +1,4 @@
-package net.phoenixvine.solaris.server;
+package net.phoenixvine.solaris.server.exploration;
 
 import java.util.HashMap;
 import java.util.Map;

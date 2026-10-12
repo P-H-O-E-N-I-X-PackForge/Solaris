@@ -5,7 +5,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.storage.LevelResource;
 import net.phoenixvine.solaris.PhoenixSolaris;
-import net.phoenixvine.solaris.sharing.SharedChunkFormat;
+import net.phoenixvine.solaris.common.SharedChunkFormat;
 import net.phoenixvine.solaris.util.FileReplace;
 
 import java.io.BufferedInputStream;

@@ -12,7 +12,7 @@ import net.phoenixvine.solaris.network.C2SSharedVeinsPacket;
 import net.phoenixvine.solaris.network.S2CSharedVeinsPacket;
 import net.phoenixvine.solaris.network.SolarisNetwork;
 import net.phoenixvine.solaris.server.ServerCapabilities;
-import net.phoenixvine.solaris.sharing.SharedVeinEntry;
+
 
 import java.util.ArrayList;
 import java.util.HashSet;

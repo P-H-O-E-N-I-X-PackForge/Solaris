@@ -4,8 +4,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
-import net.phoenixvine.solaris.client.network.ClientPacketHandlers;
-import net.phoenixvine.solaris.sharing.SharedVeinEntry;
+import net.phoenixvine.solaris.common.SharedVeinEntry;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package net.phoenixvine.solaris.server;
+package net.phoenixvine.solaris.server.exploration;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -8,11 +8,15 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.PacketDistributor;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
+import net.phoenixvine.solaris.common.SharedVeinEntry;
 import net.phoenixvine.solaris.config.SolarisServerConfig;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
 import net.phoenixvine.solaris.network.S2CSharedVeinsPacket;
 import net.phoenixvine.solaris.network.SolarisNetwork;
-import net.phoenixvine.solaris.sharing.SharedVeinEntry;
+
+import net.phoenixvine.solaris.server.SolarisServerAPI;
+import net.phoenixvine.solaris.server.SolarisServerUtil;
+import net.phoenixvine.solaris.server.guild.GuildWaypointService;
 
 import java.util.ArrayList;
 import java.util.List;

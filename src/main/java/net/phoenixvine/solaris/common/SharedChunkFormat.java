@@ -1,4 +1,4 @@
-package net.phoenixvine.solaris.sharing;
+package net.phoenixvine.solaris.common;
 
 import java.util.Arrays;
 import java.util.zip.DataFormatException;

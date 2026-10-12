@@ -16,17 +16,17 @@ import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 import net.phoenixvine.solaris.api.SolarisGatesAPI;
 import net.phoenixvine.solaris.api.SolarisMarkers;
-import net.phoenixvine.solaris.server.GuildWaypointService;
-import net.phoenixvine.solaris.server.ProgressionGates;
-import net.phoenixvine.solaris.server.SharedExplorationService;
 import net.phoenixvine.solaris.server.ServerWaypointData;
-import net.phoenixvine.solaris.server.ServerWaypointService;
 import net.phoenixvine.solaris.server.SolarisServerAPI;
 
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import net.phoenixvine.solaris.server.exploration.SharedExplorationService;
+import net.phoenixvine.solaris.server.features.ProgressionGates;
+import net.phoenixvine.solaris.server.guild.GuildWaypointService;
+import net.phoenixvine.solaris.server.waypoint.ServerWaypointService;
 
 @Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class SolarisCommands {

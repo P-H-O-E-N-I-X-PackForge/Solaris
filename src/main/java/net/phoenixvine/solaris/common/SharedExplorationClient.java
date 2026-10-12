@@ -13,7 +13,6 @@ import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 import net.phoenixvine.solaris.client.color.ChunkKey;
 import net.phoenixvine.solaris.client.color.PersistentChunkStore;
-import net.phoenixvine.solaris.client.color.SharedChunkCodec;
 import net.phoenixvine.solaris.client.render.MapTileCache;
 import net.phoenixvine.solaris.client.render.SolarisTexture;
 import net.phoenixvine.solaris.config.SolarisConfig;
@@ -21,8 +20,7 @@ import net.phoenixvine.solaris.network.C2SSharedChunksPacket;
 import net.phoenixvine.solaris.network.C2SSharedSyncRequestPacket;
 import net.phoenixvine.solaris.network.SolarisNetwork;
 import net.phoenixvine.solaris.server.ServerCapabilities;
-import net.phoenixvine.solaris.sharing.SharedChunkBlob;
-import net.phoenixvine.solaris.sharing.SharedChunkFormat;
+
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;

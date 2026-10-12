@@ -1,4 +1,4 @@
-package net.phoenixvine.solaris.server;
+package net.phoenixvine.solaris.server.exploration;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -15,13 +15,18 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
+import net.phoenixvine.solaris.common.SharedChunkBlob;
+import net.phoenixvine.solaris.common.SharedChunkFormat;
 import net.phoenixvine.solaris.config.SolarisServerConfig;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
 import net.phoenixvine.solaris.network.S2CSharedChunksPacket;
 import net.phoenixvine.solaris.network.S2CSharedUploadWantPacket;
 import net.phoenixvine.solaris.network.SolarisNetwork;
-import net.phoenixvine.solaris.sharing.SharedChunkBlob;
-import net.phoenixvine.solaris.sharing.SharedChunkFormat;
+import net.phoenixvine.solaris.server.GuildMapStore;
+import net.phoenixvine.solaris.server.SolarisServerAPI;
+import net.phoenixvine.solaris.server.SolarisServerUtil;
+import net.phoenixvine.solaris.server.guild.GuildWaypointService;
+
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -86,7 +91,7 @@ public final class SharedExplorationService {
         ResourceLocation dim = validDimension(server, dimension);
         if (dim == null || !allowed(player, dim)) return;
 
-        UUID guild = net.phoenixvine.solaris.integration.guilds.GuildsIntegration.ownerTokenFor(player);
+        UUID guild = GuildsIntegration.ownerTokenFor(player);
         GuildMapStore.DimStore store = GuildMapStore.get(server, guild, dim.toString());
         if (store == null) {
             uploadsDroppedLoading += blobs.size();

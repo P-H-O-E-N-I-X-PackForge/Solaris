@@ -1,11 +1,12 @@
-package net.phoenixvine.solaris.server;
+package net.phoenixvine.solaris.server.exploration;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.phoenixvine.solaris.sharing.SharedVeinEntry;
+import net.phoenixvine.solaris.common.SharedVeinEntry;
+
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
