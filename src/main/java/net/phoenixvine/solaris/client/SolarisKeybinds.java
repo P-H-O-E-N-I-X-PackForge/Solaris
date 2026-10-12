@@ -25,6 +25,12 @@ public class SolarisKeybinds {
             GLFW.GLFW_KEY_B,
             "key.categories.solaris");
 
+    public static final KeyMapping PING = new KeyMapping(
+            "key.solaris.ping",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_N,
+            "key.categories.solaris");
+
     public static final KeyMapping TOGGLE_COMPASS = new KeyMapping(
             "key.solaris.toggle_compass",
             InputConstants.Type.KEYSYM,
@@ -47,6 +53,7 @@ public class SolarisKeybinds {
     public static void register(RegisterKeyMappingsEvent event) {
         event.register(OPEN_MAP);
         event.register(NEW_WAYPOINT);
+        event.register(PING);
         event.register(TOGGLE_COMPASS);
         event.register(TOGGLE_MINIMAP_ROTATE);
         event.register(CYCLE_MINIMAP_STYLE);

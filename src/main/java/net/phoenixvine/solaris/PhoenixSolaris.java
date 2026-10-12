@@ -12,6 +12,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.network.NetworkConstants;
 import net.phoenixvine.solaris.client.PhoenixSolarisClient;
 import net.phoenixvine.solaris.config.SolarisConfig;
+import net.phoenixvine.solaris.config.SolarisServerConfig;
 import net.phoenixvine.solaris.network.SolarisNetwork;
 
 import org.apache.logging.log4j.LogManager;
@@ -27,6 +28,7 @@ public class PhoenixSolaris {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         SolarisConfig.register();
+        SolarisServerConfig.register();
 
         modEventBus.addListener(this::commonSetup);
 

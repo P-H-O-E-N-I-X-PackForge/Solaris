@@ -10,6 +10,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.event.WaypointEvent;
+import net.phoenixvine.solaris.client.ping.PingTracker;
 import net.phoenixvine.solaris.client.render.MinimapStyle;
 import net.phoenixvine.solaris.client.waypoint.Waypoint;
 import net.phoenixvine.solaris.client.waypoint.WaypointManager;
@@ -74,6 +75,11 @@ public class SolarisClientTickHandler {
                     mc.player.getBlockX(), mc.player.getBlockY(), mc.player.getBlockZ(), "FFFFFFFF");
             WaypointManager.add(w);
             mc.player.displayClientMessage(Component.translatable("solaris.waypoint.added", name), true);
+        }
+
+        while (SolarisKeybinds.PING.consumeClick()) {
+            if (mc.screen != null) continue;
+            PingTracker.sendPing(mc);
         }
 
         while (SolarisKeybinds.TOGGLE_COMPASS.consumeClick()) {

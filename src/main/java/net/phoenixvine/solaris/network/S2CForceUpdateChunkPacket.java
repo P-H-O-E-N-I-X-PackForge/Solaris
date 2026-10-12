@@ -1,15 +1,9 @@
 package net.phoenixvine.solaris.network;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
-import net.phoenixvine.solaris.client.color.ChunkColorEvents;
-import net.phoenixvine.solaris.client.color.ChunkKey;
-import net.phoenixvine.solaris.client.render.SolarisTexture;
 
 import java.util.function.Supplier;
 
@@ -38,20 +32,11 @@ public class S2CForceUpdateChunkPacket {
     }
 
     public void handle(Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> applyOnClient(this)));
+        String dim = dimension;
+        int cx = chunkX;
+        int cz = chunkZ;
+        ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
+                () -> () -> ClientPacketHandlers.forceUpdateChunk(dim, cx, cz)));
         ctx.get().setPacketHandled(true);
-    }
-
-    private static void applyOnClient(S2CForceUpdateChunkPacket pkt) {
-        Minecraft mc = Minecraft.getInstance();
-        Level level = mc.level;
-        if (level == null || !level.dimension().location().toString().equals(pkt.dimension)) return;
-
-        if (!level.hasChunk(pkt.chunkX, pkt.chunkZ)) return;
-
-        ChunkPos pos = new ChunkPos(pkt.chunkX, pkt.chunkZ);
-        ChunkKey key = ChunkKey.of(level, pos);
-        ChunkColorEvents.resample(level, key, pos);
-        SolarisTexture.invalidateAll();
     }
 }

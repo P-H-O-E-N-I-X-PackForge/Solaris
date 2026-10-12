@@ -47,6 +47,11 @@ public final class SolarisAPI {
     public static final String FEATURE_BLACK_AND_WHITE = "black_and_white";
     public static final String FEATURE_CHUNK_GRID = "chunk_grid";
     public static final String FEATURE_SHOW_MOBS = "show_mobs";
+    public static final String FEATURE_SHOW_PLAYERS = "show_players";
+    public static final String FEATURE_PINGS = "pings";
+    public static final String FEATURE_CLAIMS = "claims";
+    public static final String FEATURE_SHARED_EXPLORATION = "shared_exploration";
+    public static final String FEATURE_SHARED_VEINS = "shared_veins";
     public static final String FEATURE_RAIL_NETWORK = "rail_network";
     public static final String FEATURE_UNEXPLORED_STYLE = "unexplored_style";
     public static final String FEATURE_ZOOM_LIMITS = "zoom_limits";
@@ -66,7 +71,7 @@ public final class SolarisAPI {
                 FEATURE_WAYPOINTS, FEATURE_MINIMAP, FEATURE_WORLD_MAP, FEATURE_UNDERGROUND_MAP,
                 FEATURE_SETTINGS_MENU, FEATURE_GOTO_COORDINATE, FEATURE_THEME_SELECT, FEATURE_WIKI,
                 FEATURE_HILLSHADING, FEATURE_VIGNETTE, FEATURE_BLACK_AND_WHITE, FEATURE_CHUNK_GRID,
-                FEATURE_SHOW_MOBS, FEATURE_RAIL_NETWORK, FEATURE_UNEXPLORED_STYLE, FEATURE_ZOOM_LIMITS));
+                FEATURE_SHOW_MOBS, FEATURE_SHOW_PLAYERS, FEATURE_PINGS, FEATURE_CLAIMS, FEATURE_SHARED_EXPLORATION, FEATURE_SHARED_VEINS, FEATURE_RAIL_NETWORK, FEATURE_UNEXPLORED_STYLE, FEATURE_ZOOM_LIMITS));
     }
 
     private static volatile boolean refreshPending = false;

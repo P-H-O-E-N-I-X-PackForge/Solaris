@@ -226,11 +226,6 @@ public class SolarisTexture implements AutoCloseable {
 
     private static final long MAYBE_REBUILD_CHECK_INTERVAL_MS = 50L;
 
-    // Rebuilds are otherwise incremental (chunks already inside the previous window are skipped),
-    // so a chunk drawn as unknown/gray before its first sample landed stayed gray until the player
-    // moved far enough or something invalidated everything. Newly sampled chunks bump this
-    // generation; each texture notices and does one full rebuild, rate-limited so streaming
-    // chunks in while moving doesn't rebuild every few frames.
     private static volatile long dirtyGeneration = 0;
     private static final long DIRTY_REBUILD_MIN_INTERVAL_MS = 750L;
     private long seenDirtyGeneration = 0;

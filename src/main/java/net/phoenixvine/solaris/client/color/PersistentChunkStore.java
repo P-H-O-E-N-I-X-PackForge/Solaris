@@ -5,6 +5,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.client.render.SolarisTexture;
 import net.phoenixvine.solaris.client.waypoint.WaypointManager;
+import net.phoenixvine.solaris.common.SharedExplorationClient;
 import net.phoenixvine.solaris.config.SolarisConfig;
 
 import java.io.BufferedInputStream;
@@ -125,9 +126,22 @@ public final class PersistentChunkStore {
 
         ConcurrentHashMap<ChunkKey, Entry> chunks = DIMENSIONS.computeIfAbsent(dimension,
                 d -> new ConcurrentHashMap<>());
-        chunks.put(key, new Entry(pixels, heights, water, waterTint, waterDepth, waterOcean, foliage,
-                System.currentTimeMillis()));
+        Entry previous = chunks.put(key, new Entry(pixels, heights, water, waterTint, waterDepth, waterOcean,
+                foliage, System.currentTimeMillis()));
         DIRTY_DIMENSIONS.add(dimension);
+        
+        if (previous == null) SharedExplorationClient.onLocalChunk(key);
+    }
+
+    public static boolean putSharedIfAbsent(ChunkKey key, Entry entry) {
+        String dimension = key.dimension().toString();
+        ensureLoading(dimension);
+
+        ConcurrentHashMap<ChunkKey, Entry> chunks = DIMENSIONS.computeIfAbsent(dimension,
+                d -> new ConcurrentHashMap<>());
+        if (chunks.putIfAbsent(key, entry) != null) return false;
+        DIRTY_DIMENSIONS.add(dimension);
+        return true;
     }
 
     public static void saveDirtyAsync() {
@@ -259,7 +273,8 @@ public final class PersistentChunkStore {
         }
 
         Path file = fileFor(worldKey, dimension);
-        Path tempFile = file.resolveSibling(file.getFileName() + ".tmp");
+        
+        Path tempFile = file.resolveSibling(file.getFileName() + "." + ProcessHandle.current().pid() + ".tmp");
         try {
             Files.createDirectories(file.getParent());
             try (DataOutputStream out = new DataOutputStream(new GZIPOutputStream(
@@ -306,8 +321,7 @@ public final class PersistentChunkStore {
                 }
             }
 
-            Files.move(tempFile, file, java.nio.file.StandardCopyOption.REPLACE_EXISTING,
-                    java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+            net.phoenixvine.solaris.util.FileReplace.replace(tempFile, file);
             PhoenixSolaris.LOGGER.info("[Solaris] Saved {} persisted chunk(s) for {} to disk ({} in memory)",
                     entries.size(), dimension, chunks.size());
         } catch (IOException e) {

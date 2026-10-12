@@ -15,6 +15,8 @@ import net.minecraft.world.level.Level;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.client.waypoint.WaypointManager;
+import net.phoenixvine.solaris.common.SharedVeinClient;
+import net.phoenixvine.solaris.sharing.SharedVeinEntry;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -65,9 +67,47 @@ public final class GtVeinRegistry {
             BY_DIMENSION.computeIfAbsent(dimKey, k -> new CopyOnWriteArrayList<>())
                     .add(new GtceuIntegration.GtOreVein(vein.center(), name, argb, icon));
             save();
+            SharedVeinClient.onLocalVein(dimKey, vein.center(), name, argb, idFromItem(icon));
         } catch (Throwable ignored) {
 
         }
+    }
+
+    public static int addSharedBatch(List<SharedVeinEntry> entries) {
+        int added = 0;
+        try {
+            ensureLoaded();
+            for (SharedVeinEntry e : entries) {
+                BlockPos pos = new BlockPos(e.x(), e.y(), e.z());
+                if (!SEEN.add(e.dimension() + "@" + pos)) continue;
+                BY_DIMENSION.computeIfAbsent(e.dimension(), k -> new CopyOnWriteArrayList<>())
+                        .add(new GtceuIntegration.GtOreVein(pos, e.name(), e.argb(), itemFromId(e.itemId())));
+                added++;
+            }
+            if (added > 0) save();
+        } catch (Throwable ignored) {
+
+        }
+        return added;
+    }
+
+    public static List<SharedVeinEntry> snapshotAll() {
+        List<SharedVeinEntry> out = new ArrayList<>();
+        try {
+            ensureLoaded();
+            for (Map.Entry<String, List<GtceuIntegration.GtOreVein>> entry : BY_DIMENSION.entrySet()) {
+                for (GtceuIntegration.GtOreVein vein : entry.getValue()) {
+                    String item = idFromItem(vein.icon());
+                    String name = vein.name() == null ? "" : vein.name();
+                    out.add(new SharedVeinEntry(entry.getKey(), vein.center().getX(), vein.center().getY(),
+                            vein.center().getZ(), name.length() > 96 ? name.substring(0, 96) : name,
+                            vein.colorArgb(), item == null ? "" : item));
+                }
+            }
+        } catch (Throwable ignored) {
+
+        }
+        return out;
     }
 
     private static ItemStack rawOreIcon(Material material) {

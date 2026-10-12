@@ -79,7 +79,7 @@ public final class PersistentCaveStore {
 
         List<String> toSave = new ArrayList<>(DIRTY_DIMENSIONS);
         for (String dimension : toSave) {
-            
+
             if (LOADING.contains(dimension)) continue;
             if (!SAVING.add(dimension)) continue;
             DIRTY_DIMENSIONS.remove(dimension);

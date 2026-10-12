@@ -39,6 +39,8 @@ public final class SolarisConfig {
     public static final ForgeConfigSpec.DoubleValue WAYPOINT_ICON_SCALE;
     public static final ForgeConfigSpec.BooleanValue SHOW_GT_ORE_VEINS;
     public static final ForgeConfigSpec.BooleanValue SHOW_MOBS;
+    public static final ForgeConfigSpec.BooleanValue SHOW_PLAYERS;
+    public static final ForgeConfigSpec.BooleanValue SHARE_EXPLORATION;
     public static final ForgeConfigSpec.BooleanValue HILLSHADING;
     public static final ForgeConfigSpec.DoubleValue HILLSHADING_STRENGTH;
     public static final ForgeConfigSpec.EnumValue<LabelSide> LABEL_SIDE;
@@ -306,6 +308,16 @@ public final class SolarisConfig {
                 .comment("Show nearby living mobs (hostile and passive) as markers on the fullscreen map and " +
                         "globe, same way other players already show up.")
                 .define("showMobs", true);
+        SHOW_PLAYERS = builder
+                .comment("Show other players on the minimap and fullscreen map. Players near you always " +
+                        "work; players further away only appear if the server has player positions " +
+                        "enabled (guild-only or everyone) and has not disabled the feature for you.")
+                .define("showPlayers", true);
+        SHARE_EXPLORATION = builder
+                .comment("Share the map areas you explore and the GT ore veins you find with your guild, and use " +
+                        "what they share. Only does anything when the server enables common exploration and you " +
+                        "are in a guild. Turn off to neither send nor receive.")
+                .define("shareWithGuild", true);
         HILLSHADING = builder
                 .comment("Replace the flat map's simple north-neighbor relief shading with real " +
                         "cartographic hillshading. A smooth slope-based light/dark gradient computed from " +
@@ -407,7 +419,7 @@ public final class SolarisConfig {
         builder.push("cache");
         MAX_CACHED_CHUNKS = builder
                 .comment("Maximum number of sampled chunk color arrays kept in memory (LRU-evicted beyond " +
-                        "this), shared across every open map/minimap. A single fullscreen map at the default " +
+                        "this), common across every open map/minimap. A single fullscreen map at the default " +
                         "24-chunk radius alone needs ~2401 chunks in view at once. The old default of 4096 " +
                         "left barely any headroom once the always-on minimap and normal panning/exploring " +
                         "were sharing the same bound, so already-explored chunks kept aging out and " +

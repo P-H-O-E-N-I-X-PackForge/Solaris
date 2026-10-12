@@ -131,6 +131,20 @@ legacyForge {
             programArguments.addAll('--refresh-dependencies')
             systemProperty('forge.enabledGameTestNamespaces', project.mod_id)
         }
+        client2 {
+            client()
+            sourceSet = sourceSets.main
+            gameDirectory = file('run/client2')
+            programArguments.addAll('--username', 'Dev2')
+            jvmArguments.addAll('-Xmx3G')
+        }
+        client3 {
+            client()
+            sourceSet = sourceSets.main
+            gameDirectory = file('run/client3')
+            programArguments.addAll('--username', 'Dev3')
+            jvmArguments.addAll('-Xmx3G')
+        }
         server {
             server()
             sourceSet = sourceSets.main
@@ -176,8 +190,8 @@ dependencies {
     modCompileOnly("curse.maven:create-328085:${create_file_id}") { transitive = false }
     modRuntimeOnly("curse.maven:create-328085:${create_file_id}") { transitive = false }
 
-    modCompileOnly('net.phoenixvine.guilds:phoenix_guilds:1.6.3')
-    modRuntimeOnly('net.phoenixvine.guilds:phoenix_guilds:1.6.3')
+    modCompileOnly('net.phoenixvine.guilds:phoenix_guilds:1.6.6')
+    modRuntimeOnly('net.phoenixvine.guilds:phoenix_guilds:1.6.6')
 
     modImplementation("net.phoenixvine.wiki:phoenix_wiki:0.5.5")
 
@@ -220,6 +234,8 @@ tasks.withType(JavaCompile).configureEach {
     options.release.set(17)
     options.compilerArgs << "-Aquiet=true" // Suppress mixin notes
 }
+
+
 
 tasks.register('publishToDomains', Copy) {
     group = 'phoenix'

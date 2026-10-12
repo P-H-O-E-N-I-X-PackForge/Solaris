@@ -22,11 +22,16 @@ import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_PANEL;
 public class QuickWaypointScreen extends Screen {
 
     private static final int BOX_W = 216;
-    private static final int BOX_H = 262;
+    private static final int BOX_H = 250;
+    private static final int SCREEN_MARGIN = 12;
 
     private static final String[] SWATCHES = {
             "FFFFFFFF", "FFFF5555", "FFFFAA00", "FFFFFF55", "FF55FF55", "FF55FFFF", "FF5599FF", "FFFF55FF"
     };
+
+    private float uiScale = 1f;
+    private int vw;
+    private int vh;
 
     private final Screen parent;
     private final ResourceLocation dimension;
@@ -54,11 +59,11 @@ public class QuickWaypointScreen extends Screen {
     }
 
     private int boxX() {
-        return (width - BOX_W) / 2;
+        return (vw - BOX_W) / 2;
     }
 
     private int boxY() {
-        return (height - BOX_H) / 2;
+        return (vh - BOX_H) / 2;
     }
 
     @Override
@@ -68,40 +73,47 @@ public class QuickWaypointScreen extends Screen {
             parent.resize(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
         }
 
+        int needW = BOX_W + 16 + 2 * SCREEN_MARGIN;
+        int needH = BOX_H + 16 + 2 * SCREEN_MARGIN;
+        uiScale = (width < needW || height < needH) ?
+                Math.min(width / (float) needW, height / (float) needH) : 1f;
+        vw = Math.round(width / uiScale);
+        vh = Math.round(height / uiScale);
+
         int x = boxX();
         int y = boxY();
 
-        nameBox = new EditBox(font, x + 10, y + 24, BOX_W - 20, 16, Component.literal("Name"));
+        nameBox = new EditBox(font, x + 10, y + 32, BOX_W - 20, 16, Component.literal("Name"));
         nameBox.setMaxLength(48);
         nameBox.setValue("Waypoint " + (WaypointManager.getAll().size() + 1));
         addWidget(nameBox);
         setInitialFocus(nameBox);
 
         int coordW = (BOX_W - 20 - 8) / 3;
-        xBox = new EditBox(font, x + 10, y + 50, coordW, 16, Component.literal("X"));
+        xBox = new EditBox(font, x + 10, y + 64, coordW, 16, Component.literal("X"));
         xBox.setMaxLength(8);
         xBox.setFilter(s -> s.isEmpty() || s.equals("-") || s.matches("-?\\d+"));
         xBox.setValue(String.valueOf(initialX));
         addWidget(xBox);
 
-        yBox = new EditBox(font, x + 10 + coordW + 4, y + 50, coordW, 16, Component.literal("Y"));
+        yBox = new EditBox(font, x + 10 + coordW + 4, y + 64, coordW, 16, Component.literal("Y"));
         yBox.setMaxLength(8);
         yBox.setFilter(s -> s.isEmpty() || s.equals("-") || s.matches("-?\\d+"));
         yBox.setValue(String.valueOf(initialY));
         addWidget(yBox);
 
-        zBox = new EditBox(font, x + 10 + 2 * (coordW + 4), y + 50, coordW, 16, Component.literal("Z"));
+        zBox = new EditBox(font, x + 10 + 2 * (coordW + 4), y + 64, coordW, 16, Component.literal("Z"));
         zBox.setMaxLength(8);
         zBox.setFilter(s -> s.isEmpty() || s.equals("-") || s.matches("-?\\d+"));
         zBox.setValue(String.valueOf(initialZ));
         addWidget(zBox);
 
-        colorBox = new EditBox(font, x + 10, y + 92, BOX_W - 20, 16, Component.literal("Color"));
+        colorBox = new EditBox(font, x + 10, y + 96, BOX_W - 20, 16, Component.literal("Color"));
         colorBox.setMaxLength(8);
         colorBox.setValue(SWATCHES[0]);
         addWidget(colorBox);
 
-        labelColorBox = new EditBox(font, x + 10, y + 134, BOX_W - 20, 16, Component.literal("Label Color"));
+        labelColorBox = new EditBox(font, x + 10, y + 148, BOX_W - 20, 16, Component.literal("Label Color"));
         labelColorBox.setMaxLength(8);
         labelColorBox.setHint(Component.literal("Same as theme text"));
         addWidget(labelColorBox);
@@ -109,12 +121,12 @@ public class QuickWaypointScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal("Icon: " + WaypointIconManager.label(icon)),
                 b -> Minecraft.getInstance().setScreen(new WaypointIconPickerScreen(this, icon, colorArgb(), id -> {
                     icon = id;
-                }))).bounds(x + 10, y + 160, BOX_W - 20, 18).build());
+                }))).bounds(x + 10, y + 172, BOX_W - 20, 18).build());
 
         addRenderableWidget(Button.builder(Component.literal(visible ? "Visible: ON" : "Visible: OFF"), b -> {
             visible = !visible;
             b.setMessage(Component.literal(visible ? "Visible: ON" : "Visible: OFF"));
-        }).bounds(x + 10, y + 182, BOX_W - 20, 18).build());
+        }).bounds(x + 10, y + 194, BOX_W - 20, 18).build());
 
         addRenderableWidget(Button.builder(Component.literal("Save"), b -> save())
                 .bounds(x + 10, y + BOX_H - 22, (BOX_W - 24) / 2, 18).build());
@@ -133,7 +145,7 @@ public class QuickWaypointScreen extends Screen {
     }
 
     private int swatchY() {
-        return boxY() + 112;
+        return boxY() + 116;
     }
 
     private int coord(EditBox box, int fallback) {
@@ -165,23 +177,30 @@ public class QuickWaypointScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics g, int mx, int my, float pt) {
+    public void render(GuiGraphics g, int rawMx, int rawMy, float pt) {
+        int mx = Math.round(rawMx / uiScale);
+        int my = Math.round(rawMy / uiScale);
+
         if (parent instanceof SolarisMapScreen mapScreen) {
             mapScreen.renderMapBackground(g);
             g.fill(0, 0, width, height, 0xE0101014);
         } else {
             renderBackground(g);
         }
+
+        g.pose().pushPose();
+        g.pose().scale(uiScale, uiScale, 1f);
+
         int x = boxX();
         int y = boxY();
         g.fill(x, y, x + BOX_W, y + BOX_H, C_PANEL);
         VanillaPanel.draw(g, x - 8, y - 8, BOX_W + 16, BOX_H + 16, C_PANEL);
 
         g.drawCenteredString(font, "New Waypoint", x + BOX_W / 2, y + 6, C_ACCENT);
-        g.drawString(font, "Name", x + 10, y + 15, C_DIM, false);
-        g.drawString(font, "X / Y / Z  (" + dimension.getPath() + ")", x + 10, y + 41, C_DIM, false);
-        g.drawString(font, "Color (hex)", x + 10, y + 83, C_DIM, false);
-        g.drawString(font, "Label Color (hex)", x + 10, y + 125, C_DIM, false);
+        g.drawString(font, "Name", x + 10, y + 22, C_DIM, false);
+        g.drawString(font, "X / Y / Z  (" + dimension.getPath() + ")", x + 10, y + 54, C_DIM, false);
+        g.drawString(font, "Color (hex)", x + 10, y + 86, C_DIM, false);
+        g.drawString(font, "Label Color (hex)", x + 10, y + 138, C_DIM, false);
 
         List<String> swatches = List.of(SWATCHES);
         int sy = swatchY();
@@ -201,10 +220,14 @@ public class QuickWaypointScreen extends Screen {
         if (labelColorBox != null) labelColorBox.render(g, mx, my, pt);
 
         super.render(g, mx, my, pt);
+
+        g.pose().popPose();
     }
 
     @Override
-    public boolean mouseClicked(double mx, double my, int button) {
+    public boolean mouseClicked(double rawMx, double rawMy, int button) {
+        double mx = rawMx / uiScale;
+        double my = rawMy / uiScale;
         if (button == 0) {
             int x = boxX();
             int sy = swatchY();
@@ -217,6 +240,16 @@ public class QuickWaypointScreen extends Screen {
             }
         }
         return super.mouseClicked(mx, my, button);
+    }
+
+    @Override
+    public boolean mouseDragged(double rawMx, double rawMy, int btn, double dragX, double dragY) {
+        return super.mouseDragged(rawMx / uiScale, rawMy / uiScale, btn, dragX / uiScale, dragY / uiScale);
+    }
+
+    @Override
+    public boolean mouseReleased(double rawMx, double rawMy, int btn) {
+        return super.mouseReleased(rawMx / uiScale, rawMy / uiScale, btn);
     }
 
     @Override

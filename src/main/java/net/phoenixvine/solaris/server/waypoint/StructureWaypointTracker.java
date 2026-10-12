@@ -1,4 +1,4 @@
-package net.phoenixvine.solaris.server;
+package net.phoenixvine.solaris.server.waypoint;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
@@ -13,11 +13,13 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 import net.phoenixvine.solaris.PhoenixSolaris;
-import net.phoenixvine.solaris.config.SolarisConfig;
+import net.phoenixvine.solaris.api.SolarisClaimsAPI;
+import net.phoenixvine.solaris.config.SolarisServerConfig;
 import net.phoenixvine.solaris.network.S2CStructureDiscoveredPacket;
 import net.phoenixvine.solaris.network.SolarisNetwork;
 
 import it.unimi.dsi.fastutil.longs.LongSet;
+import net.phoenixvine.solaris.server.StructureWaypointData;
 
 import java.util.Map;
 import java.util.UUID;
@@ -36,7 +38,8 @@ public final class StructureWaypointTracker {
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (!(event.player instanceof ServerPlayer player)) return;
-        if (!SolarisConfig.AUTO_STRUCTURE_WAYPOINTS.get()) return;
+
+        if (!SolarisServerConfig.SPEC.isLoaded() || !SolarisServerConfig.STRUCTURE_WAYPOINTS_ENABLED.get()) return;
         if (player.tickCount % CHECK_INTERVAL_TICKS != 0) return;
 
         BlockPos pos = player.blockPosition();

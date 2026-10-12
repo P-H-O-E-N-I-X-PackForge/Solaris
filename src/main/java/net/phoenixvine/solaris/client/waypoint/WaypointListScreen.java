@@ -13,7 +13,9 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
+import net.phoenixvine.solaris.network.C2SGuildWaypointPacket;
 import net.phoenixvine.solaris.network.C2SShareWaypointPacket;
+import net.phoenixvine.solaris.network.ClientPacketHandlers;
 import net.phoenixvine.solaris.network.SolarisNetwork;
 
 import java.util.ArrayList;
@@ -184,6 +186,21 @@ public class WaypointListScreen extends Screen {
                 addRenderableWidget(Button.builder(Component.literal("Share to Guild"), b -> shareSelected())
                         .bounds(editX, y, sideW - 20, 18).build());
                 y += ROW_H + 8;
+
+                boolean guildEntry = selected.id != null &&
+                        selected.id.startsWith(ClientPacketHandlers.GUILD_WAYPOINT_PREFIX);
+                if (guildEntry) {
+                    int half = (sideW - 20 - 4) / 2;
+                    addRenderableWidget(Button.builder(Component.literal("Update Guild"), b -> publishToGuild())
+                            .bounds(editX, y, half, 18).build());
+                    addRenderableWidget(Button.builder(Component.literal("Remove"), b -> removeFromGuildList())
+                            .bounds(editX + half + 4, y, half, 18).build());
+                    y += ROW_H + 8;
+                } else if (!selected.locked) {
+                    addRenderableWidget(Button.builder(Component.literal("Add to Guild List"),
+                            b -> publishToGuild()).bounds(editX, y, sideW - 20, 18).build());
+                    y += ROW_H + 8;
+                }
             }
 
             addRenderableWidget(Button.builder(Component.literal("Save"), b -> saveSelected())
@@ -239,6 +256,29 @@ public class WaypointListScreen extends Screen {
         }
         SolarisNetwork.CHANNEL.sendToServer(new C2SShareWaypointPacket(selected.name, selected.dimension,
                 selected.x, selected.y, selected.z, selected.color, selected.icon));
+    }
+
+    private void publishToGuild() {
+        if (selected == null || nameBox == null || colorBox == null) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+
+        String key = selected.id != null && selected.id.startsWith(ClientPacketHandlers.GUILD_WAYPOINT_PREFIX) ?
+                selected.id.substring(ClientPacketHandlers.GUILD_WAYPOINT_PREFIX.length()) : "";
+        String name = nameBox.getValue().isBlank() ? selected.name : nameBox.getValue().trim();
+        String category = categoryBox != null ? categoryBox.getValue().trim() : selected.category;
+        SolarisNetwork.CHANNEL.sendToServer(C2SGuildWaypointPacket.upsert(key, name, selected.dimension,
+                parseCoord(xBox, selected.x), parseCoord(yBox, selected.y), parseCoord(zBox, selected.z),
+                colorBox.getValue().trim(), selected.icon, category));
+    }
+
+    private void removeFromGuildList() {
+        if (selected == null || selected.id == null ||
+                !selected.id.startsWith(ClientPacketHandlers.GUILD_WAYPOINT_PREFIX)) {
+            return;
+        }
+        SolarisNetwork.CHANNEL.sendToServer(C2SGuildWaypointPacket
+                .remove(selected.id.substring(ClientPacketHandlers.GUILD_WAYPOINT_PREFIX.length())));
     }
 
     private void saveSelected() {

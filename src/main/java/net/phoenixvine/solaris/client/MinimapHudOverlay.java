@@ -19,6 +19,9 @@ import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 import net.phoenixvine.solaris.client.color.ChunkKey;
 import net.phoenixvine.solaris.client.perf.SolarisProfiler;
+import net.phoenixvine.solaris.client.ping.PingMarker;
+import net.phoenixvine.solaris.client.ping.PingTracker;
+import net.phoenixvine.solaris.client.player.RemotePlayerTracker;
 import net.phoenixvine.solaris.client.render.LineRenderer;
 import net.phoenixvine.solaris.client.render.MinimapShape;
 import net.phoenixvine.solaris.client.render.ModernPanel;
@@ -217,6 +220,73 @@ public class MinimapHudOverlay {
         g.pose().popPose();
         g.disableScissor();
 
+        String hoveredPlayerName = null;
+        List<RemotePlayerTracker.MapPlayer> offScreenPlayers = new ArrayList<>();
+        for (RemotePlayerTracker.MapPlayer other : RemotePlayerTracker.collect(mc)) {
+            double plPixelX = radiusPixels + (other.x() - (chunkX << 4));
+            double plPixelZ = radiusPixels + (other.z() - (chunkZ << 4));
+            if (plPixelX < u || plPixelX > u + viewPixels || plPixelZ < v || plPixelZ > v + viewPixels) {
+                offScreenPlayers.add(other);
+                continue;
+            }
+
+            int plX = x + (int) ((plPixelX - u) * scale);
+            int plY = y + (int) ((plPixelZ - v) * scale);
+            int[] plPos = rotate ? rotateAroundCenter(plX, plY, cx, cy, contentAngle) : new int[] { plX, plY };
+            int faceR = 4;
+            if (plPos[0] < x + faceR || plPos[0] > x + screenSize - faceR || plPos[1] < y + faceR ||
+                    plPos[1] > y + screenSize - faceR) {
+                continue;
+            }
+            if (shape != MinimapShape.SQUARE && !containsPoint(shape, plPos[0] - x, plPos[1] - y, screenSize)) {
+                continue;
+            }
+
+            PlayerArrow.draw(g, plPos[0], plPos[1], faceR, other.yaw() + (rotate ? contentAngle : 0f), 0xFFAAAAAA,
+                    other.skin());
+            double pdx = plPos[0] - mouseX;
+            double pdy = plPos[1] - mouseY;
+            if (pdx * pdx + pdy * pdy <= HOVER_RADIUS_SQ) hoveredPlayerName = other.name();
+        }
+
+        for (PingTracker.Ping ping : PingTracker.collect(mc)) {
+            double pgPixelX = radiusPixels + (ping.x() + 0.5 - (chunkX << 4));
+            double pgPixelZ = radiusPixels + (ping.z() + 0.5 - (chunkZ << 4));
+            if (pgPixelX < u || pgPixelX > u + viewPixels || pgPixelZ < v || pgPixelZ > v + viewPixels) continue;
+
+            int pgX = x + (int) ((pgPixelX - u) * scale);
+            int pgY = y + (int) ((pgPixelZ - v) * scale);
+            int[] pgPos = rotate ? rotateAroundCenter(pgX, pgY, cx, cy, contentAngle) : new int[] { pgX, pgY };
+            if (pgPos[0] < x + 4 || pgPos[0] > x + screenSize - 4 || pgPos[1] < y + 4 ||
+                    pgPos[1] > y + screenSize - 4) {
+                continue;
+            }
+            if (shape != MinimapShape.SQUARE && !containsPoint(shape, pgPos[0] - x, pgPos[1] - y, screenSize)) {
+                continue;
+            }
+
+            PingMarker.draw(g, pgPos[0], pgPos[1], 4, ping);
+            double gdx = pgPos[0] - mouseX;
+            double gdy = pgPos[1] - mouseY;
+            if (gdx * gdx + gdy * gdy <= HOVER_RADIUS_SQ) hoveredPlayerName = ping.sender() + " (ping)";
+        }
+
+        for (RemotePlayerTracker.MapPlayer other : offScreenPlayers) {
+            int[] edgePos = edgePosition(other.x(), other.z(), mc, cx, cy, radius, rotate, contentAngle);
+            if (edgePos == null) continue;
+
+            double outX = other.x() - mc.player.getX();
+            double outZ = other.z() - mc.player.getZ();
+            float outward = (float) Math.toDegrees(Math.atan2(-outX, outZ)) + (rotate ? contentAngle : 0f);
+            PlayerArrow.draw(g, edgePos[0], edgePos[1], 3, outward, 0xFFAAAAAA, other.skin());
+
+            double edx = edgePos[0] - mouseX;
+            double edy = edgePos[1] - mouseY;
+            if (edx * edx + edy * edy <= HOVER_RADIUS_SQ) {
+                hoveredPlayerName = other.name() + " (" + Math.round(Math.hypot(outX, outZ)) + "m)";
+            }
+        }
+
         if (offScreenWaypoints != null) {
             for (Waypoint w : offScreenWaypoints) {
                 drawWaypointDirection(g, w, mc, cx, cy, radius, rotate, contentAngle);
@@ -243,8 +313,9 @@ public class MinimapHudOverlay {
 
         drawInfoText(g, mc, x, y, screenSize);
 
-        if (hoveredWaypoint != null) {
-            String name = hoveredWaypoint.name;
+        String hoverLabel = hoveredWaypoint != null ? hoveredWaypoint.name : hoveredPlayerName;
+        if (hoverLabel != null) {
+            String name = hoverLabel;
             int tw = mc.font.width(name);
             int tx = (int) mouseX + 10;
             int ty = (int) mouseY - 4;
@@ -263,8 +334,13 @@ public class MinimapHudOverlay {
 
     private static int[] waypointEdgePosition(Waypoint w, Minecraft mc, int cx, int cy, int radius, boolean rotate,
                                               float contentAngle) {
-        double dx = w.x - mc.player.getX();
-        double dz = w.z - mc.player.getZ();
+        return edgePosition(w.x, w.z, mc, cx, cy, radius, rotate, contentAngle);
+    }
+
+    private static int[] edgePosition(double targetX, double targetZ, Minecraft mc, int cx, int cy, int radius,
+                                      boolean rotate, float contentAngle) {
+        double dx = targetX - mc.player.getX();
+        double dz = targetZ - mc.player.getZ();
         if (dx == 0 && dz == 0) return null;
 
         double angle;

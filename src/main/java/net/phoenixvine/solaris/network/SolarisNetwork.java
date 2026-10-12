@@ -10,7 +10,7 @@ import java.util.Optional;
 
 public final class SolarisNetwork {
 
-    private static final String PROTOCOL = "1";
+    private static final String PROTOCOL = "2";
 
     public static SimpleChannel CHANNEL;
 
@@ -65,6 +65,118 @@ public final class SolarisNetwork {
                 S2CStructureDiscoveredPacket::encode,
                 S2CStructureDiscoveredPacket::new,
                 S2CStructureDiscoveredPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+
+        CHANNEL.registerMessage(id++,
+                S2CPlayerPositionsPacket.class,
+                S2CPlayerPositionsPacket::encode,
+                S2CPlayerPositionsPacket::new,
+                S2CPlayerPositionsPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+
+        CHANNEL.registerMessage(id++,
+                S2CServerCapabilitiesPacket.class,
+                S2CServerCapabilitiesPacket::encode,
+                S2CServerCapabilitiesPacket::new,
+                S2CServerCapabilitiesPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+
+        CHANNEL.registerMessage(id++,
+                S2CDeathMarkerPacket.class,
+                S2CDeathMarkerPacket::encode,
+                S2CDeathMarkerPacket::new,
+                S2CDeathMarkerPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+
+        CHANNEL.registerMessage(id++,
+                S2CServerWaypointsPacket.class,
+                S2CServerWaypointsPacket::encode,
+                S2CServerWaypointsPacket::new,
+                S2CServerWaypointsPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+
+        CHANNEL.registerMessage(id++,
+                C2SPingPacket.class,
+                C2SPingPacket::encode,
+                C2SPingPacket::new,
+                C2SPingPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
+
+        CHANNEL.registerMessage(id++,
+                S2CPingPacket.class,
+                S2CPingPacket::encode,
+                S2CPingPacket::new,
+                S2CPingPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+
+        CHANNEL.registerMessage(id++,
+                S2CMarkerPacket.class,
+                S2CMarkerPacket::encode,
+                S2CMarkerPacket::new,
+                S2CMarkerPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+
+        CHANNEL.registerMessage(id++,
+                S2CClaimsPacket.class,
+                S2CClaimsPacket::encode,
+                S2CClaimsPacket::new,
+                S2CClaimsPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+
+        CHANNEL.registerMessage(id++,
+                S2CGuildWaypointsPacket.class,
+                S2CGuildWaypointsPacket::encode,
+                S2CGuildWaypointsPacket::new,
+                S2CGuildWaypointsPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+
+        CHANNEL.registerMessage(id++,
+                C2SGuildWaypointPacket.class,
+                C2SGuildWaypointPacket::encode,
+                C2SGuildWaypointPacket::new,
+                C2SGuildWaypointPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
+
+        CHANNEL.registerMessage(id++,
+                C2SSharedChunksPacket.class,
+                C2SSharedChunksPacket::encode,
+                C2SSharedChunksPacket::new,
+                C2SSharedChunksPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
+
+        CHANNEL.registerMessage(id++,
+                S2CSharedChunksPacket.class,
+                S2CSharedChunksPacket::encode,
+                S2CSharedChunksPacket::new,
+                S2CSharedChunksPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+
+        CHANNEL.registerMessage(id++,
+                C2SSharedSyncRequestPacket.class,
+                C2SSharedSyncRequestPacket::encode,
+                C2SSharedSyncRequestPacket::new,
+                C2SSharedSyncRequestPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
+
+        CHANNEL.registerMessage(id++,
+                S2CSharedUploadWantPacket.class,
+                S2CSharedUploadWantPacket::encode,
+                S2CSharedUploadWantPacket::new,
+                S2CSharedUploadWantPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+
+        CHANNEL.registerMessage(id++,
+                C2SSharedVeinsPacket.class,
+                C2SSharedVeinsPacket::encode,
+                C2SSharedVeinsPacket::new,
+                C2SSharedVeinsPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
+
+        CHANNEL.registerMessage(id++,
+                S2CSharedVeinsPacket.class,
+                S2CSharedVeinsPacket::encode,
+                S2CSharedVeinsPacket::new,
+                S2CSharedVeinsPacket::handle,
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT));
     }
 }

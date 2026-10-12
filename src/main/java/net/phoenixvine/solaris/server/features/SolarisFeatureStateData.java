@@ -70,6 +70,13 @@ public class SolarisFeatureStateData extends SavedData {
         return perFeature.getOrDefault(featureId, SolarisFeatureState.ENABLED);
     }
 
+    public boolean isExplicit(UUID token, ResourceLocation dimension, String featureId) {
+        Map<ResourceLocation, Map<String, SolarisFeatureState>> perDimension = byToken.get(token);
+        if (perDimension == null) return false;
+        Map<String, SolarisFeatureState> perFeature = perDimension.get(dimension);
+        return perFeature != null && perFeature.containsKey(featureId);
+    }
+
     public void set(UUID token, ResourceLocation dimension, String featureId, SolarisFeatureState state) {
         byToken.computeIfAbsent(token, t -> new LinkedHashMap<>())
                 .computeIfAbsent(dimension, d -> new LinkedHashMap<>())

@@ -10,6 +10,7 @@ import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 import net.phoenixvine.solaris.client.waypoint.Waypoint;
 import net.phoenixvine.solaris.client.waypoint.WaypointManager;
+import net.phoenixvine.solaris.config.SolarisConfig;
 
 import java.util.function.Supplier;
 
@@ -56,6 +57,7 @@ public class S2CStructureDiscoveredPacket {
     private static void applyOnClient(S2CStructureDiscoveredPacket pkt) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
+        if (!SolarisConfig.AUTO_STRUCTURE_WAYPOINTS.get()) return;
 
         Waypoint w = new Waypoint(pkt.structureName, new ResourceLocation(pkt.dimension), pkt.x, pkt.y, pkt.z,
                 STRUCTURE_COLOR);

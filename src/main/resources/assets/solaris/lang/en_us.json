@@ -8,5 +8,6 @@
   "solaris.map.title": "Solaris",
   "solaris.waypoint.added": "Waypoint added: %s (edit it from the Waypoints list)",
   "solaris.export.success": "Map exported to solaris_maps/%s",
-  "solaris.export.failure": "Couldn't export map: %s"
+  "solaris.export.failure": "Couldn't export map: %s",
+  "key.solaris.ping": "Ping Location"
 }

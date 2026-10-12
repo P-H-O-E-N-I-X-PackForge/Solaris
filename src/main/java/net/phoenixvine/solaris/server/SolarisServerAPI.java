@@ -102,6 +102,16 @@ public final class SolarisServerAPI {
         SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> target), new S2CRemoveWaypointPacket(name));
     }
 
+    private static final String HIDDEN_FROM_MAP_KEY = "hidden_from_map";
+
+    public static boolean isHiddenFromMap(ServerPlayer player) {
+        return solarisTag(player).getBoolean(HIDDEN_FROM_MAP_KEY);
+    }
+
+    public static void setHiddenFromMap(ServerPlayer player, boolean hidden) {
+        solarisTag(player).putBoolean(HIDDEN_FROM_MAP_KEY, hidden);
+    }
+
     private static CompoundTag solarisTag(ServerPlayer player) {
         CompoundTag persisted = getOrCreateChild(player.getPersistentData(), Player.PERSISTED_NBT_TAG);
         return getOrCreateChild(persisted, PhoenixSolaris.MOD_ID);

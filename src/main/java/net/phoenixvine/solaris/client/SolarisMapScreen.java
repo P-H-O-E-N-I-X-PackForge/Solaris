@@ -3,7 +3,6 @@ package net.phoenixvine.solaris.client;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -37,6 +36,9 @@ import net.phoenixvine.solaris.client.render.MapViewport;
 import net.phoenixvine.solaris.client.render.MinimapShape;
 import net.phoenixvine.solaris.client.render.MobFaceIcons;
 import net.phoenixvine.solaris.client.render.ModernPanel;
+import net.phoenixvine.solaris.client.ping.PingMarker;
+import net.phoenixvine.solaris.client.ping.PingTracker;
+import net.phoenixvine.solaris.client.player.RemotePlayerTracker;
 import net.phoenixvine.solaris.client.render.PlayerArrow;
 import net.phoenixvine.solaris.client.render.SmoothShapes;
 import net.phoenixvine.solaris.client.render.SolarisTexture;
@@ -50,6 +52,7 @@ import net.phoenixvine.solaris.client.waypoint.Waypoint;
 import net.phoenixvine.solaris.client.waypoint.WaypointIconManager;
 import net.phoenixvine.solaris.client.waypoint.WaypointListScreen;
 import net.phoenixvine.solaris.client.waypoint.WaypointManager;
+import net.phoenixvine.solaris.common.SharedExplorationClient;
 import net.phoenixvine.solaris.config.SolarisConfig;
 import net.phoenixvine.solaris.integration.gtceu.GtceuIntegration;
 import net.phoenixvine.wiki.PhoenixWikiAPI;
@@ -618,6 +621,8 @@ public class SolarisMapScreen extends Screen {
 
         Minecraft mc = Minecraft.getInstance();
 
+        SharedExplorationClient.requestAround(anchorChunkX, anchorChunkZ);
+
         cachedMobs.clear();
         if (SolarisConfig.SHOW_MOBS.get() && mc.level != null) {
             SolarisProfiler.time("worldMarkers:mobScan", () -> {
@@ -672,6 +677,11 @@ public class SolarisMapScreen extends Screen {
         g.drawCenteredString(font, title, width / 2, 6, C_ACCENT);
         g.drawCenteredString(font, footerHint(), width / 2, height - MARGIN + 10, C_TEXT);
 
+        String syncText = SharedExplorationClient.activityText();
+        if (syncText != null) {
+            g.drawString(font, syncText, width - MARGIN - 6 - font.width(syncText), MARGIN + 6, C_ACCENT, false);
+        }
+
         String hoveredButton = renderIconButtons(g, mx, my);
 
         Component tooltip;
@@ -686,10 +696,10 @@ public class SolarisMapScreen extends Screen {
         } else if (mode == ViewMode.FLAT && !dragging && toolMode == ToolMode.NAVIGATE &&
                 SolarisConfig.SHOW_BLOCK_TOOLTIP.get()) {
 
-                    tooltip = hoveredBlockName(mx, my);
-                } else {
-                    tooltip = null;
-                }
+            tooltip = hoveredBlockName(mx, my);
+        } else {
+            tooltip = null;
+        }
         if (tooltip != null) {
             g.renderTooltip(font, tooltip, mx, my);
         }
@@ -876,18 +886,42 @@ public class SolarisMapScreen extends Screen {
 
         hoveredPlayerName = null;
         if (mc.level != null) {
-            for (AbstractClientPlayer other : mc.level.players()) {
-                if (other == mc.player) continue;
-                int ox = (int) viewport.toScreenX(other.getX(), 0);
-                int oy = (int) viewport.toScreenY(other.getZ(), 0);
-                if (ox < texScreenMinX || ox > texScreenMaxX || oy < texScreenMinY || oy > texScreenMaxY ||
-                        !insideMapShape(ox, oy)) {
-                    continue;
+            for (RemotePlayerTracker.MapPlayer other : RemotePlayerTracker.collect(mc)) {
+                int ox = (int) viewport.toScreenX(other.x(), 0);
+                int oy = (int) viewport.toScreenY(other.z(), 0);
+
+                boolean plEdge = ox < texScreenMinX || ox > texScreenMaxX || oy < texScreenMinY || oy > texScreenMaxY;
+                int plDrawX = ox;
+                int plDrawY = oy;
+                String plLabel = other.name();
+                if (plEdge) {
+                    int pad = playerR + 3;
+                    plDrawX = Math.max(texScreenMinX + pad, Math.min(texScreenMaxX - pad, ox));
+                    plDrawY = Math.max(texScreenMinY + pad, Math.min(texScreenMaxY - pad, oy));
+                    double plDistance = Math.hypot(other.x() - mc.player.getX(), other.z() - mc.player.getZ());
+                    plLabel = other.name() + " (" + Math.round(plDistance) + "m)";
                 }
-                PlayerArrow.draw(g, ox, oy, playerR, other.getYRot(), 0xFFAAAAAA, other.getSkinTextureLocation());
-                if (mx >= ox - playerR && mx <= ox + playerR && my >= oy - playerR && my <= oy + playerR) {
-                    hoveredPlayerName = other.getGameProfile().getName();
+                if (!insideMapShape(plDrawX, plDrawY)) continue;
+
+                PlayerArrow.draw(g, plDrawX, plDrawY, plEdge ? Math.max(3, playerR - 2) : playerR, other.yaw(),
+                        0xFFAAAAAA, other.skin());
+                if (mx >= plDrawX - playerR && mx <= plDrawX + playerR && my >= plDrawY - playerR &&
+                        my <= plDrawY + playerR) {
+                    hoveredPlayerName = plLabel;
                 }
+            }
+        }
+
+        for (PingTracker.Ping ping : PingTracker.collect(mc)) {
+            int pgX = (int) viewport.toScreenX(ping.x() + 0.5, 0);
+            int pgY = (int) viewport.toScreenY(ping.z() + 0.5, 0);
+            if (pgX < texScreenMinX || pgX > texScreenMaxX || pgY < texScreenMinY || pgY > texScreenMaxY ||
+                    !insideMapShape(pgX, pgY)) {
+                continue;
+            }
+            PingMarker.draw(g, pgX, pgY, playerR + 2, ping);
+            if (mx >= pgX - playerR && mx <= pgX + playerR && my >= pgY - playerR && my <= pgY + playerR) {
+                hoveredPlayerName = ping.sender() + " (ping)";
             }
         }
 
@@ -1018,6 +1052,9 @@ public class SolarisMapScreen extends Screen {
         int tileMaxX = Math.floorDiv((int) Math.floor(worldMaxX) >> 4, chunksPerTile);
         int tileMinZ = Math.floorDiv((int) Math.floor(worldMinZ) >> 4, chunksPerTile);
         int tileMaxZ = Math.floorDiv((int) Math.floor(worldMaxZ) >> 4, chunksPerTile);
+
+        SharedExplorationClient.requestVisible((int) Math.floor(worldMinX) >> 4, (int) Math.floor(worldMinZ) >> 4,
+                (int) Math.floor(worldMaxX) >> 4, (int) Math.floor(worldMaxZ) >> 4);
 
         MapTileCache.ensureCapacity((tileMaxX - tileMinX + 1) * (tileMaxZ - tileMinZ + 1));
 
@@ -1210,18 +1247,17 @@ public class SolarisMapScreen extends Screen {
 
         hoveredPlayerName = null;
         if (mc.level != null) {
-            for (AbstractClientPlayer other : mc.level.players()) {
-                if (other == mc.player) continue;
-                double opx = radiusPixels + (other.getX() - (anchorChunkX << 4));
-                double opz = radiusPixels + (other.getZ() - (anchorChunkZ << 4));
+            for (RemotePlayerTracker.MapPlayer other : RemotePlayerTracker.collect(mc)) {
+                double opx = radiusPixels + (other.x() - (anchorChunkX << 4));
+                double opz = radiusPixels + (other.z() - (anchorChunkZ << 4));
                 GlobeCamera.Projection p = globeCamera.sphereToScreen((float) (opx / size), (float) (opz / size), cx,
                         cy);
                 if (!p.frontFacing) continue;
-                PlayerArrow.draw(g, p.screenX, p.screenY, playerR, other.getYRot(), 0xFFAAAAAA,
-                        other.getSkinTextureLocation());
+                PlayerArrow.draw(g, p.screenX, p.screenY, playerR, other.yaw(), 0xFFAAAAAA,
+                        other.skin());
                 if (mx >= p.screenX - playerR && mx <= p.screenX + playerR && my >= p.screenY - playerR &&
                         my <= p.screenY + playerR) {
-                    hoveredPlayerName = other.getGameProfile().getName();
+                    hoveredPlayerName = other.name();
                 }
             }
         }
@@ -1421,6 +1457,12 @@ public class SolarisMapScreen extends Screen {
         Minecraft mc = Minecraft.getInstance();
         Waypoint hit = hitTestWaypoint(mx, my);
         if (hit != null) {
+            if (hit.locked) {
+                if (mc.player != null) {
+                    mc.player.displayClientMessage(Component.literal("That waypoint is locked: " + hit.name), true);
+                }
+                return;
+            }
             WaypointManager.remove(hit.id);
             if (mc.player != null) {
                 mc.player.displayClientMessage(Component.literal("Waypoint removed: " + hit.name), true);
@@ -1460,6 +1502,12 @@ public class SolarisMapScreen extends Screen {
         Minecraft mc = Minecraft.getInstance();
         Waypoint hit = hitTestWaypointGlobe(mx, my);
         if (hit != null) {
+            if (hit.locked) {
+                if (mc.player != null) {
+                    mc.player.displayClientMessage(Component.literal("That waypoint is locked: " + hit.name), true);
+                }
+                return;
+            }
             WaypointManager.remove(hit.id);
             if (mc.player != null) {
                 mc.player.displayClientMessage(Component.literal("Waypoint removed: " + hit.name), true);

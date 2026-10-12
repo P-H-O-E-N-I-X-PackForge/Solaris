@@ -63,9 +63,6 @@ public class ChunkColorEvents {
         ChunkKey key = ChunkKey.of(level, pos);
         SolarisProfiler.time("chunkSample", () -> resample(level, key, pos));
 
-        // Neighbours only need a re-sample for edge relief shading. Doing all four synchronously
-        // made every chunk load cost up to 5 samples on the render thread (3% in a spark profile);
-        // queuing them dedupes the overlap when chunks stream in as a block and spreads the rest.
         for (int[] d : new int[][] { { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 } }) {
             ChunkKey neighborKey = new ChunkKey(key.dimension(), key.x() + d[0], key.z() + d[1]);
             if (ChunkColorCache.contains(neighborKey)) PENDING_NEIGHBORS.add(neighborKey);
