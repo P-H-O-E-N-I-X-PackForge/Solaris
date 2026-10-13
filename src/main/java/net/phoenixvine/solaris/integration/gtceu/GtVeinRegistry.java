@@ -7,12 +7,12 @@ import com.gregtechceu.gtceu.api.data.worldgen.ores.GeneratedVeinMetadata;
 import com.gregtechceu.gtceu.integration.map.layer.builtin.OreRenderLayer;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.registries.ForgeRegistries;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.client.waypoint.WaypointManager;
 import net.phoenixvine.solaris.common.SharedVeinClient;
@@ -111,7 +111,7 @@ public final class GtVeinRegistry {
     }
 
     private static ItemStack rawOreIcon(Material material) {
-        if (material.isNull()) return ItemStack.EMPTY;
+        if (material == null) return ItemStack.EMPTY;
         ItemStack raw = ChemicalHelper.get(TagPrefix.rawOre, material);
         if (!raw.isEmpty()) return raw;
         return ChemicalHelper.get(TagPrefix.ore, material);
@@ -198,13 +198,13 @@ public final class GtVeinRegistry {
 
     private static String idFromItem(ItemStack stack) {
         if (stack.isEmpty()) return null;
-        ResourceLocation rl = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        ResourceLocation rl = BuiltInRegistries.ITEM.getKey(stack.getItem());
         return rl == null ? null : rl.toString();
     }
 
     private static ItemStack itemFromId(String id) {
         if (id == null || id.isEmpty()) return ItemStack.EMPTY;
-        Item item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(id));
+        Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(id));
         return item == null ? ItemStack.EMPTY : new ItemStack(item);
     }
 }

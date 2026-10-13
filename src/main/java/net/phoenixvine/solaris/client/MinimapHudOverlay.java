@@ -8,12 +8,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
@@ -44,7 +44,7 @@ import java.util.List;
 import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_ACCENT;
 import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_BORDER;
 
-@Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, value = Dist.CLIENT)
 public class MinimapHudOverlay {
 
     private static final int MARGIN = 6;
@@ -86,7 +86,7 @@ public class MinimapHudOverlay {
         int[] b = bounds(mc);
         if (mx < b[0] || mx > b[0] + b[2] || my < b[1] || my > b[1] + b[2]) return;
 
-        double zoom = Mth.clamp(SolarisConfig.MINIMAP_ZOOM.get() + event.getScrollDelta() * ZOOM_SCROLL_STEP, 1.0,
+        double zoom = Mth.clamp(SolarisConfig.MINIMAP_ZOOM.get() + event.getScrollDeltaY() * ZOOM_SCROLL_STEP, 1.0,
                 8.0);
         SolarisConfig.MINIMAP_ZOOM.set(zoom);
         SolarisConfig.MINIMAP_ZOOM.save();
@@ -94,8 +94,8 @@ public class MinimapHudOverlay {
     }
 
     @SubscribeEvent
-    public static void onRenderHud(RenderGuiOverlayEvent.Post event) {
-        if (event.getOverlay() != VanillaGuiOverlay.HOTBAR.type()) return;
+    public static void onRenderHud(RenderGuiLayerEvent.Post event) {
+        if (!event.getName().equals(VanillaGuiLayers.HOTBAR)) return;
 
         Minecraft mc = Minecraft.getInstance();
         if (!isVisible(mc)) return;
@@ -103,7 +103,7 @@ public class MinimapHudOverlay {
         SolarisProfiler.time("minimapRender", () -> onRenderHudImpl(event, mc));
     }
 
-    private static void onRenderHudImpl(RenderGuiOverlayEvent.Post event, Minecraft mc) {
+    private static void onRenderHudImpl(RenderGuiLayerEvent.Post event, Minecraft mc) {
         SolarisTexture tex = texture();
         int screenSize = SolarisConfig.MINIMAP_SIZE.get();
 
@@ -309,7 +309,7 @@ public class MinimapHudOverlay {
         }
 
         PlayerArrow.draw(g, cx, cy, 6, rotate ? 180f : mc.player.getYRot(), C_ACCENT,
-                mc.player.getSkinTextureLocation());
+                mc.player.getSkin().texture());
 
         drawInfoText(g, mc, x, y, screenSize);
 
@@ -413,8 +413,8 @@ public class MinimapHudOverlay {
                                            int screenSize, float u, float v, float scale) {
         RenderSystem.setShaderTexture(0, tex.textureId());
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        BufferBuilder buffer = Tesselator.getInstance().getBuilder();
-        buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS,
+                DefaultVertexFormat.POSITION_TEX);
 
         float texW = tex.getSizePixels();
         float texH = tex.getSizePixels();
@@ -440,13 +440,13 @@ public class MinimapHudOverlay {
             float u1 = (srcX + srcW) / texW;
             float v1 = (srcY + srcH) / texH;
 
-            buffer.vertex(destX, destY + 1, 0).uv(u0, v1).endVertex();
-            buffer.vertex(destX + destW, destY + 1, 0).uv(u1, v1).endVertex();
-            buffer.vertex(destX + destW, destY, 0).uv(u1, v0).endVertex();
-            buffer.vertex(destX, destY, 0).uv(u0, v0).endVertex();
+            buffer.addVertex(destX, destY + 1, 0).setUv(u0, v1);
+            buffer.addVertex(destX + destW, destY + 1, 0).setUv(u1, v1);
+            buffer.addVertex(destX + destW, destY, 0).setUv(u1, v0);
+            buffer.addVertex(destX, destY, 0).setUv(u0, v0);
         }
 
-        BufferUploader.drawWithShader(buffer.end());
+        BufferUploader.drawWithShader(buffer.buildOrThrow());
     }
 
     private static boolean containsPoint(MinimapShape shape, int lx, int ly, int screenSize) {

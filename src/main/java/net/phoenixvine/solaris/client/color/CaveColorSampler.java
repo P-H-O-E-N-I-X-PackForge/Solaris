@@ -1,6 +1,7 @@
 package net.phoenixvine.solaris.client.color;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.ChunkPos;
@@ -9,7 +10,6 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.MapColor;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.Set;
 
@@ -34,7 +34,7 @@ public final class CaveColorSampler {
         if (state.is(BlockTags.LEAVES)) return true;
 
         Block block = state.getBlock();
-        ResourceLocation id = ForgeRegistries.BLOCKS.getKey(block);
+        ResourceLocation id = BuiltInRegistries.BLOCK.getKey(block);
         if (id != null && STRUCTURE_NAMESPACES.contains(id.getNamespace())) return true;
 
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos(pos.getX(), pos.getY(), pos.getZ());

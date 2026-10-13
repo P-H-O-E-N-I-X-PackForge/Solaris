@@ -4,11 +4,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisClaimsAPI;
@@ -16,8 +15,7 @@ import net.phoenixvine.solaris.api.SolarisFeatureState;
 import net.phoenixvine.solaris.api.claims.ClaimProvider;
 import net.phoenixvine.solaris.api.claims.ClaimSink;
 import net.phoenixvine.solaris.config.SolarisServerConfig;
-import net.phoenixvine.solaris.network.S2CClaimsPacket;
-import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.network.packets.S2CClaimsPacket;
 import net.phoenixvine.solaris.server.SolarisServerAPI;
 import net.phoenixvine.solaris.server.SolarisServerUtil;
 
@@ -31,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber()
 public final class ClaimSyncService {
 
     private static final int MAX_CLAIM_CHUNKS = 20000;
@@ -48,16 +46,16 @@ public final class ClaimSyncService {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
         if (!SolarisServerConfig.SPEC.isLoaded() || !SolarisServerConfig.CLAIMS_ENABLED.get()) return;
         if (SolarisClaimsAPI.providers().isEmpty()) return;
         if (++counter < SolarisServerConfig.CLAIMS_UPDATE_TICKS.get()) return;
         counter = 0;
 
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server == null) return;
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) sync(player);
+        MinecraftServer server = event.getServer();
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            sync(player);
+        }
     }
 
     private static final class Accumulator {
@@ -132,7 +130,8 @@ public final class ClaimSyncService {
         if (hash == last) return;
         LAST_HASH.put(player.getUUID(), hash);
 
-        SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
+        // Modern 1.21 PacketDistributor syntax
+        PacketDistributor.sendToPlayer(player,
                 new S2CClaimsPacket(dimension.toString(), centerX, centerZ, radius, out));
     }
 }

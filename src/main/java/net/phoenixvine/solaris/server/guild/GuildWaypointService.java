@@ -7,11 +7,10 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
@@ -19,11 +18,9 @@ import net.phoenixvine.solaris.api.SolarisGuildAPI;
 import net.phoenixvine.solaris.api.guild.GuildWaypointPermission;
 import net.phoenixvine.solaris.config.SolarisServerConfig;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
-import net.phoenixvine.solaris.network.S2CGuildWaypointsPacket;
-import net.phoenixvine.solaris.network.S2CServerWaypointsPacket;
-import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.network.packets.S2CGuildWaypointsPacket;
+import net.phoenixvine.solaris.network.packets.S2CServerWaypointsPacket;
 import net.phoenixvine.solaris.server.*;
-import net.phoenixvine.solaris.server.GuildWaypointData;
 import net.phoenixvine.solaris.server.exploration.SharedVeinService;
 import net.phoenixvine.solaris.server.waypoint.ServerWaypointService;
 
@@ -33,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber()
 public final class GuildWaypointService {
 
     private static final int MEMBERSHIP_CHECK_TICKS = 40;
@@ -65,7 +62,8 @@ public final class GuildWaypointService {
                         e.color(), e.icon(), e.category()));
             }
         }
-        SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new S2CGuildWaypointsPacket(out));
+        // Modern 1.21 PacketDistributor static dispatch helper
+        PacketDistributor.sendToPlayer(player, new S2CGuildWaypointsPacket(out));
     }
 
     private static void broadcast(ServerPlayer anyMember) {
@@ -74,13 +72,12 @@ public final class GuildWaypointService {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || !GuildsIntegration.isAvailable()) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (!GuildsIntegration.isAvailable()) return;
         if (++counter < MEMBERSHIP_CHECK_TICKS) return;
         counter = 0;
 
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server == null) return;
+        MinecraftServer server = event.getServer();
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             UUID token = GuildsIntegration.ownerTokenFor(player);
             UUID last = LAST_TOKEN.get(player.getUUID());

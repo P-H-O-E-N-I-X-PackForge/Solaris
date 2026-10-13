@@ -3,20 +3,18 @@ package net.phoenixvine.solaris.server.waypoint;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.network.PacketDistributor;
-import net.phoenixvine.solaris.PhoenixSolaris;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.phoenixvine.solaris.config.SolarisServerConfig;
-import net.phoenixvine.solaris.network.S2CStructureDiscoveredPacket;
-import net.phoenixvine.solaris.network.SolarisNetwork;
-import net.phoenixvine.solaris.server.StructureWaypointData;
+import net.phoenixvine.solaris.network.packets.S2CStructureDiscoveredPacket;
 
 import it.unimi.dsi.fastutil.longs.LongSet;
 
@@ -24,7 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber()
 public final class StructureWaypointTracker {
 
     private static final int CHECK_INTERVAL_TICKS = 20;
@@ -34,43 +32,46 @@ public final class StructureWaypointTracker {
     private StructureWaypointTracker() {}
 
     @SubscribeEvent
-    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-        if (!(event.player instanceof ServerPlayer player)) return;
-
+    public static void onPlayerTick(ServerTickEvent.Post event) {
         if (!SolarisServerConfig.SPEC.isLoaded() || !SolarisServerConfig.STRUCTURE_WAYPOINTS_ENABLED.get()) return;
-        if (player.tickCount % CHECK_INTERVAL_TICKS != 0) return;
 
-        BlockPos pos = player.blockPosition();
-        ChunkPos chunkPos = new ChunkPos(pos);
-        UUID id = player.getUUID();
-        if (chunkPos.equals(LAST_CHECKED_CHUNK.get(id))) return;
-        LAST_CHECKED_CHUNK.put(id, chunkPos);
+        MinecraftServer server = event.getServer();
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (player.tickCount % CHECK_INTERVAL_TICKS != 0) continue;
 
-        StructureManager structureManager = player.serverLevel().structureManager();
+            BlockPos pos = player.blockPosition();
+            ChunkPos chunkPos = new ChunkPos(pos);
+            UUID id = player.getUUID();
+            if (chunkPos.equals(LAST_CHECKED_CHUNK.get(id))) continue;
+            LAST_CHECKED_CHUNK.put(id, chunkPos);
 
-        Map<Structure, LongSet> candidates = structureManager.getAllStructuresAt(pos);
-        if (candidates.isEmpty()) return;
+            StructureManager structureManager = player.serverLevel().structureManager();
 
-        StructureWaypointData data = StructureWaypointData.get(player.getServer().overworld());
-        ResourceLocation dimension = player.level().dimension().location();
+            Map<Structure, LongSet> candidates = structureManager.getAllStructuresAt(pos);
+            if (candidates.isEmpty()) continue;
 
-        for (Structure structure : candidates.keySet()) {
-            StructureStart start = structureManager.getStructureWithPieceAt(pos, structure);
-            if (!start.isValid()) continue;
+            StructureWaypointData data = StructureWaypointData.get(server.overworld());
+            ResourceLocation dimension = player.level().dimension().location();
 
-            ResourceLocation structureId = player.level().registryAccess().registryOrThrow(Registries.STRUCTURE)
-                    .getKey(structure);
-            if (structureId == null) continue;
+            for (Structure structure : candidates.keySet()) {
+                StructureStart start = structureManager.getStructureWithPieceAt(pos, structure);
+                if (!start.isValid()) continue;
 
-            ChunkPos originChunk = start.getChunkPos();
-            String key = dimension + "|" + structureId + "|" + originChunk.toLong();
-            if (!data.markDiscovered(id, key)) continue;
+                ResourceLocation structureId = player.level().registryAccess().registryOrThrow(Registries.STRUCTURE)
+                        .getKey(structure);
+                if (structureId == null) continue;
 
-            BlockPos center = start.getBoundingBox().getCenter();
-            SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
-                    new S2CStructureDiscoveredPacket(displayName(structureId), dimension.toString(),
-                            center.getX(), pos.getY(), center.getZ()));
+                ChunkPos originChunk = start.getChunkPos();
+                String key = dimension + "|" + structureId + "|" + originChunk.toLong();
+                if (!data.markDiscovered(id, key)) continue;
+
+                BlockPos center = start.getBoundingBox().getCenter();
+
+                // Modernized 1.21 PacketDistributor static dispatch helper
+                PacketDistributor.sendToPlayer(player,
+                        new S2CStructureDiscoveredPacket(displayName(structureId), dimension.toString(),
+                                center.getX(), pos.getY(), center.getZ()));
+            }
         }
     }
 

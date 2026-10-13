@@ -14,8 +14,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
@@ -599,10 +599,10 @@ public class SolarisMapScreen extends Screen {
                 UnexploredImageStyle.height());
     }
 
-    public void renderMapBackground(GuiGraphics g) {
-        renderBackground(g);
+    public void renderMapBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        renderBackground(g, mouseX, mouseY, partialTick);
 
-        ModernPanel.draw(g, MARGIN - 4, MARGIN - 4, width - 2 * (MARGIN - 4), height - 2 * (MARGIN - 4), C_BORDER);
+        ModernPanel.draw(g, MARGIN - 4, MARGIN - 4, width - 2 - (MARGIN - 4), height - 2 - (MARGIN - 4), C_BORDER);
         g.enableScissor(MARGIN, MARGIN, width - MARGIN, height - MARGIN);
         g.fill(MARGIN, MARGIN, width - MARGIN, height - MARGIN, C_BG);
         drawUnexploredCoverImage(g);
@@ -612,6 +612,11 @@ public class SolarisMapScreen extends Screen {
             renderFlatMapTiles(g);
         }
         g.disableScissor();
+    }
+
+
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
     }
 
     private void refreshWorldMarkersIfNeeded() {
@@ -655,9 +660,9 @@ public class SolarisMapScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mx, int my, float partialTick) {
         refreshWorldMarkersIfNeeded();
-        renderBackground(g);
+        renderBackground(g, mx, my, partialTick);
 
-        ModernPanel.draw(g, MARGIN - 4, MARGIN - 4, width - 2 * (MARGIN - 4), height - 2 * (MARGIN - 4), C_BORDER);
+        ModernPanel.draw(g, MARGIN - 4, MARGIN - 4, width - 2 - (MARGIN - 4), height - 2 - (MARGIN - 4), C_BORDER);
         g.enableScissor(MARGIN, MARGIN, width - MARGIN, height - MARGIN);
         g.fill(MARGIN, MARGIN, width - MARGIN, height - MARGIN, C_BG);
         drawUnexploredCoverImage(g);
@@ -947,7 +952,7 @@ public class SolarisMapScreen extends Screen {
             int cy = (int) viewport.toScreenY(mc.player.getZ(), 0);
             if (cx >= texScreenMinX && cx <= texScreenMaxX && cy >= texScreenMinY && cy <= texScreenMaxY &&
                     insideMapShape(cx, cy)) {
-                PlayerArrow.draw(g, cx, cy, playerR, mc.player.getYRot(), C_ACCENT, mc.player.getSkinTextureLocation());
+                PlayerArrow.draw(g, cx, cy, playerR, mc.player.getYRot(), C_ACCENT, mc.player.getSkin().texture());
             }
         }
 
@@ -1285,7 +1290,7 @@ public class SolarisMapScreen extends Screen {
                     cx, cy);
             if (p.frontFacing) {
                 PlayerArrow.draw(g, p.screenX, p.screenY, playerR, mc.player.getYRot(), C_ACCENT,
-                        mc.player.getSkinTextureLocation());
+                        mc.player.getSkin().texture());
             }
         }
     }
@@ -1590,17 +1595,17 @@ public class SolarisMapScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mx, double my, double delta) {
+    public boolean mouseScrolled(double mx, double my, double scrollX, double scrollY) {
         if (mode == ViewMode.GLOBE) {
-            globeCamera.adjustZoom(delta);
+            globeCamera.adjustZoom(scrollY);
             return true;
         }
         syncZoomLimits();
-        if (viewport.adjustZoomToAnchor(delta, mx, my, 0, 0)) {
+        if (viewport.adjustZoomToAnchor(scrollY, mx, my, 0, 0)) {
             clampViewport();
             return true;
         }
-        return super.mouseScrolled(mx, my, delta);
+        return super.mouseScrolled(mx, my, scrollX, scrollY);
     }
 
     @Override

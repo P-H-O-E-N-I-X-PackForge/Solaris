@@ -37,7 +37,7 @@ public class PlanShape {
     }
 
     public ResourceLocation dimensionLocation() {
-        return new ResourceLocation(dimension);
+        return ResourceLocation.parse(dimension);
     }
 
     public int colorArgb() {

@@ -11,7 +11,7 @@ public final class BlockColorOverrides {
 
     private static final Map<Block, Integer> OVERRIDES = new HashMap<>();
 
-    private static final Set<Block> TRANSPARENT = Set.of(Blocks.GRASS, Blocks.TALL_GRASS);
+    private static final Set<Block> TRANSPARENT = Set.of(Blocks.SHORT_GRASS, Blocks.TALL_GRASS);
 
     private BlockColorOverrides() {}
 

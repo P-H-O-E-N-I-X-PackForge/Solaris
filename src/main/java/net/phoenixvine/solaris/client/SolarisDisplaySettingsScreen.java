@@ -8,8 +8,8 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.phoenixvine.solaris.client.render.CaveTileCache;
 import net.phoenixvine.solaris.client.render.MapTileCache;
 import net.phoenixvine.solaris.client.render.ModernPanel;
@@ -488,10 +488,10 @@ public class SolarisDisplaySettingsScreen extends Screen {
         int my = Math.round(rawMy / uiScale);
 
         if (parent instanceof SolarisMapScreen mapScreen) {
-            mapScreen.renderMapBackground(g);
+            mapScreen.renderMapBackground(g, rawMx, rawMy, pt);
             g.fill(0, 0, width, height, 0xE0101014);
         } else {
-            renderBackground(g);
+            renderBackground(g, rawMx, rawMy, pt);
         }
 
         g.pose().pushPose();
@@ -535,8 +535,8 @@ public class SolarisDisplaySettingsScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double rawMx, double rawMy, double delta) {
-        return super.mouseScrolled(rawMx / uiScale, rawMy / uiScale, delta);
+    public boolean mouseScrolled(double rawMx, double rawMy, double scrollX, double scrollY) {
+        return super.mouseScrolled(rawMx / uiScale, rawMy / uiScale, scrollX, scrollY);
     }
 
     @Override

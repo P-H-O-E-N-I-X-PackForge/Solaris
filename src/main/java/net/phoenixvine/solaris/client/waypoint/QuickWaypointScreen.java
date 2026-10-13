@@ -7,8 +7,8 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.phoenixvine.solaris.client.SolarisMapScreen;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
 
@@ -64,6 +64,11 @@ public class QuickWaypointScreen extends Screen {
 
     private int boxY() {
         return (vh - BOX_H) / 2;
+    }
+
+
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
     }
 
     @Override
@@ -182,10 +187,10 @@ public class QuickWaypointScreen extends Screen {
         int my = Math.round(rawMy / uiScale);
 
         if (parent instanceof SolarisMapScreen mapScreen) {
-            mapScreen.renderMapBackground(g);
+            mapScreen.renderMapBackground(g, mx, my, pt);
             g.fill(0, 0, width, height, 0xE0101014);
         } else {
-            renderBackground(g);
+            renderBackground(g, mx, my, pt);
         }
 
         g.pose().pushPose();

@@ -1,5 +1,6 @@
-package net.phoenixvine.solaris.server;
+package net.phoenixvine.solaris.server.features;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -19,11 +20,17 @@ public class ManualGateData extends SavedData {
 
     private final Map<UUID, Set<String>> byToken = new LinkedHashMap<>();
 
+    // Modern 1.21 SavedData factory definition
+    private static final SavedData.Factory<ManualGateData> FACTORY = new SavedData.Factory<>(
+            ManualGateData::new,
+            ManualGateData::load,
+            null);
+
     public static ManualGateData get(ServerLevel overworld) {
-        return overworld.getDataStorage().computeIfAbsent(ManualGateData::load, ManualGateData::new, SAVE_KEY);
+        return overworld.getDataStorage().computeIfAbsent(FACTORY, SAVE_KEY);
     }
 
-    private static ManualGateData load(CompoundTag tag) {
+    private static ManualGateData load(CompoundTag tag, HolderLookup.Provider registries) {
         ManualGateData data = new ManualGateData();
         for (String key : tag.getAllKeys()) {
             UUID token;
@@ -33,17 +40,21 @@ public class ManualGateData extends SavedData {
                 continue;
             }
             Set<String> gates = new LinkedHashSet<>();
-            for (Tag entry : tag.getList(key, Tag.TAG_STRING)) gates.add(entry.getAsString());
+            for (Tag entry : tag.getList(key, Tag.TAG_STRING)) {
+                gates.add(entry.getAsString());
+            }
             data.byToken.put(token, gates);
         }
         return data;
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         for (Map.Entry<UUID, Set<String>> entry : byToken.entrySet()) {
             ListTag list = new ListTag();
-            for (String gate : entry.getValue()) list.add(StringTag.valueOf(gate));
+            for (String gate : entry.getValue()) {
+                list.add(StringTag.valueOf(gate));
+            }
             tag.put(entry.getKey().toString(), list);
         }
         return tag;

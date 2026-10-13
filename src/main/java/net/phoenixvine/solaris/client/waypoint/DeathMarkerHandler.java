@@ -3,16 +3,16 @@ package net.phoenixvine.solaris.client.waypoint;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.DeathScreen;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ScreenEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.config.SolarisConfig;
 import net.phoenixvine.solaris.server.ServerCapabilities;
 
-@Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, value = Dist.CLIENT)
 public class DeathMarkerHandler {
 
     private static boolean recorded = false;
@@ -41,8 +41,8 @@ public class DeathMarkerHandler {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || !recorded) return;
+    public static void onClientTick(ClientTickEvent.Post event) {
+        if (!recorded) return;
         Minecraft mc = Minecraft.getInstance();
 
         if (mc.player == null || !(mc.screen instanceof DeathScreen)) recorded = false;

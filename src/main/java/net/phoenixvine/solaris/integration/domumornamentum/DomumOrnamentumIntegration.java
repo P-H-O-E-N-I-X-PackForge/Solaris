@@ -4,7 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.ModList;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.client.color.BlockTextureColors;
 

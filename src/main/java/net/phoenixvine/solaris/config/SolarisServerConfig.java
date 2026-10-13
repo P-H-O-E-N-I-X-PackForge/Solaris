@@ -1,8 +1,6 @@
 package net.phoenixvine.solaris.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.config.ModConfig;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 
 import java.util.List;
@@ -31,50 +29,50 @@ public final class SolarisServerConfig {
         HOOK
     }
 
-    public static final ForgeConfigSpec SPEC;
+    public static final ModConfigSpec SPEC;
 
-    public static final ForgeConfigSpec.EnumValue<PlayerVisibility> PLAYER_VISIBILITY;
-    public static final ForgeConfigSpec.IntValue PLAYER_UPDATE_TICKS;
-    public static final ForgeConfigSpec.IntValue PLAYER_MAX_RANGE;
-    public static final ForgeConfigSpec.BooleanValue HIDE_SNEAKING;
-    public static final ForgeConfigSpec.BooleanValue HIDE_INVISIBLE;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> PLAYER_BLOCKED_DIMENSIONS;
+    public static final ModConfigSpec.EnumValue<PlayerVisibility> PLAYER_VISIBILITY;
+    public static final ModConfigSpec.IntValue PLAYER_UPDATE_TICKS;
+    public static final ModConfigSpec.IntValue PLAYER_MAX_RANGE;
+    public static final ModConfigSpec.BooleanValue HIDE_SNEAKING;
+    public static final ModConfigSpec.BooleanValue HIDE_INVISIBLE;
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> PLAYER_BLOCKED_DIMENSIONS;
 
-    public static final ForgeConfigSpec.BooleanValue SERVER_DEATH_MARKERS;
-    public static final ForgeConfigSpec.BooleanValue SHARE_DEATHS_WITH_GUILD;
+    public static final ModConfigSpec.BooleanValue SERVER_DEATH_MARKERS;
+    public static final ModConfigSpec.BooleanValue SHARE_DEATHS_WITH_GUILD;
 
-    public static final ForgeConfigSpec.EnumValue<PingAudience> PING_AUDIENCE;
-    public static final ForgeConfigSpec.IntValue PING_DURATION_SECONDS;
-    public static final ForgeConfigSpec.IntValue PING_COOLDOWN_TICKS;
-    public static final ForgeConfigSpec.IntValue PING_MAX_DISTANCE;
+    public static final ModConfigSpec.EnumValue<PingAudience> PING_AUDIENCE;
+    public static final ModConfigSpec.IntValue PING_DURATION_SECONDS;
+    public static final ModConfigSpec.IntValue PING_COOLDOWN_TICKS;
+    public static final ModConfigSpec.IntValue PING_MAX_DISTANCE;
 
-    public static final ForgeConfigSpec.BooleanValue STRUCTURE_WAYPOINTS_ENABLED;
+    public static final ModConfigSpec.BooleanValue STRUCTURE_WAYPOINTS_ENABLED;
 
-    public static final ForgeConfigSpec.BooleanValue SHARED_EXPLORATION_ENABLED;
-    public static final ForgeConfigSpec.IntValue SHARED_EXPLORATION_MAX_CHUNKS;
-    public static final ForgeConfigSpec.IntValue SHARED_EXPLORATION_UPLOAD_PER_SECOND;
-    public static final ForgeConfigSpec.IntValue SHARED_EXPLORATION_DOWNLOAD_PER_SECOND;
-    public static final ForgeConfigSpec.IntValue SHARED_EXPLORATION_RELAY_RADIUS;
-    public static final ForgeConfigSpec.IntValue SHARED_EXPLORATION_SAVE_MINUTES;
+    public static final ModConfigSpec.BooleanValue SHARED_EXPLORATION_ENABLED;
+    public static final ModConfigSpec.IntValue SHARED_EXPLORATION_MAX_CHUNKS;
+    public static final ModConfigSpec.IntValue SHARED_EXPLORATION_UPLOAD_PER_SECOND;
+    public static final ModConfigSpec.IntValue SHARED_EXPLORATION_DOWNLOAD_PER_SECOND;
+    public static final ModConfigSpec.IntValue SHARED_EXPLORATION_RELAY_RADIUS;
+    public static final ModConfigSpec.IntValue SHARED_EXPLORATION_SAVE_MINUTES;
 
-    public static final ForgeConfigSpec.BooleanValue SHARED_VEINS_ENABLED;
-    public static final ForgeConfigSpec.IntValue SHARED_VEINS_MAX;
+    public static final ModConfigSpec.BooleanValue SHARED_VEINS_ENABLED;
+    public static final ModConfigSpec.IntValue SHARED_VEINS_MAX;
 
-    public static final ForgeConfigSpec.BooleanValue CLAIMS_ENABLED;
-    public static final ForgeConfigSpec.IntValue CLAIMS_UPDATE_TICKS;
-    public static final ForgeConfigSpec.IntValue CLAIMS_RADIUS_CHUNKS;
+    public static final ModConfigSpec.BooleanValue CLAIMS_ENABLED;
+    public static final ModConfigSpec.IntValue CLAIMS_UPDATE_TICKS;
+    public static final ModConfigSpec.IntValue CLAIMS_RADIUS_CHUNKS;
 
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> PROGRESSION_GATES;
-    public static final ForgeConfigSpec.EnumValue<SolarisFeatureState> GATE_LOCKED_STATE;
-    public static final ForgeConfigSpec.EnumValue<SolarisFeatureState> GATE_UNLOCKED_STATE;
-    public static final ForgeConfigSpec.IntValue PROGRESSION_POLL_TICKS;
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> PROGRESSION_GATES;
+    public static final ModConfigSpec.EnumValue<SolarisFeatureState> GATE_LOCKED_STATE;
+    public static final ModConfigSpec.EnumValue<SolarisFeatureState> GATE_UNLOCKED_STATE;
+    public static final ModConfigSpec.IntValue PROGRESSION_POLL_TICKS;
 
-    public static final ForgeConfigSpec.BooleanValue GUILD_WAYPOINTS_ENABLED;
-    public static final ForgeConfigSpec.IntValue GUILD_WAYPOINTS_MAX;
-    public static final ForgeConfigSpec.EnumValue<GuildWaypointEditors> GUILD_WAYPOINT_EDIT_POLICY;
+    public static final ModConfigSpec.BooleanValue GUILD_WAYPOINTS_ENABLED;
+    public static final ModConfigSpec.IntValue GUILD_WAYPOINTS_MAX;
+    public static final ModConfigSpec.EnumValue<GuildWaypointEditors> GUILD_WAYPOINT_EDIT_POLICY;
 
     static {
-        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
 
         builder.push("playerPositions");
         PLAYER_VISIBILITY = builder
@@ -236,8 +234,4 @@ public final class SolarisServerConfig {
     }
 
     private SolarisServerConfig() {}
-
-    public static void register() {
-        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, SPEC, "solaris/solaris-server.toml");
-    }
 }

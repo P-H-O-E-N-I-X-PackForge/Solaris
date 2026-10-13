@@ -6,20 +6,20 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
-import net.phoenixvine.solaris.network.C2SPingPacket;
-import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.network.packets.C2SPingPacket;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, value = Dist.CLIENT)
 public final class PingTracker {
 
     public record Ping(String sender, ResourceLocation dimension, int x, int y, int z, long createdAtMillis,
@@ -65,7 +65,9 @@ public final class PingTracker {
             mc.player.displayClientMessage(Component.literal("Pings aren't available here."), true);
             return;
         }
-        if (!SolarisNetwork.CHANNEL.isRemotePresent(mc.getConnection().getConnection())) {
+
+        // Check if the server supports the custom payload channel in 1.21.1
+        if (!mc.getConnection().hasChannel(C2SPingPacket.TYPE)) {
             mc.player.displayClientMessage(Component.literal("Pings need Solaris on the server."), true);
             return;
         }
@@ -73,6 +75,8 @@ public final class PingTracker {
         HitResult hit = mc.player.pick(256.0D, 0.0F, false);
         BlockPos pos = hit.getType() == HitResult.Type.BLOCK && hit instanceof BlockHitResult block ?
                 block.getBlockPos() : mc.player.blockPosition();
-        SolarisNetwork.CHANNEL.sendToServer(new C2SPingPacket(pos.getX(), pos.getY(), pos.getZ()));
+
+        // Send the packet to the server using the modern PacketDistributor API
+        PacketDistributor.sendToServer(new C2SPingPacket(pos.getX(), pos.getY(), pos.getZ()));
     }
 }

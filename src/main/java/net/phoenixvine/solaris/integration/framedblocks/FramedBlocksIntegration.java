@@ -3,11 +3,12 @@ package net.phoenixvine.solaris.integration.framedblocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.ModList;
 import net.phoenixvine.solaris.PhoenixSolaris;
 
-import xfacthd.framedblocks.api.block.FramedBlockEntity;
+import xfacthd.framedblocks.api.block.blockentity.FramedBlockEntity;
 import xfacthd.framedblocks.api.camo.CamoContainer;
+import xfacthd.framedblocks.api.camo.block.BlockCamoContent;
 
 public final class FramedBlocksIntegration {
 
@@ -25,9 +26,16 @@ public final class FramedBlocksIntegration {
         if (broken) return null;
         try {
             if (!(level.getBlockEntity(pos) instanceof FramedBlockEntity fbe)) return null;
-            CamoContainer camo = fbe.getCamo();
-            if (camo.isEmpty()) return null;
-            return camo.getState();
+            CamoContainer<?, ?> camo = fbe.getCamo();
+            if (camo == null || camo.isEmpty()) return null;
+
+            // Retrieve state via the content object (checking for block camo content)
+            var content = camo.getContent();
+            if (content instanceof BlockCamoContent blockContent) {
+                return blockContent.getState();
+            }
+
+            return null;
         } catch (Throwable t) {
             broken = true;
             PhoenixSolaris.LOGGER.error(

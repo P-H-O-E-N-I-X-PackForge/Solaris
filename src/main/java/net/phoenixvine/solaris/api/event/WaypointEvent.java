@@ -1,8 +1,8 @@
 package net.phoenixvine.solaris.api.event;
 
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.eventbus.api.Cancelable;
-import net.minecraftforge.eventbus.api.Event;
+import net.neoforged.bus.api.Event;
+import net.neoforged.bus.api.ICancellableEvent;
 import net.phoenixvine.solaris.client.waypoint.Waypoint;
 
 public class WaypointEvent extends Event {
@@ -24,8 +24,8 @@ public class WaypointEvent extends Event {
         }
     }
 
-    @Cancelable
-    public static class Removed extends WaypointEvent {
+    // Implement ICancellableEvent for events that can be canceled
+    public static class Removed extends WaypointEvent implements ICancellableEvent {
 
         public Removed(Waypoint waypoint) {
             super(waypoint);

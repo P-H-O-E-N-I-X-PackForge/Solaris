@@ -5,13 +5,14 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.world.item.Items;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
 
 import java.util.ArrayList;
@@ -51,14 +52,19 @@ public class WaypointItemPickerScreen extends Screen {
     private static List<ItemStack> allItems() {
         if (allItems == null) {
             List<ItemStack> out = new ArrayList<>();
-            for (Item item : ForgeRegistries.ITEMS.getValues()) {
-                if (item == net.minecraft.world.item.Items.AIR) continue;
+            for (Item item : BuiltInRegistries.ITEM) {
+                if (item == Items.AIR) continue;
                 out.add(new ItemStack(item));
             }
             out.sort((a, b) -> a.getHoverName().getString().compareToIgnoreCase(b.getHoverName().getString()));
             allItems = out;
         }
         return allItems;
+    }
+
+
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
     }
 
     @Override
@@ -72,7 +78,7 @@ public class WaypointItemPickerScreen extends Screen {
         searchBox = new EditBox(font, width / 2 - 100, 22, 200, 16, Component.literal("Search"));
         searchBox.setMaxLength(48);
         searchBox.setValue(previousSearch);
-        searchBox.setHint(Component.literal("Search items/blocks…"));
+        searchBox.setHint(Component.literal("Search items/blocksâ€¦"));
         addWidget(searchBox);
         setInitialFocus(searchBox);
 
@@ -92,7 +98,7 @@ public class WaypointItemPickerScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
-        renderBackground(g);
+        renderBackground(g, mx, my, pt);
         g.fill(0, 0, width, height, C_PANEL);
         VanillaPanel.draw(g, -8, -8, width + 16, height + 16, C_PANEL);
         g.drawCenteredString(font, "Choose Item/Block", width / 2, 8, C_ACCENT);
@@ -154,8 +160,8 @@ public class WaypointItemPickerScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mx, double my, double delta) {
-        scrollOffset -= (int) delta;
+    public boolean mouseScrolled(double mx, double my, double horizontalScroll, double verticalScroll) {
+        scrollOffset -= (int) verticalScroll;
         return true;
     }
 

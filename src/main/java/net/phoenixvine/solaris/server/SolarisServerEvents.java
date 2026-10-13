@@ -1,11 +1,10 @@
 package net.phoenixvine.solaris.server;
 
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.phoenixvine.solaris.PhoenixSolaris;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.phoenixvine.solaris.api.SolarisMarkerSyncEvent;
 import net.phoenixvine.solaris.server.claims.ClaimSyncService;
 import net.phoenixvine.solaris.server.exploration.SharedExplorationService;
@@ -15,7 +14,7 @@ import net.phoenixvine.solaris.server.guild.GuildWaypointService;
 import net.phoenixvine.solaris.server.players.PingService;
 import net.phoenixvine.solaris.server.waypoint.ServerWaypointService;
 
-@Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber()
 public class SolarisServerEvents {
 
     @SubscribeEvent
@@ -28,7 +27,7 @@ public class SolarisServerEvents {
             ServerWaypointService.sendTo(player);
             GuildWaypointService.sendTo(player);
             SharedVeinService.sendAll(player);
-            MinecraftForge.EVENT_BUS.post(new SolarisMarkerSyncEvent(player));
+            NeoForge.EVENT_BUS.post(new SolarisMarkerSyncEvent(player));
         }
     }
 

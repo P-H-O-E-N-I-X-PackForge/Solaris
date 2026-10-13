@@ -1,0 +1,60 @@
+package net.phoenixvine.solaris.network.packets;
+
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.phoenixvine.solaris.PhoenixSolaris;
+import net.phoenixvine.solaris.common.SharedChunkBlob;
+import net.phoenixvine.solaris.common.SharedChunkFormat;
+import net.phoenixvine.solaris.network.ClientPacketHandlers;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public record S2CSharedChunksPacket(String dimension, List<SharedChunkBlob> blobs) implements CustomPacketPayload {
+
+    public static final int MAX_BLOBS = 64;
+
+    public static final CustomPacketPayload.Type<S2CSharedChunksPacket> TYPE = new Type<>(
+            ResourceLocation.fromNamespaceAndPath(PhoenixSolaris.MOD_ID, "s2c_shared_chunks"));
+
+    public static final StreamCodec<RegistryFriendlyByteBuf, S2CSharedChunksPacket> STREAM_CODEC = StreamCodec.of(
+            (buf, packet) -> {
+                buf.writeUtf(packet.dimension(), 128);
+                int count = Math.min(packet.blobs().size(), MAX_BLOBS);
+                buf.writeVarInt(count);
+                for (int i = 0; i < count; i++) {
+                    SharedChunkBlob b = packet.blobs().get(i);
+                    buf.writeInt(b.x());
+                    buf.writeInt(b.z());
+                    buf.writeByteArray(b.data());
+                }
+            },
+            buf -> {
+                String dim = buf.readUtf(128);
+                int count = buf.readVarInt();
+                if (count < 0 || count > MAX_BLOBS) {
+                    throw new IllegalArgumentException("Too many chunks: " + count);
+                }
+                List<SharedChunkBlob> blobList = new ArrayList<>(count);
+                for (int i = 0; i < count; i++) {
+                    int x = buf.readInt();
+                    int z = buf.readInt();
+                    blobList.add(new SharedChunkBlob(x, z, buf.readByteArray(SharedChunkFormat.MAX_BLOB_BYTES)));
+                }
+                return new S2CSharedChunksPacket(dim, blobList);
+            });
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
+    public static void handle(final S2CSharedChunksPacket packet, final IPayloadContext context) {
+        context.enqueueWork(() -> {
+            ClientPacketHandlers.sharedChunks(packet.dimension(), packet.blobs());
+        });
+    }
+}

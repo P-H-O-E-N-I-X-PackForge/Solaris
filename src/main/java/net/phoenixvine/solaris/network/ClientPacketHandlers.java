@@ -5,8 +5,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.client.color.ChunkColorEvents;
 import net.phoenixvine.solaris.client.color.ChunkKey;
@@ -22,6 +22,9 @@ import net.phoenixvine.solaris.common.SharedExplorationClient;
 import net.phoenixvine.solaris.common.SharedVeinClient;
 import net.phoenixvine.solaris.common.SharedVeinEntry;
 import net.phoenixvine.solaris.config.SolarisConfig;
+import net.phoenixvine.solaris.network.packets.S2CClaimsPacket;
+import net.phoenixvine.solaris.network.packets.S2CMarkerPacket;
+import net.phoenixvine.solaris.network.packets.S2CServerWaypointsPacket;
 import net.phoenixvine.solaris.server.ServerCapabilities;
 
 import java.util.ArrayList;
@@ -76,7 +79,7 @@ public final class ClientPacketHandlers {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
-        ResourceLocation dim = new ResourceLocation(dimension);
+        ResourceLocation dim = ResourceLocation.parse(dimension);
         if (!WaypointManager.canPlace(dim)) return;
 
         Waypoint waypoint = new Waypoint(own ? "Death" : "Death: " + playerName, dim, x, y, z,
@@ -114,7 +117,7 @@ public final class ClientPacketHandlers {
             }
 
             if (target == null) {
-                Waypoint w = new Waypoint(e.name(), new ResourceLocation(e.dimension()), e.x(), e.y(), e.z(),
+                Waypoint w = new Waypoint(e.name(), ResourceLocation.parse(e.dimension()), e.x(), e.y(), e.z(),
                         e.color());
                 w.id = id;
                 w.icon = e.icon();
@@ -144,7 +147,7 @@ public final class ClientPacketHandlers {
                               String color, String icon, String category, int durationTicks) {
         switch (op) {
             case PUT -> {
-                Waypoint w = new Waypoint(name, new ResourceLocation(dimension), x, y, z, color);
+                Waypoint w = new Waypoint(name, ResourceLocation.parse(dimension), x, y, z, color);
                 w.id = TransientMarkers.ID_PREFIX + key;
                 w.icon = icon;
                 w.category = category;
@@ -158,14 +161,14 @@ public final class ClientPacketHandlers {
 
     public static void claims(String dimension, int centerX, int centerZ, int radius,
                               List<S2CClaimsPacket.Owner> owners) {
-        ClaimOverlay.INSTANCE.apply(new ResourceLocation(dimension), centerX, centerZ, radius, owners);
+        ClaimOverlay.INSTANCE.apply(ResourceLocation.parse(dimension), centerX, centerZ, radius, owners);
     }
 
     public static void ping(String sender, String dimension, int x, int y, int z, int durationTicks) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
-        PingTracker.add(sender, new ResourceLocation(dimension), x, y, z, durationTicks * 50L);
+        PingTracker.add(sender, ResourceLocation.parse(dimension), x, y, z, durationTicks * 50L);
         if (!sender.equals(mc.player.getGameProfile().getName())) {
             mc.player.displayClientMessage(Component.literal(sender + " pinged a location"), true);
         }

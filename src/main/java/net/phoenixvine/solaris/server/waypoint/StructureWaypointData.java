@@ -1,5 +1,6 @@
-package net.phoenixvine.solaris.server;
+package net.phoenixvine.solaris.server.waypoint;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -19,12 +20,17 @@ public class StructureWaypointData extends SavedData {
 
     private final Map<UUID, Set<String>> discoveredByPlayer = new LinkedHashMap<>();
 
+    // Modern 1.21 SavedData factory definition
+    private static final SavedData.Factory<StructureWaypointData> FACTORY = new SavedData.Factory<>(
+            StructureWaypointData::new,
+            StructureWaypointData::load,
+            null);
+
     public static StructureWaypointData get(ServerLevel overworld) {
-        return overworld.getDataStorage().computeIfAbsent(StructureWaypointData::load, StructureWaypointData::new,
-                SAVE_KEY);
+        return overworld.getDataStorage().computeIfAbsent(FACTORY, SAVE_KEY);
     }
 
-    private static StructureWaypointData load(CompoundTag tag) {
+    private static StructureWaypointData load(CompoundTag tag, HolderLookup.Provider registries) {
         StructureWaypointData data = new StructureWaypointData();
         for (String playerKey : tag.getAllKeys()) {
             UUID player;
@@ -43,7 +49,7 @@ public class StructureWaypointData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         for (Map.Entry<UUID, Set<String>> entry : discoveredByPlayer.entrySet()) {
             ListTag list = new ListTag();
             for (String key : entry.getValue()) {

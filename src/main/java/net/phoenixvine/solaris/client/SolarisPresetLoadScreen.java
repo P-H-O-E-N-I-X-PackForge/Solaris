@@ -5,8 +5,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
 import net.phoenixvine.solaris.config.SolarisPresets;
 
@@ -33,12 +33,19 @@ public class SolarisPresetLoadScreen extends Screen {
         this.onLoaded = onLoaded;
     }
 
+
+
     private int boxX() {
         return (width - BOX_W) / 2;
     }
 
     private int boxY() {
         return (height - boxH) / 2;
+    }
+
+
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
     }
 
     @Override
@@ -70,7 +77,7 @@ public class SolarisPresetLoadScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
-        renderBackground(g);
+        renderBackground(g, mx, my, pt);
         g.fill(0, 0, width, height, 0xC0101014);
 
         int x = boxX();

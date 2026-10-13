@@ -8,10 +8,10 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderLevelStageEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.config.SolarisConfig;
 
@@ -22,7 +22,7 @@ import com.mojang.math.Axis;
 import java.util.ArrayList;
 import java.util.List;
 
-@Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, value = Dist.CLIENT)
 public class WaypointBeamRenderer {
 
     private static final double HALF_WIDTH = 0.15;
@@ -44,11 +44,13 @@ public class WaypointBeamRenderer {
         List<Waypoint> waypoints = WaypointManager.getVisibleForDimension(mc.level.dimension().location());
         if (waypoints.isEmpty()) return;
 
-        double rangeSq = (double) SolarisConfig.WAYPOINT_BEAM_RANGE.get() * SolarisConfig.WAYPOINT_BEAM_RANGE.get();
+        double range = SolarisConfig.WAYPOINT_BEAM_RANGE.get();
+        double rangeSq = range * range;
         Vec3 camPos = event.getCamera().getPosition();
         PoseStack poseStack = event.getPoseStack();
         MultiBufferSource.BufferSource bufferSource = mc.renderBuffers().bufferSource();
-        float time = mc.level.getGameTime() + event.getPartialTick();
+        float partialTick = mc.getTimer().getGameTimeDeltaPartialTick(true);
+        float time = mc.level.getGameTime() + partialTick;
 
         poseStack.pushPose();
         poseStack.translate(-camPos.x, -camPos.y, -camPos.z);
@@ -58,7 +60,7 @@ public class WaypointBeamRenderer {
         for (Waypoint w : waypoints) {
             double dx = (w.x + 0.5) - mc.player.getX();
             double dz = (w.z + 0.5) - mc.player.getZ();
-            if (dx * dx + dz * dz > rangeSq) continue;
+            if ((dx * dx + dz * dz) > rangeSq) continue;
             inRange.add(w);
 
             int argb = w.colorArgb();
@@ -66,7 +68,8 @@ public class WaypointBeamRenderer {
             float g = (argb >> 8 & 255) / 255f;
             float b = (argb & 255) / 255f;
 
-            LevelRenderer.renderLineBox(poseStack, lines, w.x + 0.5 - HALF_WIDTH, w.y, w.z + 0.5 - HALF_WIDTH,
+            LevelRenderer.renderLineBox(poseStack, lines,
+                    w.x + 0.5 - HALF_WIDTH, w.y, w.z + 0.5 - HALF_WIDTH,
                     w.x + 0.5 + HALF_WIDTH, w.y + BEAM_HEIGHT, w.z + 0.5 + HALF_WIDTH, r, g, b, 0.6f);
         }
         bufferSource.endBatch(RenderType.lines());

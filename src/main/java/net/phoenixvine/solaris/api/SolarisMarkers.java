@@ -3,10 +3,9 @@ package net.phoenixvine.solaris.api;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
-import net.phoenixvine.solaris.network.S2CMarkerPacket;
-import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.network.packets.S2CMarkerPacket;
 import net.phoenixvine.solaris.server.SolarisServerUtil;
 
 import java.util.Collection;
@@ -48,7 +47,8 @@ public final class SolarisMarkers {
 
     private static void send(ServerPlayer target, S2CMarkerPacket packet) {
         if (!SolarisServerUtil.hasSolaris(target)) return;
-        SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> target), packet);
+        // Modern 1.21.1 PacketDistributor syntax
+        PacketDistributor.sendToPlayer(target, packet);
     }
 
     public static final class Builder {

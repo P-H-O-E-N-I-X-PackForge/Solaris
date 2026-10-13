@@ -4,7 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.storage.LevelResource;
-import net.minecraftforge.common.MinecraftForge;
+import net.neoforged.neoforge.common.NeoForge;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 import net.phoenixvine.solaris.api.event.WaypointEvent;
@@ -74,7 +74,7 @@ public final class WaypointManager {
         ensureLoaded();
         WAYPOINTS.add(waypoint);
         save();
-        MinecraftForge.EVENT_BUS.post(new WaypointEvent.Added(waypoint));
+        NeoForge.EVENT_BUS.post(new WaypointEvent.Added(waypoint));
     }
 
     public static boolean remove(String id) {
@@ -89,7 +89,7 @@ public final class WaypointManager {
         if (target == null) return false;
 
         WaypointEvent.Removed event = new WaypointEvent.Removed(target);
-        MinecraftForge.EVENT_BUS.post(event);
+        NeoForge.EVENT_BUS.post(event);
         if (event.isCanceled()) return false;
 
         WAYPOINTS.remove(target);

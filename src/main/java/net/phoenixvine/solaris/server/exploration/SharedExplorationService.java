@@ -6,22 +6,19 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.server.ServerLifecycleHooks;
-import net.phoenixvine.solaris.PhoenixSolaris;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 import net.phoenixvine.solaris.common.SharedChunkBlob;
 import net.phoenixvine.solaris.common.SharedChunkFormat;
 import net.phoenixvine.solaris.config.SolarisServerConfig;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
-import net.phoenixvine.solaris.network.S2CSharedChunksPacket;
-import net.phoenixvine.solaris.network.S2CSharedUploadWantPacket;
-import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.network.packets.S2CSharedChunksPacket;
+import net.phoenixvine.solaris.network.packets.S2CSharedUploadWantPacket;
 import net.phoenixvine.solaris.server.GuildMapStore;
 import net.phoenixvine.solaris.server.SolarisServerAPI;
 import net.phoenixvine.solaris.server.SolarisServerUtil;
@@ -34,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber()
 public final class SharedExplorationService {
 
     private static final int MAX_COORD = 1_875_000;
@@ -170,8 +167,7 @@ public final class SharedExplorationService {
         for (SharedChunkBlob blob : blobs) {
             if (!batch.isEmpty() &&
                     (batch.size() >= PACKET_MAX_BLOBS || bytes + blob.data().length > PACKET_MAX_BYTES)) {
-                SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
-                        new S2CSharedChunksPacket(dimension, batch));
+                PacketDistributor.sendToPlayer(player, new S2CSharedChunksPacket(dimension, batch));
                 batch = new ArrayList<>();
                 bytes = 0;
             }
@@ -179,9 +175,7 @@ public final class SharedExplorationService {
             bytes += blob.data().length;
         }
         if (!batch.isEmpty()) {
-            final List<SharedChunkBlob> last = batch;
-            SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
-                    new S2CSharedChunksPacket(dimension, last));
+            PacketDistributor.sendToPlayer(player, new S2CSharedChunksPacket(dimension, batch));
         }
     }
 
@@ -222,8 +216,7 @@ public final class SharedExplorationService {
 
         if (anyWant) {
             final long[] bits = want;
-            SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
-                    new S2CSharedUploadWantPacket(dim.toString(), minX, minZ, bits));
+            PacketDistributor.sendToPlayer(player, new S2CSharedUploadWantPacket(dim.toString(), minX, minZ, bits));
         }
 
         double centerX = minX + window / 2.0;
@@ -254,12 +247,10 @@ public final class SharedExplorationService {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || !SolarisServerConfig.SPEC.isLoaded()) return;
-        if (!SolarisServerConfig.SHARED_EXPLORATION_ENABLED.get()) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (!SolarisServerConfig.SPEC.isLoaded() || !SolarisServerConfig.SHARED_EXPLORATION_ENABLED.get()) return;
 
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server == null) return;
+        MinecraftServer server = event.getServer();
 
         if (++saveCounter >= SolarisServerConfig.SHARED_EXPLORATION_SAVE_MINUTES.get() * 1200) {
             saveCounter = 0;

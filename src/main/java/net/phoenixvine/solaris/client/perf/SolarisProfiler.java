@@ -1,9 +1,9 @@
 package net.phoenixvine.solaris.client.perf;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.config.SolarisConfig;
 
@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-@Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, value = Dist.CLIENT)
 public final class SolarisProfiler {
 
     private static final Map<String, Stats> STATS = new ConcurrentHashMap<>();
@@ -56,8 +56,7 @@ public final class SolarisProfiler {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onClientTick(ClientTickEvent.Post event) {
         if (!SolarisConfig.PERF_LOGGING.get() || STATS.isEmpty()) return;
 
         int intervalTicks = SolarisConfig.PERF_SUMMARY_INTERVAL_SECONDS.get() * 20;

@@ -3,10 +3,10 @@ package net.phoenixvine.solaris.client.waypoint;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
 import net.phoenixvine.solaris.PhoenixSolaris;
 
 import com.mojang.blaze3d.platform.NativeImage;
@@ -45,13 +45,13 @@ public final class WaypointIconManager {
     }
 
     public static String itemIconId(Item item) {
-        return ITEM_PREFIX + ForgeRegistries.ITEMS.getKey(item);
+        return ITEM_PREFIX + BuiltInRegistries.ITEM.getKey(item);
     }
 
     public static ItemStack resolveItem(String iconId) {
         try {
-            ResourceLocation id = new ResourceLocation(iconId.substring(ITEM_PREFIX.length()));
-            Item item = ForgeRegistries.ITEMS.getValue(id);
+            ResourceLocation id = ResourceLocation.parse(iconId.substring(ITEM_PREFIX.length()));
+            Item item = BuiltInRegistries.ITEM.get(id);
             return item == null ? ItemStack.EMPTY : new ItemStack(item);
         } catch (Exception e) {
             return ItemStack.EMPTY;
@@ -92,7 +92,8 @@ public final class WaypointIconManager {
             NativeImage image = NativeImage.read(in);
             DynamicTexture texture = new DynamicTexture(image);
             String safe = baseName.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_.-]", "_");
-            ResourceLocation loc = new ResourceLocation(PhoenixSolaris.MOD_ID, "waypoint_icon/" + safe);
+            ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(PhoenixSolaris.MOD_ID,
+                    "waypoint_icon/" + safe);
             Minecraft.getInstance().getTextureManager().register(loc, texture);
             CUSTOM.put(CUSTOM_PREFIX + baseName, new Loaded(loc, image.getWidth(), image.getHeight()));
         } catch (IOException e) {

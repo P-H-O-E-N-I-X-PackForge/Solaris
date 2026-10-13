@@ -1,26 +1,23 @@
 package net.phoenixvine.solaris.server.features;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.AdvancementEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 import net.phoenixvine.solaris.api.SolarisGatesAPI;
 import net.phoenixvine.solaris.api.gates.GateCondition;
 import net.phoenixvine.solaris.config.SolarisServerConfig;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
-import net.phoenixvine.solaris.server.ManualGateData;
-import net.phoenixvine.solaris.server.SolarisFeatureStateData;
 import net.phoenixvine.solaris.server.SolarisServerAPI;
 
 import java.util.ArrayList;
@@ -32,7 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-@Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber()
 public final class ProgressionGates {
 
     private record GroupKey(String feature, ResourceLocation dimension) {}
@@ -111,8 +108,11 @@ public final class ProgressionGates {
 
         ResourceLocation advancementId = ResourceLocation.tryParse(gateId);
         if (advancementId != null) {
-            Advancement advancement = server.getAdvancements().getAdvancement(advancementId);
-            if (advancement != null) return player.getAdvancements().getOrStartProgress(advancement).isDone();
+            // Modernized 1.21.1 advancement lookup using Holder lookup / registries
+            AdvancementHolder advancement = server.getAdvancements().get(advancementId);
+            if (advancement != null) {
+                return player.getAdvancements().getOrStartProgress(advancement).isDone();
+            }
         }
         return false;
     }
@@ -230,15 +230,16 @@ public final class ProgressionGates {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || !SolarisServerConfig.SPEC.isLoaded()) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (!SolarisServerConfig.SPEC.isLoaded()) return;
         int interval = SolarisServerConfig.PROGRESSION_POLL_TICKS.get();
         if (interval <= 0) return;
         if (++pollCounter < interval) return;
         pollCounter = 0;
 
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server == null) return;
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) refresh(player);
+        MinecraftServer server = event.getServer();
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            refresh(player);
+        }
     }
 }

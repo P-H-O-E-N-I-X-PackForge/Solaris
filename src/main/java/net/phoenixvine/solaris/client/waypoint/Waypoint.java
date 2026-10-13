@@ -36,7 +36,7 @@ public class Waypoint {
     }
 
     public ResourceLocation dimensionLocation() {
-        return new ResourceLocation(dimension);
+        return ResourceLocation.parse(dimension);
     }
 
     public String categoryOrEmpty() {

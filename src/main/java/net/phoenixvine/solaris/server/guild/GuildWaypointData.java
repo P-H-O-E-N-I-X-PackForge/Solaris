@@ -1,5 +1,6 @@
-package net.phoenixvine.solaris.server;
+package net.phoenixvine.solaris.server.guild;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -21,11 +22,17 @@ public class GuildWaypointData extends SavedData {
 
     private final Map<UUID, Map<String, Entry>> byGuild = new LinkedHashMap<>();
 
+    // Modern 1.21 SavedData factory definition
+    private static final SavedData.Factory<GuildWaypointData> FACTORY = new SavedData.Factory<>(
+            GuildWaypointData::new,
+            GuildWaypointData::load,
+            null);
+
     public static GuildWaypointData get(ServerLevel overworld) {
-        return overworld.getDataStorage().computeIfAbsent(GuildWaypointData::load, GuildWaypointData::new, SAVE_KEY);
+        return overworld.getDataStorage().computeIfAbsent(FACTORY, SAVE_KEY);
     }
 
-    private static GuildWaypointData load(CompoundTag tag) {
+    private static GuildWaypointData load(CompoundTag tag, HolderLookup.Provider registries) {
         GuildWaypointData data = new GuildWaypointData();
         for (String guildKey : tag.getAllKeys()) {
             UUID guild;
@@ -50,7 +57,7 @@ public class GuildWaypointData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         for (Map.Entry<UUID, Map<String, Entry>> guild : byGuild.entrySet()) {
             ListTag list = new ListTag();
             for (Entry e : guild.getValue().values()) {

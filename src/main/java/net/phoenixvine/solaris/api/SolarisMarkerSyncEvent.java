@@ -1,7 +1,7 @@
 package net.phoenixvine.solaris.api;
 
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.eventbus.api.Event;
+import net.neoforged.bus.api.Event;
 
 public class SolarisMarkerSyncEvent extends Event {
 

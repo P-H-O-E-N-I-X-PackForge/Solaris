@@ -1,15 +1,13 @@
 package net.phoenixvine.solaris;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.IExtensionPoint;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.network.NetworkConstants;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.phoenixvine.solaris.client.PhoenixSolarisClient;
 import net.phoenixvine.solaris.config.SolarisConfig;
 import net.phoenixvine.solaris.config.SolarisServerConfig;
@@ -24,23 +22,21 @@ public class PhoenixSolaris {
     public static final String MOD_ID = "solaris";
     public static final Logger LOGGER = LogManager.getLogger();
 
-    public PhoenixSolaris() {
-        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
-
-        SolarisConfig.register();
-        SolarisServerConfig.register();
+    public PhoenixSolaris(IEventBus modEventBus, ModContainer modContainer) {
+        // Register client and server configuration specs directly to the mod container
+        modContainer.registerConfig(ModConfig.Type.CLIENT, SolarisConfig.SPEC);
+        modContainer.registerConfig(ModConfig.Type.SERVER, SolarisServerConfig.SPEC);
 
         modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(SolarisNetwork::register);
 
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> PhoenixSolarisClient.init(modEventBus));
-
-        ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class,
-                () -> new IExtensionPoint.DisplayTest(() -> NetworkConstants.IGNORESERVERONLY,
-                        (remote, isServer) -> true));
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            PhoenixSolarisClient.init(modEventBus);
+        }
     }
 
     public static ResourceLocation id(String path) {
-        return new ResourceLocation(MOD_ID, path);
+        return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {

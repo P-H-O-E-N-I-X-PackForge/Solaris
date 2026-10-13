@@ -8,15 +8,15 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
-import net.phoenixvine.solaris.network.C2SGuildWaypointPacket;
-import net.phoenixvine.solaris.network.C2SShareWaypointPacket;
 import net.phoenixvine.solaris.network.ClientPacketHandlers;
-import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.network.packets.C2SGuildWaypointPacket;
+import net.phoenixvine.solaris.network.packets.C2SShareWaypointPacket;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -61,6 +61,11 @@ public class WaypointListScreen extends Screen {
         this.parent = parent;
     }
 
+
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    }
+
     @Override
     protected void init() {
         clearWidgets();
@@ -87,7 +92,7 @@ public class WaypointListScreen extends Screen {
         searchBox = new EditBox(font, 8, 52, leftW - 8, 16, Component.literal("Search"));
         searchBox.setMaxLength(48);
         searchBox.setValue(previousSearch);
-        searchBox.setHint(Component.literal("Search…"));
+        searchBox.setHint(Component.literal("Searchâ€¦"));
         addWidget(searchBox);
 
         List<String> categories = WaypointManager.getCategories();
@@ -175,7 +180,7 @@ public class WaypointListScreen extends Screen {
 
             boolean tracked = selected.id.equals(trackedId());
             addRenderableWidget(Button.builder(
-                    Component.literal(tracked ? "Tracked (compass) ✓" : "Track (compass)"),
+                    Component.literal(tracked ? "Tracked (compass) âœ“" : "Track (compass)"),
                     b -> {
                         WaypointManager.setTracked(tracked ? null : selected.id);
                         init();
@@ -240,7 +245,7 @@ public class WaypointListScreen extends Screen {
 
     private String truncate(String text, int maxWidth) {
         if (font.width(text) <= maxWidth) return text;
-        return font.plainSubstrByWidth(text, maxWidth - font.width("…")) + "…";
+        return font.plainSubstrByWidth(text, maxWidth - font.width("â€¦")) + "â€¦";
     }
 
     private void shareSelected() {
@@ -254,8 +259,16 @@ public class WaypointListScreen extends Screen {
             mc.player.displayClientMessage(Component.literal("Sharing isn't available right now."), true);
             return;
         }
-        SolarisNetwork.CHANNEL.sendToServer(new C2SShareWaypointPacket(selected.name, selected.dimension,
-                selected.x, selected.y, selected.z, selected.color, selected.icon));
+
+        // Send using modern PacketDistributor
+        PacketDistributor.sendToServer(new C2SShareWaypointPacket(
+                selected.name,
+                selected.dimension,
+                selected.x,
+                selected.y,
+                selected.z,
+                selected.color,
+                selected.icon));
     }
 
     private void publishToGuild() {
@@ -267,7 +280,9 @@ public class WaypointListScreen extends Screen {
                 selected.id.substring(ClientPacketHandlers.GUILD_WAYPOINT_PREFIX.length()) : "";
         String name = nameBox.getValue().isBlank() ? selected.name : nameBox.getValue().trim();
         String category = categoryBox != null ? categoryBox.getValue().trim() : selected.category;
-        SolarisNetwork.CHANNEL.sendToServer(C2SGuildWaypointPacket.upsert(key, name, selected.dimension,
+
+        // Updated for 1.21.1: Use PacketDistributor instead of CHANNEL
+        PacketDistributor.sendToServer(C2SGuildWaypointPacket.upsert(key, name, selected.dimension,
                 parseCoord(xBox, selected.x), parseCoord(yBox, selected.y), parseCoord(zBox, selected.z),
                 colorBox.getValue().trim(), selected.icon, category));
     }
@@ -277,8 +292,9 @@ public class WaypointListScreen extends Screen {
                 !selected.id.startsWith(ClientPacketHandlers.GUILD_WAYPOINT_PREFIX)) {
             return;
         }
-        SolarisNetwork.CHANNEL.sendToServer(C2SGuildWaypointPacket
-                .remove(selected.id.substring(ClientPacketHandlers.GUILD_WAYPOINT_PREFIX.length())));
+
+        PacketDistributor.sendToServer(C2SGuildWaypointPacket.remove(
+                selected.id.substring(ClientPacketHandlers.GUILD_WAYPOINT_PREFIX.length())));
     }
 
     private void saveSelected() {
@@ -352,7 +368,7 @@ public class WaypointListScreen extends Screen {
         int mx = Math.round(rawMx / uiScale);
         int my = Math.round(rawMy / uiScale);
 
-        renderBackground(g);
+        renderBackground(g, mx, my, pt);
 
         g.pose().pushPose();
         g.pose().scale(uiScale, uiScale, 1f);
@@ -377,7 +393,7 @@ public class WaypointListScreen extends Screen {
             boolean hov = mx >= 8 && mx < leftW && my >= rowY && my < rowY + ROW_H;
             g.fill(8, rowY, leftW, rowY + ROW_H, sel ? 0xFF2A2A44 : hov ? C_HEADER : C_PANEL);
             WaypointIconManager.draw(g, w.icon, 16, rowY + 8, 4, w.colorArgb());
-            String label = w.name + "  §7(" + w.x + ", " + w.y + ", " + w.z + ")" + (w.visible ? "" : " §8[hidden]");
+            String label = w.name + "  Â§7(" + w.x + ", " + w.y + ", " + w.z + ")" + (w.visible ? "" : " Â§8[hidden]");
             g.drawString(font, truncate(label, leftW - 32), 28, rowY + 4, sel ? C_ACCENT : C_TEXT, false);
             rowY += ROW_H;
         }
@@ -451,8 +467,8 @@ public class WaypointListScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mx, double my, double delta) {
-        scrollOffset -= (int) delta;
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        scrollOffset -= (int) verticalAmount;
         return true;
     }
 

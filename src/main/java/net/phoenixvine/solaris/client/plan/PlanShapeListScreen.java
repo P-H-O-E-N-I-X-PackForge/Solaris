@@ -8,8 +8,8 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
 
 import java.util.List;
@@ -44,6 +44,11 @@ public class PlanShapeListScreen extends Screen {
     public PlanShapeListScreen(Screen parent) {
         super(Component.literal("Plan Shapes"));
         this.parent = parent;
+    }
+
+
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
     }
 
     @Override
@@ -148,7 +153,8 @@ public class PlanShapeListScreen extends Screen {
         int mx = Math.round(rawMx / uiScale);
         int my = Math.round(rawMy / uiScale);
 
-        renderBackground(g);
+        // Updated background rendering call for 1.21.1
+        this.renderBackground(g, rawMx, rawMy, pt);
 
         g.pose().pushPose();
         g.pose().scale(uiScale, uiScale, 1f);
@@ -238,8 +244,8 @@ public class PlanShapeListScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mx, double my, double delta) {
-        scrollOffset -= (int) delta;
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        scrollOffset -= (int) scrollY;
         return true;
     }
 

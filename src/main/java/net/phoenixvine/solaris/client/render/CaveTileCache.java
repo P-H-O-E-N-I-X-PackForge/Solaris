@@ -140,7 +140,7 @@ public final class CaveTileCache {
         buildBudget[0]--;
 
         if (tile == null) {
-            ResourceLocation id = new ResourceLocation(PhoenixSolaris.MOD_ID,
+            ResourceLocation id = ResourceLocation.fromNamespaceAndPath(PhoenixSolaris.MOD_ID,
                     "dynamic/cave_tile_" + nextTileId++ + "_" + key.tileX() + "_" + key.tileZ() + "_" +
                             key.yBucket() + "_" + key.lod());
             tile = new CaveTile(id);

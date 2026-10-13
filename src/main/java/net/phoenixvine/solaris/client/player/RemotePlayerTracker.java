@@ -6,15 +6,15 @@ import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 import net.phoenixvine.solaris.config.SolarisConfig;
-import net.phoenixvine.solaris.network.S2CPlayerPositionsPacket;
+import net.phoenixvine.solaris.network.packets.S2CPlayerPositionsPacket;
 import net.phoenixvine.solaris.server.ServerCapabilities;
 
 import java.util.ArrayList;
@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-@Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, value = Dist.CLIENT)
 public final class RemotePlayerTracker {
 
     private static final long EXPIRY_MS = 15_000L;
@@ -80,15 +80,15 @@ public final class RemotePlayerTracker {
             if (!seen.add(other.getUUID())) continue;
             if (authoritative && !permitted.contains(other.getUUID())) continue;
             out.add(new MapPlayer(other.getUUID(), other.getGameProfile().getName(), other.getX(), other.getZ(),
-                    other.getYRot(), other.getSkinTextureLocation()));
+                    other.getYRot(), other.getSkin().texture()));
         }
 
         if (fresh) {
             for (S2CPlayerPositionsPacket.Entry e : snapshot) {
                 if (!seen.add(e.id())) continue;
                 PlayerInfo info = mc.getConnection() != null ? mc.getConnection().getPlayerInfo(e.id()) : null;
-                ResourceLocation skin = info != null ? info.getSkinLocation() :
-                        DefaultPlayerSkin.getDefaultSkin(e.id());
+                ResourceLocation skin = info != null ? info.getSkin().texture() :
+                        DefaultPlayerSkin.get(e.id()).texture();
                 out.add(new MapPlayer(e.id(), e.name(), e.x() + 0.5, e.z() + 0.5, e.yaw(), skin));
             }
         }

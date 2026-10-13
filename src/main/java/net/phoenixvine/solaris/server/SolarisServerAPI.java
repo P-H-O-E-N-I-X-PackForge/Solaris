@@ -7,15 +7,15 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
-import net.phoenixvine.solaris.network.S2CForceUpdateChunkPacket;
-import net.phoenixvine.solaris.network.S2CReceiveWaypointPacket;
-import net.phoenixvine.solaris.network.S2CRemoveWaypointPacket;
-import net.phoenixvine.solaris.network.S2CSyncFeatureStatePacket;
-import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.network.packets.S2CForceUpdateChunkPacket;
+import net.phoenixvine.solaris.network.packets.S2CReceiveWaypointPacket;
+import net.phoenixvine.solaris.network.packets.S2CRemoveWaypointPacket;
+import net.phoenixvine.solaris.network.packets.S2CSyncFeatureStatePacket;
+import net.phoenixvine.solaris.server.features.SolarisFeatureStateData;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -62,7 +62,7 @@ public final class SolarisServerAPI {
         Map<String, Map<String, SolarisFeatureState>> states = SolarisFeatureStateData
                 .get(player.getServer().overworld()).snapshot(token);
 
-        SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
+        PacketDistributor.sendToPlayer(player,
                 new S2CSyncFeatureStatePacket(tiers, features, states));
     }
 
@@ -87,19 +87,19 @@ public final class SolarisServerAPI {
         ServerLevel level = target.getServer().getLevel(ResourceKey.create(Registries.DIMENSION, dimension));
         if (level == null || !level.getChunkSource().hasChunk(chunkX, chunkZ)) return;
 
-        SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> target),
+        PacketDistributor.sendToPlayer(target,
                 new S2CForceUpdateChunkPacket(dimension.toString(), chunkX, chunkZ));
     }
 
     public static void placeWaypoint(ServerPlayer target, String name, ResourceLocation dimension, int x, int y,
                                      int z, String colorHex, boolean locked) {
-        SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> target),
+        PacketDistributor.sendToPlayer(target,
                 new S2CReceiveWaypointPacket("System", name, dimension.toString(), x, y, z, colorHex,
                         net.phoenixvine.solaris.client.waypoint.WaypointIcon.DOT.name(), locked));
     }
 
     public static void removeWaypoint(ServerPlayer target, String name) {
-        SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> target), new S2CRemoveWaypointPacket(name));
+        PacketDistributor.sendToPlayer(target, new S2CRemoveWaypointPacket(name));
     }
 
     private static final String HIDDEN_FROM_MAP_KEY = "hidden_from_map";

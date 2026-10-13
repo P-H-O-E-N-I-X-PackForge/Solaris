@@ -2,13 +2,13 @@ package net.phoenixvine.solaris.client.overlay;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisAPI;
-import net.phoenixvine.solaris.network.S2CClaimsPacket;
+import net.phoenixvine.solaris.network.packets.S2CClaimsPacket;
 
 import it.unimi.dsi.fastutil.longs.Long2IntMap;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
@@ -16,7 +16,7 @@ import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import java.util.List;
 import java.util.Optional;
 
-@Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, value = Dist.CLIENT)
 public final class ClaimOverlay implements SolarisOverlay {
 
     public static final ClaimOverlay INSTANCE = new ClaimOverlay();

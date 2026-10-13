@@ -3,10 +3,10 @@ package net.phoenixvine.solaris.api;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.client.SolarisMapScreen;
 import net.phoenixvine.solaris.client.overlay.SolarisOverlay;
@@ -217,12 +217,14 @@ public final class SolarisAPI {
         MapTileCache.clearAll();
     }
 
-    @Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+    @EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, value = Dist.CLIENT)
     public static final class RefreshFlusher {
 
+        private static boolean refreshPending = false;
+
         @SubscribeEvent
-        public static void onClientTick(TickEvent.ClientTickEvent event) {
-            if (event.phase == TickEvent.Phase.END && refreshPending) {
+        public static void onClientTick(ClientTickEvent.Post event) {
+            if (refreshPending) {
                 refreshPending = false;
                 SolarisTexture.invalidateAll();
                 MapTileCache.clearAll();

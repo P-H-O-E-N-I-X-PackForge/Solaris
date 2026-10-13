@@ -107,7 +107,7 @@ public class SolarisTexture implements AutoCloseable {
         this.spanChunks = radiusChunks * 2 + 1;
         this.sizePixels = spanChunks * 16;
 
-        this.textureId = new ResourceLocation(PhoenixSolaris.MOD_ID, "dynamic/" + name);
+        this.textureId = ResourceLocation.fromNamespaceAndPath(PhoenixSolaris.MOD_ID, "dynamic/" + name);
         this.image = new NativeImage(sizePixels, sizePixels, false);
         this.texture = new DynamicTexture(image);
         Minecraft.getInstance().getTextureManager().register(textureId, texture);
@@ -844,7 +844,7 @@ public class SolarisTexture implements AutoCloseable {
 
     public ResourceLocation ensureGlobeTexture() {
         if (globeTexture == null) {
-            globeTextureId = new ResourceLocation(PhoenixSolaris.MOD_ID, "dynamic/" + name + "_globe");
+            globeTextureId = ResourceLocation.fromNamespaceAndPath(PhoenixSolaris.MOD_ID, "dynamic/" + name + "_globe");
             globeImage = new NativeImage(sizePixels, sizePixels, false);
             globeTexture = new DynamicTexture(globeImage);
             Minecraft.getInstance().getTextureManager().register(globeTextureId, globeTexture);

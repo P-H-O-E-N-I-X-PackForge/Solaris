@@ -1,5 +1,6 @@
-package net.phoenixvine.solaris.server;
+package net.phoenixvine.solaris.server.features;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -16,12 +17,17 @@ public class SolarisFeatureStateData extends SavedData {
 
     private final Map<UUID, Map<ResourceLocation, Map<String, SolarisFeatureState>>> byToken = new LinkedHashMap<>();
 
+    // Modern 1.21 SavedData factory definition
+    private static final SavedData.Factory<SolarisFeatureStateData> FACTORY = new SavedData.Factory<>(
+            SolarisFeatureStateData::new,
+            SolarisFeatureStateData::load,
+            null);
+
     public static SolarisFeatureStateData get(ServerLevel overworld) {
-        return overworld.getDataStorage().computeIfAbsent(SolarisFeatureStateData::load, SolarisFeatureStateData::new,
-                SAVE_KEY);
+        return overworld.getDataStorage().computeIfAbsent(FACTORY, SAVE_KEY);
     }
 
-    private static SolarisFeatureStateData load(CompoundTag tag) {
+    private static SolarisFeatureStateData load(CompoundTag tag, HolderLookup.Provider registries) {
         SolarisFeatureStateData data = new SolarisFeatureStateData();
         for (String tokenKey : tag.getAllKeys()) {
             UUID token = UUID.fromString(tokenKey);
@@ -37,7 +43,7 @@ public class SolarisFeatureStateData extends SavedData {
 
                     }
                 }
-                perDimension.put(new ResourceLocation(dimensionKey), perFeature);
+                perDimension.put(ResourceLocation.parse(dimensionKey), perFeature);
             }
             data.byToken.put(token, perDimension);
         }
@@ -45,7 +51,7 @@ public class SolarisFeatureStateData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         for (Map.Entry<UUID, Map<ResourceLocation, Map<String, SolarisFeatureState>>> tokenEntry : byToken
                 .entrySet()) {
             CompoundTag dimensions = new CompoundTag();

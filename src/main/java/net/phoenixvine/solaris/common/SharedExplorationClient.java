@@ -3,11 +3,12 @@ package net.phoenixvine.solaris.common;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
@@ -16,9 +17,8 @@ import net.phoenixvine.solaris.client.color.PersistentChunkStore;
 import net.phoenixvine.solaris.client.render.MapTileCache;
 import net.phoenixvine.solaris.client.render.SolarisTexture;
 import net.phoenixvine.solaris.config.SolarisConfig;
-import net.phoenixvine.solaris.network.C2SSharedChunksPacket;
-import net.phoenixvine.solaris.network.C2SSharedSyncRequestPacket;
-import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.network.packets.C2SSharedChunksPacket;
+import net.phoenixvine.solaris.network.packets.C2SSharedSyncRequestPacket;
 import net.phoenixvine.solaris.server.ServerCapabilities;
 
 import java.util.ArrayDeque;
@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, value = Dist.CLIENT)
 public final class SharedExplorationClient {
 
     private static final int WINDOW = SharedChunkFormat.WINDOW;
@@ -127,9 +127,7 @@ public final class SharedExplorationClient {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-
+    public static void onClientTick(ClientTickEvent.Post event) {
         long now = System.currentTimeMillis();
         if (pendingTextureRefresh && now - lastTextureRefreshMillis >= INVALIDATE_INTERVAL_MS) {
             pendingTextureRefresh = false;
@@ -158,6 +156,7 @@ public final class SharedExplorationClient {
         boolean moved = lastPlayerDimension == null || !lastPlayerDimension.equals(dimension) ||
                 Math.abs(here.x - lastPlayerChunkX) >= REQUEST_MOVE_CHUNKS ||
                 Math.abs(here.z - lastPlayerChunkZ) >= REQUEST_MOVE_CHUNKS;
+
         if (moved || now - lastPlayerRequestMillis >= WINDOW_REFRESH_MS) {
             lastPlayerDimension = dimension;
             lastPlayerChunkX = here.x;
@@ -276,7 +275,9 @@ public final class SharedExplorationClient {
                 }
             }
         }
-        SolarisNetwork.CHANNEL.sendToServer(
+
+        // Updated for 1.21.1: Use PacketDistributor instead of CHANNEL
+        PacketDistributor.sendToServer(
                 new C2SSharedSyncRequestPacket(dimensionName, window.minX(), window.minZ(), have));
         return true;
     }
@@ -287,14 +288,20 @@ public final class SharedExplorationClient {
 
         int maxBlobs = uploadBlobsPerStep();
 
-        while (!WANTED.isEmpty() && blobs.size() < maxBlobs && bytes < UPLOAD_MAX_BYTES) {
-            ChunkKey key = WANTED.iterator().next();
-            WANTED.remove(key);
-            synchronized (UPLOAD_QUEUE) {
-                UPLOAD_QUEUE.remove(key);
+        // Synchronize access to WANTED if it's accessed across multiple threads
+        synchronized (WANTED) {
+            Iterator<ChunkKey> it = WANTED.iterator();
+            while (it.hasNext() && blobs.size() < maxBlobs && bytes < UPLOAD_MAX_BYTES) {
+                ChunkKey key = it.next();
+                it.remove(); // Safely remove using the iterator
+
+                synchronized (UPLOAD_QUEUE) {
+                    UPLOAD_QUEUE.remove(key);
+                }
+                bytes += addBlob(blobs, key, dimension);
             }
-            bytes += addBlob(blobs, key, dimension);
         }
+
         synchronized (UPLOAD_QUEUE) {
             Iterator<ChunkKey> it = UPLOAD_QUEUE.iterator();
             while (it.hasNext() && blobs.size() < maxBlobs && bytes < UPLOAD_MAX_BYTES) {
@@ -308,13 +315,16 @@ public final class SharedExplorationClient {
             long now = System.currentTimeMillis();
             uploadedChunks += blobs.size();
             lastActivityMillis = now;
+
             if (UPLOADED_AT.size() > 20_000) UPLOADED_AT.clear();
             if (VERIFY_AT.size() > 500) VERIFY_AT.clear();
+
             for (SharedChunkBlob blob : blobs) {
                 UPLOADED_AT.put(new ChunkKey(dimension, blob.x(), blob.z()), now);
                 VERIFY_AT.put(alignedWindow(dimension, blob.x(), blob.z()), now + VERIFY_DELAY_MS);
             }
-            SolarisNetwork.CHANNEL.sendToServer(new C2SSharedChunksPacket(dimension.toString(), blobs));
+
+            PacketDistributor.sendToServer(new C2SSharedChunksPacket(dimension.toString(), blobs));
         }
     }
 

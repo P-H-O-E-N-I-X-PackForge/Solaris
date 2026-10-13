@@ -5,14 +5,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 import net.phoenixvine.solaris.config.SolarisServerConfig;
 import net.phoenixvine.solaris.config.SolarisServerConfig.PingAudience;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
-import net.phoenixvine.solaris.network.S2CPingPacket;
-import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.network.packets.S2CPingPacket;
 import net.phoenixvine.solaris.server.SolarisServerAPI;
 import net.phoenixvine.solaris.server.SolarisServerUtil;
 
@@ -75,7 +74,7 @@ public final class PingService {
             if (!receiver.level().dimension().location().equals(dimension)) continue;
             if (!SolarisServerUtil.hasSolaris(receiver)) continue;
             if (!allowed(receiver, dimension, SolarisFeatureState.VISIBLE)) continue;
-            SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> receiver), packet);
+            PacketDistributor.sendToPlayer(receiver, packet);
         }
     }
 

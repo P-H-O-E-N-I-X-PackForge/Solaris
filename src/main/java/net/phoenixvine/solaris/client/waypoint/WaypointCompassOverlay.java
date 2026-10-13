@@ -2,25 +2,21 @@ package net.phoenixvine.solaris.client.waypoint;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.client.render.PlayerArrow;
 import net.phoenixvine.solaris.config.SolarisConfig;
 
 import java.util.List;
 
-import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_TEXT;
-
-@Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, value = Dist.CLIENT)
 public class WaypointCompassOverlay {
 
     @SubscribeEvent
-    public static void onRenderHud(RenderGuiOverlayEvent.Post event) {
-        if (event.getOverlay() != VanillaGuiOverlay.HOTBAR.type()) return;
+    public static void onRenderHud(RenderGuiEvent.Post event) {
         if (!SolarisConfig.WAYPOINT_COMPASS.get()) return;
 
         Minecraft mc = Minecraft.getInstance();
@@ -49,7 +45,7 @@ public class WaypointCompassOverlay {
 
         String label = target.name + " (" + Math.round(distance) + "m)";
         int textWidth = mc.font.width(label);
-        g.drawString(mc.font, label, cx - textWidth / 2, cy + 10, C_TEXT);
+        g.drawString(mc.font, label, cx - textWidth / 2, cy + 10, -1, false);
     }
 
     private static Waypoint nearest(Minecraft mc) {

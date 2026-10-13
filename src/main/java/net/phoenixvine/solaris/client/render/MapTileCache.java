@@ -167,7 +167,7 @@ public final class MapTileCache {
         buildBudget[0]--;
 
         if (tile == null) {
-            ResourceLocation id = new ResourceLocation(PhoenixSolaris.MOD_ID,
+            ResourceLocation id = ResourceLocation.fromNamespaceAndPath(PhoenixSolaris.MOD_ID,
                     "dynamic/tile_" + nextTileId++ + "_" + key.tileX() + "_" + key.tileZ() + "_" + key.lod());
             tile = new MapTile(id);
             TILES.put(key, tile);

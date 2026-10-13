@@ -8,7 +8,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 
 public final class VanillaPanel {
 
-    private static final ResourceLocation WINDOW = new ResourceLocation("textures/gui/advancements/window.png");
+    private static final ResourceLocation WINDOW = ResourceLocation.parse("textures/gui/advancements/window.png");
     private static final int NATIVE_W = 252;
     private static final int NATIVE_H = 140;
     private static final int BORDER = 7;

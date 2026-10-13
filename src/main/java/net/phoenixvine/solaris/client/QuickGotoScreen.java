@@ -6,8 +6,8 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
 
 import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_ACCENT;
@@ -75,9 +75,14 @@ public class QuickGotoScreen extends Screen {
         }
     }
 
+
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    }
+
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
-        parent.renderMapBackground(g);
+        parent.renderMapBackground(g, mx, my, pt);
         g.fill(0, 0, width, height, 0xE0101014);
 
         int x = boxX();

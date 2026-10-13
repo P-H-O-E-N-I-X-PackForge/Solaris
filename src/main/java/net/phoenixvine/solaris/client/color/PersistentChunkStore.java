@@ -216,7 +216,7 @@ public final class PersistentChunkStore {
             }
 
             int count = in.readInt();
-            ResourceLocation dimLoc = new ResourceLocation(dimension);
+            ResourceLocation dimLoc = ResourceLocation.parse(dimension);
             for (int i = 0; i < count; i++) {
                 int x = in.readInt();
                 int z = in.readInt();

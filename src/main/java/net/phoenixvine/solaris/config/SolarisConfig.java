@@ -1,87 +1,85 @@
 package net.phoenixvine.solaris.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.config.ModConfig;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import net.phoenixvine.solaris.client.render.LabelSide;
 import net.phoenixvine.solaris.client.render.MinimapShape;
 
 public final class SolarisConfig {
 
-    public static final ForgeConfigSpec SPEC;
+    public static final ModConfigSpec SPEC;
 
-    public static final ForgeConfigSpec.IntValue MINIMAP_SIZE;
-    public static final ForgeConfigSpec.IntValue MINIMAP_RADIUS_CHUNKS;
-    public static final ForgeConfigSpec.IntValue MAP_RADIUS_CHUNKS;
-    public static final ForgeConfigSpec.IntValue MAX_CACHED_CHUNKS;
-    public static final ForgeConfigSpec.IntValue WATER_BLEND_RADIUS;
-    public static final ForgeConfigSpec.DoubleValue ZOOM_MIN;
-    public static final ForgeConfigSpec.DoubleValue ZOOM_MAX;
-    public static final ForgeConfigSpec.DoubleValue SATURATION;
-    public static final ForgeConfigSpec.DoubleValue CONTRAST;
-    public static final ForgeConfigSpec.DoubleValue BRIGHTNESS;
-    public static final ForgeConfigSpec.DoubleValue FOLIAGE_BRIGHTNESS;
-    public static final ForgeConfigSpec.DoubleValue TINT_RED;
-    public static final ForgeConfigSpec.DoubleValue TINT_GREEN;
-    public static final ForgeConfigSpec.DoubleValue TINT_BLUE;
-    public static final ForgeConfigSpec.BooleanValue VIGNETTE;
-    public static final ForgeConfigSpec.DoubleValue VIGNETTE_STRENGTH;
-    public static final ForgeConfigSpec.BooleanValue BLACK_AND_WHITE;
-    public static final ForgeConfigSpec.EnumValue<net.phoenixvine.solaris.client.render.UnexploredStyle> UNEXPLORED_STYLE;
-    public static final ForgeConfigSpec.DoubleValue UNEXPLORED_DENSITY;
-    public static final ForgeConfigSpec.DoubleValue UNEXPLORED_BRIGHTNESS;
-    public static final ForgeConfigSpec.ConfigValue<String> UNEXPLORED_IMAGE_PATH;
-    public static final ForgeConfigSpec.BooleanValue UNEXPLORED_IMAGE_COVER;
-    public static final ForgeConfigSpec.BooleanValue SHOW_BLOCK_TOOLTIP;
-    public static final ForgeConfigSpec.DoubleValue WATER_OPACITY;
-    public static final ForgeConfigSpec.BooleanValue WATER_DEEP_ONLY;
-    public static final ForgeConfigSpec.IntValue WATER_DEEP_Y_THRESHOLD;
-    public static final ForgeConfigSpec.DoubleValue WAYPOINT_ICON_SCALE;
-    public static final ForgeConfigSpec.BooleanValue SHOW_GT_ORE_VEINS;
-    public static final ForgeConfigSpec.BooleanValue SHOW_MOBS;
-    public static final ForgeConfigSpec.BooleanValue SHOW_PLAYERS;
-    public static final ForgeConfigSpec.BooleanValue SHARE_EXPLORATION;
-    public static final ForgeConfigSpec.BooleanValue HILLSHADING;
-    public static final ForgeConfigSpec.DoubleValue HILLSHADING_STRENGTH;
-    public static final ForgeConfigSpec.EnumValue<LabelSide> LABEL_SIDE;
-    public static final ForgeConfigSpec.BooleanValue WAYPOINT_BEAMS;
-    public static final ForgeConfigSpec.IntValue WAYPOINT_BEAM_RANGE;
-    public static final ForgeConfigSpec.BooleanValue WAYPOINT_COMPASS;
-    public static final ForgeConfigSpec.BooleanValue DEATH_MARKERS;
-    public static final ForgeConfigSpec.BooleanValue AUTO_STRUCTURE_WAYPOINTS;
-    public static final ForgeConfigSpec.BooleanValue SHOW_PLAN_SHAPES;
-    public static final ForgeConfigSpec.IntValue PLAN_SHAPE_RANGE;
-    public static final ForgeConfigSpec.IntValue LIVE_REFRESH_INTERVAL_SECONDS;
-    public static final ForgeConfigSpec.IntValue LIVE_REFRESH_RADIUS_CHUNKS;
-    public static final ForgeConfigSpec.BooleanValue PERF_LOGGING;
-    public static final ForgeConfigSpec.IntValue PERF_LOG_THRESHOLD_MS;
-    public static final ForgeConfigSpec.IntValue PERF_SUMMARY_INTERVAL_SECONDS;
-    public static final ForgeConfigSpec.IntValue MAX_PERSISTED_CHUNKS_PER_DIMENSION;
-    public static final ForgeConfigSpec.BooleanValue MINIMAP_ROTATE;
-    public static final ForgeConfigSpec.EnumValue<net.phoenixvine.solaris.client.render.MinimapShape> MINIMAP_SHAPE;
-    public static final ForgeConfigSpec.BooleanValue SHOW_RAIL_NETWORK;
-    public static final ForgeConfigSpec.IntValue RAIL_NETWORK_RANGE;
-    public static final ForgeConfigSpec.IntValue MAX_MINIMAP_RANGE_CHUNKS;
-    public static final ForgeConfigSpec.IntValue WORLD_MAP_WRITE_RANGE_CHUNKS;
-    public static final ForgeConfigSpec.DoubleValue MINIMAP_ZOOM;
-    public static final ForgeConfigSpec.BooleanValue MINIMAP_SHOW_TIME;
-    public static final ForgeConfigSpec.BooleanValue MINIMAP_SHOW_COORDS;
-    public static final ForgeConfigSpec.BooleanValue MINIMAP_SHOW_BORDER;
-    public static final ForgeConfigSpec.BooleanValue MINIMAP_SHOW_BIOME;
-    public static final ForgeConfigSpec.BooleanValue MINIMAP_SHOW_WAYPOINTS;
-    public static final ForgeConfigSpec.IntValue MINIMAP_MAX_WAYPOINTS;
-    public static final ForgeConfigSpec.BooleanValue MINIMAP_SHOW_WAYPOINT_DIRECTIONS;
-    public static final ForgeConfigSpec.BooleanValue MINIMAP_AUTO_UNDERGROUND;
-    public static final ForgeConfigSpec.BooleanValue MINIMAP_SHOW_TEXT_LABELS;
-    public static final ForgeConfigSpec.BooleanValue SHOW_CLAIMS_MINIMAP;
-    public static final ForgeConfigSpec.BooleanValue SHOW_CHUNK_GRID;
-    public static final ForgeConfigSpec.DoubleValue NIGHT_MODE_STRENGTH;
-    public static final ForgeConfigSpec.BooleanValue GLOBE_VIEW_ENABLED;
-    public static final ForgeConfigSpec.EnumValue<MinimapShape> MAP_SHAPE;
-    public static final ForgeConfigSpec.BooleanValue SHOW_CLAIMS_MAP;
+    public static final ModConfigSpec.IntValue MINIMAP_SIZE;
+    public static final ModConfigSpec.IntValue MINIMAP_RADIUS_CHUNKS;
+    public static final ModConfigSpec.IntValue MAP_RADIUS_CHUNKS;
+    public static final ModConfigSpec.IntValue MAX_CACHED_CHUNKS;
+    public static final ModConfigSpec.IntValue WATER_BLEND_RADIUS;
+    public static final ModConfigSpec.DoubleValue ZOOM_MIN;
+    public static final ModConfigSpec.DoubleValue ZOOM_MAX;
+    public static final ModConfigSpec.DoubleValue SATURATION;
+    public static final ModConfigSpec.DoubleValue CONTRAST;
+    public static final ModConfigSpec.DoubleValue BRIGHTNESS;
+    public static final ModConfigSpec.DoubleValue FOLIAGE_BRIGHTNESS;
+    public static final ModConfigSpec.DoubleValue TINT_RED;
+    public static final ModConfigSpec.DoubleValue TINT_GREEN;
+    public static final ModConfigSpec.DoubleValue TINT_BLUE;
+    public static final ModConfigSpec.BooleanValue VIGNETTE;
+    public static final ModConfigSpec.DoubleValue VIGNETTE_STRENGTH;
+    public static final ModConfigSpec.BooleanValue BLACK_AND_WHITE;
+    public static final ModConfigSpec.EnumValue<net.phoenixvine.solaris.client.render.UnexploredStyle> UNEXPLORED_STYLE;
+    public static final ModConfigSpec.DoubleValue UNEXPLORED_DENSITY;
+    public static final ModConfigSpec.DoubleValue UNEXPLORED_BRIGHTNESS;
+    public static final ModConfigSpec.ConfigValue<String> UNEXPLORED_IMAGE_PATH;
+    public static final ModConfigSpec.BooleanValue UNEXPLORED_IMAGE_COVER;
+    public static final ModConfigSpec.BooleanValue SHOW_BLOCK_TOOLTIP;
+    public static final ModConfigSpec.DoubleValue WATER_OPACITY;
+    public static final ModConfigSpec.BooleanValue WATER_DEEP_ONLY;
+    public static final ModConfigSpec.IntValue WATER_DEEP_Y_THRESHOLD;
+    public static final ModConfigSpec.DoubleValue WAYPOINT_ICON_SCALE;
+    public static final ModConfigSpec.BooleanValue SHOW_GT_ORE_VEINS;
+    public static final ModConfigSpec.BooleanValue SHOW_MOBS;
+    public static final ModConfigSpec.BooleanValue SHOW_PLAYERS;
+    public static final ModConfigSpec.BooleanValue SHARE_EXPLORATION;
+    public static final ModConfigSpec.BooleanValue HILLSHADING;
+    public static final ModConfigSpec.DoubleValue HILLSHADING_STRENGTH;
+    public static final ModConfigSpec.EnumValue<LabelSide> LABEL_SIDE;
+    public static final ModConfigSpec.BooleanValue WAYPOINT_BEAMS;
+    public static final ModConfigSpec.IntValue WAYPOINT_BEAM_RANGE;
+    public static final ModConfigSpec.BooleanValue WAYPOINT_COMPASS;
+    public static final ModConfigSpec.BooleanValue DEATH_MARKERS;
+    public static final ModConfigSpec.BooleanValue AUTO_STRUCTURE_WAYPOINTS;
+    public static final ModConfigSpec.BooleanValue SHOW_PLAN_SHAPES;
+    public static final ModConfigSpec.IntValue PLAN_SHAPE_RANGE;
+    public static final ModConfigSpec.IntValue LIVE_REFRESH_INTERVAL_SECONDS;
+    public static final ModConfigSpec.IntValue LIVE_REFRESH_RADIUS_CHUNKS;
+    public static final ModConfigSpec.BooleanValue PERF_LOGGING;
+    public static final ModConfigSpec.IntValue PERF_LOG_THRESHOLD_MS;
+    public static final ModConfigSpec.IntValue PERF_SUMMARY_INTERVAL_SECONDS;
+    public static final ModConfigSpec.IntValue MAX_PERSISTED_CHUNKS_PER_DIMENSION;
+    public static final ModConfigSpec.BooleanValue MINIMAP_ROTATE;
+    public static final ModConfigSpec.EnumValue<net.phoenixvine.solaris.client.render.MinimapShape> MINIMAP_SHAPE;
+    public static final ModConfigSpec.BooleanValue SHOW_RAIL_NETWORK;
+    public static final ModConfigSpec.IntValue RAIL_NETWORK_RANGE;
+    public static final ModConfigSpec.IntValue MAX_MINIMAP_RANGE_CHUNKS;
+    public static final ModConfigSpec.IntValue WORLD_MAP_WRITE_RANGE_CHUNKS;
+    public static final ModConfigSpec.DoubleValue MINIMAP_ZOOM;
+    public static final ModConfigSpec.BooleanValue MINIMAP_SHOW_TIME;
+    public static final ModConfigSpec.BooleanValue MINIMAP_SHOW_COORDS;
+    public static final ModConfigSpec.BooleanValue MINIMAP_SHOW_BORDER;
+    public static final ModConfigSpec.BooleanValue MINIMAP_SHOW_BIOME;
+    public static final ModConfigSpec.BooleanValue MINIMAP_SHOW_WAYPOINTS;
+    public static final ModConfigSpec.IntValue MINIMAP_MAX_WAYPOINTS;
+    public static final ModConfigSpec.BooleanValue MINIMAP_SHOW_WAYPOINT_DIRECTIONS;
+    public static final ModConfigSpec.BooleanValue MINIMAP_AUTO_UNDERGROUND;
+    public static final ModConfigSpec.BooleanValue MINIMAP_SHOW_TEXT_LABELS;
+    public static final ModConfigSpec.BooleanValue SHOW_CLAIMS_MINIMAP;
+    public static final ModConfigSpec.BooleanValue SHOW_CHUNK_GRID;
+    public static final ModConfigSpec.DoubleValue NIGHT_MODE_STRENGTH;
+    public static final ModConfigSpec.BooleanValue GLOBE_VIEW_ENABLED;
+    public static final ModConfigSpec.EnumValue<MinimapShape> MAP_SHAPE;
+    public static final ModConfigSpec.BooleanValue SHOW_CLAIMS_MAP;
 
     static {
-        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
 
         builder.push("minimap");
         MINIMAP_SIZE = builder.comment("On-screen size, in pixels, of the corner minimap.")
@@ -471,11 +469,6 @@ public final class SolarisConfig {
     private SolarisConfig() {}
 
     private static final String CONFIG_FILE_NAME = "solaris/solaris-client.toml";
-
-    public static void register() {
-        migrateLegacyConfigFile();
-        ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, SPEC, CONFIG_FILE_NAME);
-    }
 
     private static void migrateLegacyConfigFile() {
         java.nio.file.Path legacy = java.nio.file.Paths.get("config", "solaris-client.toml");

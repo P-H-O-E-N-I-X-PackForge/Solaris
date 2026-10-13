@@ -4,9 +4,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.event.config.ModConfigEvent;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.client.render.CaveTileCache;
@@ -34,7 +34,7 @@ public class PhoenixSolarisClient {
 
     private static void clientSetup(final FMLClientSetupEvent event) {
         SuiteHudBar.register(PhoenixSolaris.MOD_ID, SuiteHudBar.PRIORITY_SOLARIS,
-                new ResourceLocation(PhoenixSolaris.MOD_ID, "textures/gui/suite_bar_icon.png"),
+                ResourceLocation.fromNamespaceAndPath(PhoenixSolaris.MOD_ID, "textures/gui/suite_bar_icon.png"),
                 Component.literal("§fOpen Map"),
                 () -> {
                     Minecraft mc = Minecraft.getInstance();

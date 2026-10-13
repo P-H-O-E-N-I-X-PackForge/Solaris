@@ -6,8 +6,8 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
 import net.phoenixvine.solaris.config.SolarisPresets;
 
@@ -63,9 +63,13 @@ public class SolarisPresetSaveScreen extends Screen {
         onClose();
     }
 
+
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    }
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
-        renderBackground(g);
+        renderBackground(g, mx, my, pt);
         g.fill(0, 0, width, height, 0xC0101014);
 
         int x = boxX();

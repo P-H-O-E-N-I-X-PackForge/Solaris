@@ -1,0 +1,29 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "${mod_license}"
+issueTrackerURL = "https://github.com/Omicron-Industries/Solaris/issues"
+
+[[mods]]
+modId = "${mod_id}"
+version = "${mod_version}"
+displayName = "${mod_name}"
+mixinConfigs = "solaris.mixins.json"
+displayURL = "https://github.com/Omicron-Industries/Solaris"
+authors = "${mod_authors}"
+description = '''
+ A Phoenix-original map mod seeking to be beautiful, easy to use, and an owner of good api.
+'''
+
+[[dependencies.solaris]]
+modId = "neoforge"
+mandatory = true
+versionRange = "[21,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.solaris]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.21.1,1.22)"
+ordering = "NONE"
+side = "BOTH"

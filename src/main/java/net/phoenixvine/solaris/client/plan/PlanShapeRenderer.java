@@ -5,21 +5,19 @@ import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderLevelStageEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.config.SolarisConfig;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import org.joml.Matrix3f;
-import org.joml.Matrix4f;
 
 import java.util.List;
 
-@Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, value = Dist.CLIENT)
 public class PlanShapeRenderer {
 
     private static final int CIRCLE_SEGMENTS = 32;
@@ -93,8 +91,7 @@ public class PlanShapeRenderer {
         double baseY = shape.baseY;
         double topY = shape.baseY + shape.height;
 
-        Matrix4f matrix4f = poseStack.last().pose();
-        Matrix3f matrix3f = poseStack.last().normal();
+        PoseStack.Pose pose = poseStack.last();
 
         double[] xs = new double[CIRCLE_SEGMENTS];
         double[] zs = new double[CIRCLE_SEGMENTS];
@@ -106,18 +103,17 @@ public class PlanShapeRenderer {
 
         for (int i = 0; i < CIRCLE_SEGMENTS; i++) {
             int j = (i + 1) % CIRCLE_SEGMENTS;
-            line(lines, matrix4f, matrix3f, xs[i], baseY, zs[i], xs[j], baseY, zs[j], r, g, b);
-            line(lines, matrix4f, matrix3f, xs[i], topY, zs[i], xs[j], topY, zs[j], r, g, b);
+            line(lines, pose, xs[i], baseY, zs[i], xs[j], baseY, zs[j], r, g, b);
+            line(lines, pose, xs[i], topY, zs[i], xs[j], topY, zs[j], r, g, b);
             if (i % STRUT_INTERVAL == 0) {
-                line(lines, matrix4f, matrix3f, xs[i], baseY, zs[i], xs[i], topY, zs[i], r, g, b);
+                line(lines, pose, xs[i], baseY, zs[i], xs[i], topY, zs[i], r, g, b);
             }
         }
     }
 
     private static void renderLine(PoseStack poseStack, VertexConsumer lines, PlanShape shape, float r, float g,
                                    float b) {
-        Matrix4f matrix4f = poseStack.last().pose();
-        Matrix3f matrix3f = poseStack.last().normal();
+        PoseStack.Pose pose = poseStack.last();
         double baseY = shape.baseY;
         double topY = shape.baseY + shape.height;
         List<int[]> pts = shape.points;
@@ -127,25 +123,34 @@ public class PlanShapeRenderer {
             double z1 = pts.get(i)[1] + 0.5;
             double x2 = pts.get(i + 1)[0] + 0.5;
             double z2 = pts.get(i + 1)[1] + 0.5;
-            line(lines, matrix4f, matrix3f, x1, baseY, z1, x2, baseY, z2, r, g, b);
-            line(lines, matrix4f, matrix3f, x1, topY, z1, x2, topY, z2, r, g, b);
+            line(lines, pose, x1, baseY, z1, x2, baseY, z2, r, g, b);
+            line(lines, pose, x1, topY, z1, x2, topY, z2, r, g, b);
         }
         for (int[] pt : pts) {
             double x = pt[0] + 0.5;
             double z = pt[1] + 0.5;
-            line(lines, matrix4f, matrix3f, x, baseY, z, x, topY, z, r, g, b);
+            line(lines, pose, x, baseY, z, x, topY, z, r, g, b);
         }
     }
 
-    private static void line(VertexConsumer consumer, Matrix4f matrix4f, Matrix3f matrix3f, double x1, double y1,
+    private static void line(VertexConsumer consumer, PoseStack.Pose pose, double x1, double y1,
                              double z1, double x2, double y2, double z2, float r, float g, float b) {
         float nx = (float) (x2 - x1);
         float ny = (float) (y2 - y1);
         float nz = (float) (z2 - z1);
-        consumer.vertex(matrix4f, (float) x1, (float) y1, (float) z1).color(r, g, b, ALPHA)
-                .normal(matrix3f, nx, ny, nz).endVertex();
-        consumer.vertex(matrix4f, (float) x2, (float) y2, (float) z2).color(r, g, b, ALPHA)
-                .normal(matrix3f, nx, ny, nz).endVertex();
+        float len = (float) Math.sqrt(nx * nx + ny * ny + nz * nz);
+        if (len < 1.0E-6f) return;
+        nx /= len;
+        ny /= len;
+        nz /= len;
+
+        consumer.addVertex(pose, (float) x1, (float) y1, (float) z1)
+                .setColor(r, g, b, ALPHA)
+                .setNormal(pose, nx, ny, nz);
+
+        consumer.addVertex(pose, (float) x2, (float) y2, (float) z2)
+                .setColor(r, g, b, ALPHA)
+                .setNormal(pose, nx, ny, nz);
     }
 
     private static double centroidX(PlanShape shape) {

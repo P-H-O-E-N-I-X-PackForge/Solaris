@@ -2,20 +2,18 @@ package net.phoenixvine.solaris.server.waypoint;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.network.PacketDistributor;
-import net.phoenixvine.solaris.PhoenixSolaris;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.phoenixvine.solaris.config.SolarisServerConfig;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
-import net.phoenixvine.solaris.network.S2CDeathMarkerPacket;
-import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.network.packets.S2CDeathMarkerPacket;
 import net.phoenixvine.solaris.server.CapabilityService;
 import net.phoenixvine.solaris.server.SolarisServerUtil;
 
-@Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber()
 public final class DeathMarkerService {
 
     private DeathMarkerService() {}
@@ -41,14 +39,13 @@ public final class DeathMarkerService {
         int z = player.getBlockZ();
 
         if (SolarisServerUtil.hasSolaris(player)) {
-            SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
-                    new S2CDeathMarkerPacket(dimension.toString(), x, y, z, name, true));
+            PacketDistributor.sendToPlayer(player, new S2CDeathMarkerPacket(dimension.toString(), x, y, z, name, true));
         }
 
         if (SolarisServerConfig.SHARE_DEATHS_WITH_GUILD.get()) {
             for (ServerPlayer mate : GuildsIntegration.getOnlineGuildmates(player)) {
                 if (!SolarisServerUtil.hasSolaris(mate)) continue;
-                SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> mate),
+                PacketDistributor.sendToPlayer(mate,
                         new S2CDeathMarkerPacket(dimension.toString(), x, y, z, name, false));
             }
         }

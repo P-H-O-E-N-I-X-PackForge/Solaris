@@ -2,14 +2,14 @@ package net.phoenixvine.solaris.common;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 import net.phoenixvine.solaris.config.SolarisConfig;
 import net.phoenixvine.solaris.integration.gtceu.GtVeinRegistry;
 import net.phoenixvine.solaris.integration.gtceu.GtceuIntegration;
-import net.phoenixvine.solaris.network.C2SSharedVeinsPacket;
-import net.phoenixvine.solaris.network.S2CSharedVeinsPacket;
-import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.network.packets.C2SSharedVeinsPacket;
+import net.phoenixvine.solaris.network.packets.S2CSharedVeinsPacket;
 import net.phoenixvine.solaris.server.ServerCapabilities;
 
 import java.util.ArrayList;
@@ -40,7 +40,7 @@ public final class SharedVeinClient {
         List<SharedVeinEntry> one = new ArrayList<>();
         one.add(new SharedVeinEntry(dimension, center.getX(), center.getY(), center.getZ(), name, argb,
                 itemId == null ? "" : itemId));
-        SolarisNetwork.CHANNEL.sendToServer(new C2SSharedVeinsPacket(one));
+        PacketDistributor.sendToServer(new C2SSharedVeinsPacket(one));
     }
 
     public static void receive(int flags, List<SharedVeinEntry> entries) {
@@ -65,7 +65,7 @@ public final class SharedVeinClient {
         for (int from = 0; from < missing.size(); from += C2SSharedVeinsPacket.MAX_ENTRIES) {
             List<SharedVeinEntry> batch = new ArrayList<>(missing.subList(from,
                     Math.min(missing.size(), from + C2SSharedVeinsPacket.MAX_ENTRIES)));
-            SolarisNetwork.CHANNEL.sendToServer(new C2SSharedVeinsPacket(batch));
+            PacketDistributor.sendToServer(new C2SSharedVeinsPacket(batch));
         }
     }
 }

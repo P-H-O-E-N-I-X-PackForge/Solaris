@@ -1,21 +1,19 @@
-package net.phoenixvine.solaris.server;
+package net.phoenixvine.solaris.server.players;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.server.ServerLifecycleHooks;
-import net.phoenixvine.solaris.PhoenixSolaris;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 import net.phoenixvine.solaris.config.SolarisServerConfig;
 import net.phoenixvine.solaris.config.SolarisServerConfig.PlayerVisibility;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
-import net.phoenixvine.solaris.network.S2CPlayerPositionsPacket;
-import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.network.packets.S2CPlayerPositionsPacket;
+import net.phoenixvine.solaris.server.SolarisServerAPI;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,7 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-@Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber()
 public final class PlayerPositionBroadcaster {
 
     private static int counter = 0;
@@ -34,8 +32,7 @@ public final class PlayerPositionBroadcaster {
     private PlayerPositionBroadcaster() {}
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
         if (!SolarisServerConfig.SPEC.isLoaded()) return;
 
         PlayerVisibility mode = SolarisServerConfig.PLAYER_VISIBILITY.get();
@@ -47,8 +44,7 @@ public final class PlayerPositionBroadcaster {
         if (++counter < SolarisServerConfig.PLAYER_UPDATE_TICKS.get()) return;
         counter = 0;
 
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server == null) return;
+        MinecraftServer server = event.getServer();
 
         List<ServerPlayer> players = server.getPlayerList().getPlayers();
         Set<UUID> online = new HashSet<>();
@@ -57,8 +53,6 @@ public final class PlayerPositionBroadcaster {
 
         for (ServerPlayer receiver : players) {
             if (receiver.connection == null) continue;
-
-            if (!SolarisNetwork.CHANNEL.isRemotePresent(receiver.connection.connection)) continue;
 
             ResourceLocation dimension = receiver.level().dimension().location();
             if (SolarisServerConfig.PLAYER_BLOCKED_DIMENSIONS.get().contains(dimension.toString())) continue;
@@ -74,8 +68,7 @@ public final class PlayerPositionBroadcaster {
             if (entries.isEmpty()) LAST_SENT_NON_EMPTY.remove(receiver.getUUID());
             else LAST_SENT_NON_EMPTY.add(receiver.getUUID());
 
-            SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> receiver),
-                    new S2CPlayerPositionsPacket(dimension, entries));
+            PacketDistributor.sendToPlayer(receiver, new S2CPlayerPositionsPacket(dimension, entries));
         }
     }
 

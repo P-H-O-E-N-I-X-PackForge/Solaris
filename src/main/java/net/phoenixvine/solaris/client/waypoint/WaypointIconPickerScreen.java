@@ -5,8 +5,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
 
 import java.util.List;
@@ -46,6 +46,11 @@ public class WaypointIconPickerScreen extends Screen {
         this.onPick = onPick;
     }
 
+
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    }
+
     @Override
     protected void init() {
         WaypointIconManager.rescan();
@@ -81,7 +86,7 @@ public class WaypointIconPickerScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
-        renderBackground(g);
+        renderBackground(g, mx, my, pt);
 
         int contentBottom = gridY + rowsHeight() + (hintLines.isEmpty() ? 0 : 4 + hintLines.size() * LINE_H);
         g.fill(panelX - 12, gridY - 24, panelX + panelW + 12, contentBottom + 24, C_PANEL);

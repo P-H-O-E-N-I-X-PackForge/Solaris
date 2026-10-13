@@ -5,14 +5,13 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 import net.phoenixvine.solaris.common.SharedVeinEntry;
 import net.phoenixvine.solaris.config.SolarisServerConfig;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
-import net.phoenixvine.solaris.network.S2CSharedVeinsPacket;
-import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.network.packets.S2CSharedVeinsPacket;
 import net.phoenixvine.solaris.server.SolarisServerAPI;
 import net.phoenixvine.solaris.server.SolarisServerUtil;
 import net.phoenixvine.solaris.server.guild.GuildWaypointService;
@@ -83,7 +82,7 @@ public final class SharedVeinService {
             for (int from = 0; from < added.size(); from += S2CSharedVeinsPacket.MAX_ENTRIES) {
                 List<SharedVeinEntry> batch = added.subList(from,
                         Math.min(added.size(), from + S2CSharedVeinsPacket.MAX_ENTRIES));
-                SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> mate),
+                PacketDistributor.sendToPlayer(mate,
                         new S2CSharedVeinsPacket(S2CSharedVeinsPacket.FIRST | S2CSharedVeinsPacket.LAST,
                                 new ArrayList<>(batch)));
             }
@@ -104,7 +103,7 @@ public final class SharedVeinService {
             List<SharedVeinEntry> batch = new ArrayList<>(all.subList(i * SNAPSHOT_BATCH,
                     Math.min(all.size(), (i + 1) * SNAPSHOT_BATCH)));
             int flags = (i == 0 ? S2CSharedVeinsPacket.FIRST : 0) | (i == batches - 1 ? S2CSharedVeinsPacket.LAST : 0);
-            SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
+            PacketDistributor.sendToPlayer(player,
                     new S2CSharedVeinsPacket(flags, batch));
         }
     }

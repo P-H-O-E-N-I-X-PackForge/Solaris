@@ -1,11 +1,14 @@
 package net.phoenixvine.solaris.server.exploration;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.phoenixvine.solaris.common.SharedVeinEntry;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -19,11 +22,18 @@ public class GuildVeinData extends SavedData {
 
     private final Map<UUID, Map<String, SharedVeinEntry>> byGuild = new LinkedHashMap<>();
 
-    public static GuildVeinData get(ServerLevel overworld) {
-        return overworld.getDataStorage().computeIfAbsent(GuildVeinData::load, GuildVeinData::new, SAVE_KEY);
+    // 1.21.1 Factory requirement for computeIfAbsent
+    public static SavedData.Factory<GuildVeinData> factory() {
+        return new SavedData.Factory<>(
+                GuildVeinData::new,
+                GuildVeinData::load);
     }
 
-    private static GuildVeinData load(CompoundTag tag) {
+    public static GuildVeinData get(ServerLevel overworld) {
+        return overworld.getDataStorage().computeIfAbsent(factory(), SAVE_KEY);
+    }
+
+    private static GuildVeinData load(CompoundTag tag, HolderLookup.Provider registries) {
         GuildVeinData data = new GuildVeinData();
         for (String guildKey : tag.getAllKeys()) {
             UUID guild;
@@ -36,8 +46,14 @@ public class GuildVeinData extends SavedData {
             ListTag list = tag.getList(guildKey, Tag.TAG_COMPOUND);
             for (int i = 0; i < list.size(); i++) {
                 CompoundTag c = list.getCompound(i);
-                SharedVeinEntry e = new SharedVeinEntry(c.getString("dimension"), c.getInt("x"), c.getInt("y"),
-                        c.getInt("z"), c.getString("name"), c.getInt("argb"), c.getString("item"));
+                SharedVeinEntry e = new SharedVeinEntry(
+                        c.getString("dimension"),
+                        c.getInt("x"),
+                        c.getInt("y"),
+                        c.getInt("z"),
+                        c.getString("name"),
+                        c.getInt("argb"),
+                        c.getString("item"));
                 entries.put(e.key(), e);
             }
             data.byGuild.put(guild, entries);
@@ -46,7 +62,8 @@ public class GuildVeinData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    @NotNull
+    public CompoundTag save(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider registries) {
         for (Map.Entry<UUID, Map<String, SharedVeinEntry>> guild : byGuild.entrySet()) {
             ListTag list = new ListTag();
             for (SharedVeinEntry e : guild.getValue().values()) {

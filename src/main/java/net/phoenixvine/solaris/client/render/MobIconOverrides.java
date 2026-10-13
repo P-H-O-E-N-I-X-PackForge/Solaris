@@ -1,8 +1,8 @@
 package net.phoenixvine.solaris.client.render;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
-import net.minecraftforge.registries.ForgeRegistries;
 import net.phoenixvine.solaris.PhoenixSolaris;
 
 import com.google.gson.Gson;
@@ -82,7 +82,7 @@ public final class MobIconOverrides {
                     continue;
                 }
 
-                EntityType<?> entityType = ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(entityId));
+                EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(entityId));
                 if (entityType == null) {
                     PhoenixSolaris.LOGGER.warn(
                             "solaris_mob_icons.json: '{}' isn't a known entity id (check for a typo), skipping",
@@ -90,7 +90,7 @@ public final class MobIconOverrides {
                     continue;
                 }
 
-                put(entityType, new IconSource(new ResourceLocation(entry.texture), entry.u, entry.v, entry.width,
+                put(entityType, new IconSource(ResourceLocation.parse(entry.texture), entry.u, entry.v, entry.width,
                         entry.height, entry.texWidth, entry.texHeight));
                 loaded++;
             }

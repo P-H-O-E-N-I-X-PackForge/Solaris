@@ -7,8 +7,8 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.phoenixvine.solaris.client.SolarisMapScreen;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
 
@@ -135,11 +135,24 @@ public class QuickPlanShapeScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
+        super.render(g, mx, my, pt); // calls renderBackground above, then registered widgets
+
+        if (nameBox != null) nameBox.render(g, mx, my, pt);
+        if (colorBox != null) colorBox.render(g, mx, my, pt);
+        if (baseYBox != null) baseYBox.render(g, mx, my, pt);
+        if (heightBox != null) heightBox.render(g, mx, my, pt);
+    }
+
+
+
+    @Override
+    public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
         if (parent instanceof SolarisMapScreen mapScreen) {
-            mapScreen.renderMapBackground(g);
+            // custom background replaces vanilla's, so no blur is applied
+            mapScreen.renderMapBackground(g, mx, my, pt);
             g.fill(0, 0, width, height, 0xE0101014);
         } else {
-            renderBackground(g);
+            super.renderBackground(g, mx, my, pt);
         }
         int x = boxX();
         int y = boxY();
@@ -151,22 +164,14 @@ public class QuickPlanShapeScreen extends Screen {
         g.drawString(font, "Color (hex)", x + 10, y + 57, C_DIM, false);
         g.drawString(font, "Base Y / Height", x + 10, y + 99, C_DIM, false);
 
-        List<String> swatches = List.of(SWATCHES);
         int sy = swatchY();
-        for (int i = 0; i < swatches.size(); i++) {
+        for (int i = 0; i < SWATCHES.length; i++) {
             int sx = x + 10 + i * 20;
-            int argb = 0xFF000000 | (Integer.parseUnsignedInt(swatches.get(i).substring(2), 16));
+            int argb = 0xFF000000 | Integer.parseUnsignedInt(SWATCHES[i].substring(2), 16);
             boolean hov = mx >= sx && mx < sx + 16 && my >= sy && my < sy + 16;
             if (hov) g.fill(sx - 1, sy - 1, sx + 17, sy + 17, C_ACCENT);
             g.fill(sx, sy, sx + 16, sy + 16, argb);
         }
-
-        if (nameBox != null) nameBox.render(g, mx, my, pt);
-        if (colorBox != null) colorBox.render(g, mx, my, pt);
-        if (baseYBox != null) baseYBox.render(g, mx, my, pt);
-        if (heightBox != null) heightBox.render(g, mx, my, pt);
-
-        super.render(g, mx, my, pt);
     }
 
     @Override

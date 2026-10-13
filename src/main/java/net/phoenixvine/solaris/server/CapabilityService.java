@@ -1,10 +1,9 @@
 package net.phoenixvine.solaris.server;
 
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.phoenixvine.solaris.config.SolarisServerConfig;
-import net.phoenixvine.solaris.network.S2CServerCapabilitiesPacket;
-import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.network.packets.S2CServerCapabilitiesPacket;
 import net.phoenixvine.solaris.server.guild.GuildWaypointService;
 import net.phoenixvine.solaris.server.waypoint.DeathMarkerService;
 
@@ -33,7 +32,8 @@ public final class CapabilityService {
         final int sent = flags;
         final int uploadRate = SolarisServerConfig.SPEC.isLoaded() ?
                 SolarisServerConfig.SHARED_EXPLORATION_UPLOAD_PER_SECOND.get() : 0;
-        SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
-                new S2CServerCapabilitiesPacket(sent, uploadRate));
+
+        // Modernized 1.21 packet dispatch using PacketDistributor directly
+        PacketDistributor.sendToPlayer(player, new S2CServerCapabilitiesPacket(sent, uploadRate));
     }
 }

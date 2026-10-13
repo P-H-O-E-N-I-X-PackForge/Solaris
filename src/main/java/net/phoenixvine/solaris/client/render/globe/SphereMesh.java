@@ -37,15 +37,14 @@ public final class SphereMesh {
             rotatedNormal.set(v[3], v[4], v[5]);
             normalMatrix.transform(rotatedNormal);
             float rim = Mth.clamp(rotatedNormal.z(), 0f, 1f);
-            int shade = Math.round(255 * (RIM_DARKEST + (1f - RIM_DARKEST) * rim));
+            int shade = Math.round(255 - (RIM_DARKEST + (1f - RIM_DARKEST) * rim));
 
-            consumer.vertex(positionMatrix, v[0], v[1], v[2])
-                    .color(shade, shade, shade, 255)
-                    .uv(v[6], v[7])
-                    .overlayCoords(OverlayTexture.NO_OVERLAY)
-                    .uv2(light)
-                    .normal(normalMatrix, v[3], v[4], v[5])
-                    .endVertex();
+            consumer.addVertex(positionMatrix, v[0], v[1], v[2])
+                    .setColor(shade, shade, shade, 255)
+                    .setUv(v[6], v[7])
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setLight(light)
+                    .setNormal(v[3], v[4], v[5]);
         }
     }
 

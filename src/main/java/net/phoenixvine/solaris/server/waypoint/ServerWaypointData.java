@@ -1,5 +1,6 @@
-package net.phoenixvine.solaris.server;
+package net.phoenixvine.solaris.server.waypoint;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -20,12 +21,17 @@ public class ServerWaypointData extends SavedData {
 
     private final Map<String, Entry> entries = new LinkedHashMap<>();
 
+    // Modern 1.21 SavedData factory definition
+    private static final SavedData.Factory<ServerWaypointData> FACTORY = new SavedData.Factory<>(
+            ServerWaypointData::new,
+            ServerWaypointData::load,
+            null);
+
     public static ServerWaypointData get(ServerLevel overworld) {
-        return overworld.getDataStorage().computeIfAbsent(ServerWaypointData::load, ServerWaypointData::new,
-                SAVE_KEY);
+        return overworld.getDataStorage().computeIfAbsent(FACTORY, SAVE_KEY);
     }
 
-    private static ServerWaypointData load(CompoundTag tag) {
+    private static ServerWaypointData load(CompoundTag tag, HolderLookup.Provider registries) {
         ServerWaypointData data = new ServerWaypointData();
         ListTag list = tag.getList("waypoints", Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++) {
@@ -40,7 +46,7 @@ public class ServerWaypointData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag list = new ListTag();
         for (Entry e : entries.values()) {
             CompoundTag c = new CompoundTag();

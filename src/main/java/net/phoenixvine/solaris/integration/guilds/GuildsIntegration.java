@@ -1,7 +1,7 @@
 package net.phoenixvine.solaris.integration.guilds;
 
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.ModList;
 import net.phoenixvine.guilds.GuildAPI;
 import net.phoenixvine.solaris.PhoenixSolaris;
 

@@ -39,7 +39,8 @@ public final class UnexploredImageStyle {
         Path file = Paths.get("config", "solaris", path);
         try {
             NativeImage loaded = NativeImage.read(Files.newInputStream(file));
-            ResourceLocation id = new ResourceLocation(PhoenixSolaris.MOD_ID, "dynamic/unexplored_image");
+            ResourceLocation id = ResourceLocation.fromNamespaceAndPath(PhoenixSolaris.MOD_ID,
+                    "dynamic/unexplored_image");
             DynamicTexture tex = new DynamicTexture(loaded);
             Minecraft.getInstance().getTextureManager().register(id, tex);
             tex.setFilter(false, false);

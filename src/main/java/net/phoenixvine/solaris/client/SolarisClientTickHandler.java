@@ -2,11 +2,11 @@ package net.phoenixvine.solaris.client;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.common.NeoForge;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.event.WaypointEvent;
@@ -20,20 +20,17 @@ import net.phoenixvine.solaris.integration.gtceu.GtceuIntegration;
 import java.util.HashSet;
 import java.util.Set;
 
-@Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, value = Dist.CLIENT)
 public class SolarisClientTickHandler {
 
-    private static final double WAYPOINT_REACH_RADIUS_SQ = 8.0 * 8.0;
-    private static final int WAYPOINT_REACH_CHECK_INTERVAL_TICKS = 10;
+    private static boolean gtceuBroken = false;
     private static int reachCheckTickCounter = 0;
+    private static final int WAYPOINT_REACH_CHECK_INTERVAL_TICKS = 10;
+    private static final double WAYPOINT_REACH_RADIUS_SQ = 9.0;
     private static final Set<String> NEAR_WAYPOINT_IDS = new HashSet<>();
 
-    private static boolean gtceuBroken = false;
-
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-
+    public static void onClientTick(ClientTickEvent.Post event) {
         SolarisThemeUtils.refreshCache();
 
         Minecraft mc = Minecraft.getInstance();
@@ -121,7 +118,7 @@ public class SolarisClientTickHandler {
             if (inRange) {
                 stillNear.add(w.id);
                 if (!NEAR_WAYPOINT_IDS.contains(w.id)) {
-                    MinecraftForge.EVENT_BUS.post(new WaypointEvent.Reached(mc.player, w));
+                    NeoForge.EVENT_BUS.post(new WaypointEvent.Reached(mc.player, w));
                 }
             }
         }
