@@ -140,7 +140,7 @@ public final class SolarisConfig {
                         "when you can't see the sky from where you're standing (caves, mines, under a roof), " +
                         "same as it already does unconditionally in ceilinged dimensions like the Nether. " +
                         "Turn off to keep the minimap on the surface render even while underground.")
-                .define("autoUnderground", true);
+                .define("autoUnderground", false);
         MINIMAP_SHOW_TEXT_LABELS = builder
                 .comment("Prefix the minimap's time/coords lines with their labels (\"Time: 20:13\", " +
                         "\"x: -219, y: 116, z: -488\") instead of showing just the bare values (\"20:13\", " +
