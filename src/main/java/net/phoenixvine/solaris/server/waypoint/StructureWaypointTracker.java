@@ -13,13 +13,12 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 import net.phoenixvine.solaris.PhoenixSolaris;
-import net.phoenixvine.solaris.api.SolarisClaimsAPI;
 import net.phoenixvine.solaris.config.SolarisServerConfig;
 import net.phoenixvine.solaris.network.S2CStructureDiscoveredPacket;
 import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.server.StructureWaypointData;
 
 import it.unimi.dsi.fastutil.longs.LongSet;
-import net.phoenixvine.solaris.server.StructureWaypointData;
 
 import java.util.Map;
 import java.util.UUID;

@@ -5,12 +5,14 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 import net.phoenixvine.solaris.server.guild.GuildWaypointService;
 
-
 import java.util.function.Supplier;
 
 public class C2SGuildWaypointPacket {
 
-    public enum Op { UPSERT, REMOVE }
+    public enum Op {
+        UPSERT,
+        REMOVE
+    }
 
     private final Op op;
     private final String key;

@@ -99,7 +99,8 @@ public final class GuildWaypointService {
     }
 
     public static boolean canEdit(ServerPlayer player, UUID guild) {
-        if (SolarisServerConfig.GUILD_WAYPOINT_EDIT_POLICY.get() == SolarisServerConfig.GuildWaypointEditors.ALL_MEMBERS) {
+        if (SolarisServerConfig.GUILD_WAYPOINT_EDIT_POLICY.get() ==
+                SolarisServerConfig.GuildWaypointEditors.ALL_MEMBERS) {
             return true;
         }
         GuildWaypointPermission hook = SolarisGuildAPI.waypointPermission();

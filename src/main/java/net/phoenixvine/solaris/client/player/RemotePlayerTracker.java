@@ -1,10 +1,10 @@
 package net.phoenixvine.solaris.client.player;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.DefaultPlayerSkin;
-import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
@@ -87,7 +87,8 @@ public final class RemotePlayerTracker {
             for (S2CPlayerPositionsPacket.Entry e : snapshot) {
                 if (!seen.add(e.id())) continue;
                 PlayerInfo info = mc.getConnection() != null ? mc.getConnection().getPlayerInfo(e.id()) : null;
-                ResourceLocation skin = info != null ? info.getSkinLocation() : DefaultPlayerSkin.getDefaultSkin(e.id());
+                ResourceLocation skin = info != null ? info.getSkinLocation() :
+                        DefaultPlayerSkin.getDefaultSkin(e.id());
                 out.add(new MapPlayer(e.id(), e.name(), e.x() + 0.5, e.z() + 0.5, e.yaw(), skin));
             }
         }

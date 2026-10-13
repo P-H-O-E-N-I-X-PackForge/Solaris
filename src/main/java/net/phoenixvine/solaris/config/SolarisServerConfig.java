@@ -3,7 +3,6 @@ package net.phoenixvine.solaris.config;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
-
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 
 import java.util.List;
@@ -11,19 +10,19 @@ import java.util.List;
 public final class SolarisServerConfig {
 
     public enum PlayerVisibility {
-        
+
         OFF,
-        
+
         GUILD,
-        
+
         ALL
     }
 
     public enum PingAudience {
         OFF,
-        
+
         GUILD,
-        
+
         ALL
     }
 

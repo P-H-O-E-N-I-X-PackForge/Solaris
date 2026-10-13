@@ -11,6 +11,7 @@ import net.phoenixvine.solaris.network.S2CServerCapabilitiesPacket;
 public final class ServerCapabilities {
 
     private static int flags = 0;
+    private static int uploadChunksPerSecond = 0;
 
     private ServerCapabilities() {}
 
@@ -30,12 +31,18 @@ public final class ServerCapabilities {
         return (flags & S2CServerCapabilitiesPacket.PLAYER_POSITIONS) != 0;
     }
 
-    public static void setFlags(int value) {
+    public static int uploadChunksPerSecond() {
+        return uploadChunksPerSecond;
+    }
+
+    public static void setFlags(int value, int uploadRate) {
         flags = value;
+        uploadChunksPerSecond = uploadRate;
     }
 
     @SubscribeEvent
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
         flags = 0;
+        uploadChunksPerSecond = 0;
     }
 }

@@ -6,7 +6,6 @@ import net.minecraftforge.network.NetworkEvent;
 import net.phoenixvine.solaris.common.SharedVeinEntry;
 import net.phoenixvine.solaris.server.exploration.SharedVeinService;
 
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;

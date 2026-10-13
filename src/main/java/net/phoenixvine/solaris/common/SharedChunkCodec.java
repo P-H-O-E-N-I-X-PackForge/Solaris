@@ -1,7 +1,5 @@
 package net.phoenixvine.solaris.common;
 
-
-
 import net.phoenixvine.solaris.client.color.PersistentChunkStore;
 
 import java.nio.ByteBuffer;

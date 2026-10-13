@@ -14,7 +14,7 @@ public final class FileReplace {
             Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
             return;
         } catch (IOException ignored) {
-            
+
         }
 
         IOException last = null;

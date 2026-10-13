@@ -52,7 +52,7 @@ public final class GuildMapStore {
             DimStore created = new DimStore(guild, dimension);
             Path file = fileFor(server, guild, dimension);
             if (!Files.exists(file)) {
-                
+
                 created.ready = true;
                 return created;
             }

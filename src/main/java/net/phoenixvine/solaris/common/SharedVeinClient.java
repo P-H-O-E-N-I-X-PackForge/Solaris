@@ -2,7 +2,6 @@ package net.phoenixvine.solaris.common;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 import net.phoenixvine.solaris.config.SolarisConfig;
@@ -12,7 +11,6 @@ import net.phoenixvine.solaris.network.C2SSharedVeinsPacket;
 import net.phoenixvine.solaris.network.S2CSharedVeinsPacket;
 import net.phoenixvine.solaris.network.SolarisNetwork;
 import net.phoenixvine.solaris.server.ServerCapabilities;
-
 
 import java.util.ArrayList;
 import java.util.HashSet;

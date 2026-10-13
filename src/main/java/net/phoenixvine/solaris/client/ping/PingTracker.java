@@ -31,7 +31,7 @@ public final class PingTracker {
 
     public static void add(String sender, ResourceLocation dimension, int x, int y, int z, long durationMillis) {
         long now = System.currentTimeMillis();
-        
+
         PINGS.removeIf(p -> p.sender().equals(sender));
         PINGS.add(new Ping(sender, dimension, x, y, z, now, now + durationMillis));
     }

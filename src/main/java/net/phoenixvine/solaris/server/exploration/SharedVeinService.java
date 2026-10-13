@@ -13,7 +13,6 @@ import net.phoenixvine.solaris.config.SolarisServerConfig;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
 import net.phoenixvine.solaris.network.S2CSharedVeinsPacket;
 import net.phoenixvine.solaris.network.SolarisNetwork;
-
 import net.phoenixvine.solaris.server.SolarisServerAPI;
 import net.phoenixvine.solaris.server.SolarisServerUtil;
 import net.phoenixvine.solaris.server.guild.GuildWaypointService;

@@ -7,7 +7,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.phoenixvine.solaris.common.SharedVeinEntry;
 
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;

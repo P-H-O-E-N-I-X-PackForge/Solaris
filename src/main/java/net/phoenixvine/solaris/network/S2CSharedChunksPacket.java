@@ -7,7 +7,6 @@ import net.minecraftforge.network.NetworkEvent;
 import net.phoenixvine.solaris.common.SharedChunkBlob;
 import net.phoenixvine.solaris.common.SharedChunkFormat;
 
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;

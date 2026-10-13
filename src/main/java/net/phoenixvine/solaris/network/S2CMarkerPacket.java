@@ -9,7 +9,11 @@ import java.util.function.Supplier;
 
 public class S2CMarkerPacket {
 
-    public enum Op { PUT, REMOVE, CLEAR }
+    public enum Op {
+        PUT,
+        REMOVE,
+        CLEAR
+    }
 
     private final Op op;
     private final String key;

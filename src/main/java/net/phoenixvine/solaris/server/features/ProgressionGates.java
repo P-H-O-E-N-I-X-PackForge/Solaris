@@ -38,6 +38,7 @@ public final class ProgressionGates {
     private record GroupKey(String feature, ResourceLocation dimension) {}
 
     private static final class Result {
+
         boolean changed = false;
         final Set<String> newlyUnlocked = new HashSet<>();
     }
@@ -197,7 +198,7 @@ public final class ProgressionGates {
                 data.set(token, dimension, feature, locked);
                 result.changed = true;
             } else if (solo && current == unlocked) {
-                
+
                 data.set(token, dimension, feature, locked);
                 result.changed = true;
             }

@@ -21,7 +21,7 @@ public class SolarisServerEvents {
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            
+
             ProgressionGates.evaluate(player);
             SolarisServerAPI.syncToClient(player);
             CapabilityService.send(player);

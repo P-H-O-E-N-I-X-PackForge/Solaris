@@ -27,7 +27,6 @@ import net.phoenixvine.solaris.server.SolarisServerAPI;
 import net.phoenixvine.solaris.server.SolarisServerUtil;
 import net.phoenixvine.solaris.server.guild.GuildWaypointService;
 
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -54,6 +53,7 @@ public final class SharedExplorationService {
     private static long uploadsAccepted = 0;
     private static long uploadsRejected = 0;
     private static long uploadsDroppedLoading = 0;
+    private static long uploadsThrottled = 0;
     private static long chunksRelayed = 0;
 
     private static int downloadCounter = 0;
@@ -101,6 +101,7 @@ public final class SharedExplorationService {
         int permitted = UPLOAD_LIMITER.take(player.getUUID(), blobs.size(), server.getTickCount(),
                 SolarisServerConfig.SHARED_EXPLORATION_UPLOAD_PER_SECOND.get());
         int cap = SolarisServerConfig.SHARED_EXPLORATION_MAX_CHUNKS.get();
+        if (permitted < blobs.size()) uploadsThrottled += blobs.size() - permitted;
 
         List<SharedChunkBlob> added = new ArrayList<>();
         for (int i = 0; i < permitted; i++) {
@@ -135,7 +136,8 @@ public final class SharedExplorationService {
     public static List<String> status(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
         ResourceLocation dimension = player.level().dimension().location();
-        boolean configured = SolarisServerConfig.SPEC.isLoaded() && SolarisServerConfig.SHARED_EXPLORATION_ENABLED.get();
+        boolean configured = SolarisServerConfig.SPEC.isLoaded() &&
+                SolarisServerConfig.SHARED_EXPLORATION_ENABLED.get();
         lines.add("sharedExploration.enabled = " + configured);
         lines.add("client has Solaris = " + SolarisServerUtil.hasSolaris(player));
         boolean inGuild = GuildWaypointService.inGuild(player);
@@ -143,7 +145,7 @@ public final class SharedExplorationService {
         lines.add("shared_exploration feature: toggle=" +
                 SolarisServerAPI.isFeatureEnabled(player, SolarisAPI.FEATURE_SHARED_EXPLORATION) + ", state in " +
                 dimension + " = " + SolarisServerAPI.getFeatureState(player, SolarisAPI.FEATURE_SHARED_EXPLORATION,
-                dimension));
+                        dimension));
         lines.add("allowed right now = " + allowed(player, dimension));
 
         MinecraftServer server = player.getServer();
@@ -156,7 +158,9 @@ public final class SharedExplorationService {
         ArrayDeque<Long> queue = DOWNLOAD_QUEUES.get(player.getUUID());
         lines.add("queued downloads for this player = " + (queue == null ? 0 : queue.size()));
         lines.add("since start: uploads accepted " + uploadsAccepted + ", rejected (malformed) " + uploadsRejected +
-                ", dropped while loading " + uploadsDroppedLoading + ", chunks relayed live " + chunksRelayed);
+                ", dropped while loading " + uploadsDroppedLoading + ", turned away by the rate limit " +
+                uploadsThrottled +
+                ", chunks relayed live " + chunksRelayed);
         return lines;
     }
 
@@ -164,7 +168,8 @@ public final class SharedExplorationService {
         List<SharedChunkBlob> batch = new ArrayList<>();
         int bytes = 0;
         for (SharedChunkBlob blob : blobs) {
-            if (!batch.isEmpty() && (batch.size() >= PACKET_MAX_BLOBS || bytes + blob.data().length > PACKET_MAX_BYTES)) {
+            if (!batch.isEmpty() &&
+                    (batch.size() >= PACKET_MAX_BLOBS || bytes + blob.data().length > PACKET_MAX_BYTES)) {
                 SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
                         new S2CSharedChunksPacket(dimension, batch));
                 batch = new ArrayList<>();
@@ -269,7 +274,8 @@ public final class SharedExplorationService {
     private static void streamDownloads(MinecraftServer server) {
         if (DOWNLOAD_QUEUES.isEmpty()) return;
 
-        int perTick = Math.max(1, SolarisServerConfig.SHARED_EXPLORATION_DOWNLOAD_PER_SECOND.get() * DOWNLOAD_TICK_INTERVAL / 20);
+        int perTick = Math.max(1,
+                SolarisServerConfig.SHARED_EXPLORATION_DOWNLOAD_PER_SECOND.get() * DOWNLOAD_TICK_INTERVAL / 20);
 
         for (UUID id : new ArrayList<>(DOWNLOAD_QUEUES.keySet())) {
             ServerPlayer player = server.getPlayerList().getPlayer(id);
@@ -290,7 +296,8 @@ public final class SharedExplorationService {
                 DOWNLOAD_DIMENSIONS.remove(id);
                 continue;
             }
-            GuildMapStore.DimStore store = GuildMapStore.get(server, GuildsIntegration.ownerTokenFor(player), dimension);
+            GuildMapStore.DimStore store = GuildMapStore.get(server, GuildsIntegration.ownerTokenFor(player),
+                    dimension);
             if (store == null) continue;
 
             List<SharedChunkBlob> out = new ArrayList<>();

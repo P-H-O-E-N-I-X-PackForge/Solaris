@@ -24,10 +24,13 @@ import net.phoenixvine.solaris.client.color.ChunkRailCache;
 import net.phoenixvine.solaris.client.color.PersistentCaveStore;
 import net.phoenixvine.solaris.client.export.SolarisWebExporter;
 import net.phoenixvine.solaris.client.perf.SolarisProfiler;
+import net.phoenixvine.solaris.client.ping.PingMarker;
+import net.phoenixvine.solaris.client.ping.PingTracker;
 import net.phoenixvine.solaris.client.plan.PlanShape;
 import net.phoenixvine.solaris.client.plan.PlanShapeListScreen;
 import net.phoenixvine.solaris.client.plan.PlanShapeManager;
 import net.phoenixvine.solaris.client.plan.QuickPlanShapeScreen;
+import net.phoenixvine.solaris.client.player.RemotePlayerTracker;
 import net.phoenixvine.solaris.client.render.CaveTileCache;
 import net.phoenixvine.solaris.client.render.LabelSide;
 import net.phoenixvine.solaris.client.render.LineRenderer;
@@ -36,9 +39,6 @@ import net.phoenixvine.solaris.client.render.MapViewport;
 import net.phoenixvine.solaris.client.render.MinimapShape;
 import net.phoenixvine.solaris.client.render.MobFaceIcons;
 import net.phoenixvine.solaris.client.render.ModernPanel;
-import net.phoenixvine.solaris.client.ping.PingMarker;
-import net.phoenixvine.solaris.client.ping.PingTracker;
-import net.phoenixvine.solaris.client.player.RemotePlayerTracker;
 import net.phoenixvine.solaris.client.render.PlayerArrow;
 import net.phoenixvine.solaris.client.render.SmoothShapes;
 import net.phoenixvine.solaris.client.render.SolarisTexture;
@@ -696,10 +696,10 @@ public class SolarisMapScreen extends Screen {
         } else if (mode == ViewMode.FLAT && !dragging && toolMode == ToolMode.NAVIGATE &&
                 SolarisConfig.SHOW_BLOCK_TOOLTIP.get()) {
 
-            tooltip = hoveredBlockName(mx, my);
-        } else {
-            tooltip = null;
-        }
+                    tooltip = hoveredBlockName(mx, my);
+                } else {
+                    tooltip = null;
+                }
         if (tooltip != null) {
             g.renderTooltip(font, tooltip, mx, my);
         }

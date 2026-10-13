@@ -129,7 +129,7 @@ public final class PersistentChunkStore {
         Entry previous = chunks.put(key, new Entry(pixels, heights, water, waterTint, waterDepth, waterOcean,
                 foliage, System.currentTimeMillis()));
         DIRTY_DIMENSIONS.add(dimension);
-        
+
         if (previous == null) SharedExplorationClient.onLocalChunk(key);
     }
 
@@ -273,7 +273,7 @@ public final class PersistentChunkStore {
         }
 
         Path file = fileFor(worldKey, dimension);
-        
+
         Path tempFile = file.resolveSibling(file.getFileName() + "." + ProcessHandle.current().pid() + ".tmp");
         try {
             Files.createDirectories(file.getParent());

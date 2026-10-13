@@ -31,7 +31,9 @@ public final class CapabilityService {
         }
 
         final int sent = flags;
+        final int uploadRate = SolarisServerConfig.SPEC.isLoaded() ?
+                SolarisServerConfig.SHARED_EXPLORATION_UPLOAD_PER_SECOND.get() : 0;
         SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
-                new S2CServerCapabilitiesPacket(sent));
+                new S2CServerCapabilitiesPacket(sent, uploadRate));
     }
 }

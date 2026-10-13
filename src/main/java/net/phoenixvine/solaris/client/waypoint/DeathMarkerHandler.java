@@ -21,7 +21,7 @@ public class DeathMarkerHandler {
     public static void onScreenOpening(ScreenEvent.Opening event) {
         if (!(event.getNewScreen() instanceof DeathScreen)) return;
         if (recorded) return;
-        
+
         if (ServerCapabilities.serverDeathMarkers()) return;
         if (!SolarisConfig.DEATH_MARKERS.get()) return;
 
@@ -44,7 +44,7 @@ public class DeathMarkerHandler {
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END || !recorded) return;
         Minecraft mc = Minecraft.getInstance();
-        
+
         if (mc.player == null || !(mc.screen instanceof DeathScreen)) recorded = false;
     }
 }

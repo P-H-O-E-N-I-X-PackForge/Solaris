@@ -6,7 +6,6 @@ import net.minecraftforge.network.NetworkEvent;
 import net.phoenixvine.solaris.common.SharedChunkFormat;
 import net.phoenixvine.solaris.server.exploration.SharedExplorationService;
 
-
 import java.util.function.Supplier;
 
 public class C2SSharedSyncRequestPacket {

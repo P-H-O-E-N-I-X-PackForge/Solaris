@@ -21,7 +21,6 @@ import net.phoenixvine.solaris.network.C2SSharedSyncRequestPacket;
 import net.phoenixvine.solaris.network.SolarisNetwork;
 import net.phoenixvine.solaris.server.ServerCapabilities;
 
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,8 +37,13 @@ public final class SharedExplorationClient {
     private static final int MAX_QUEUE = 20000;
     private static final int UPLOAD_MAX_BLOBS = 12;
     private static final int UPLOAD_MAX_BYTES = 24000;
-    
     private static final int TICK_INTERVAL = 5;
+
+    private static final double UPLOAD_RATE_SHARE = 0.7;
+    private static final int DEFAULT_UPLOAD_RATE = 30;
+    private static final long VERIFY_DELAY_MS = 20_000L;
+    private static final int MAX_VERIFY_ATTEMPTS = 4;
+    private static final long UPLOAD_ECHO_IGNORE_MS = 20_000L;
     private static final int REQUEST_MOVE_CHUNKS = 24;
     private static final long REQUEST_SPACING_MS = 2500L;
     private static final long WINDOW_REFRESH_MS = 60_000L;
@@ -54,6 +58,10 @@ public final class SharedExplorationClient {
     private static final LinkedHashSet<ChunkKey> WANTED = new LinkedHashSet<>();
     private static final ArrayDeque<Window> WINDOW_QUEUE = new ArrayDeque<>();
     private static final Map<Window, Long> WINDOW_REQUESTED_AT = new HashMap<>();
+
+    private static final Map<Window, Long> VERIFY_AT = new HashMap<>();
+    private static final Map<Window, Integer> VERIFY_ATTEMPTS = new HashMap<>();
+    private static final Map<ChunkKey, Long> UPLOADED_AT = new HashMap<>();
 
     private static int tickCounter = 0;
     private static long lastRequestMillis = 0L;
@@ -108,6 +116,9 @@ public final class SharedExplorationClient {
         WANTED.clear();
         WINDOW_QUEUE.clear();
         WINDOW_REQUESTED_AT.clear();
+        VERIFY_AT.clear();
+        VERIFY_ATTEMPTS.clear();
+        UPLOADED_AT.clear();
         lastPlayerDimension = null;
         lastAroundX = Integer.MIN_VALUE;
         lastAroundZ = Integer.MIN_VALUE;
@@ -152,9 +163,10 @@ public final class SharedExplorationClient {
             lastPlayerChunkX = here.x;
             lastPlayerChunkZ = here.z;
             lastPlayerRequestMillis = now;
-            enqueueWindow(new Window(dimension, here.x - WINDOW / 2, here.z - WINDOW / 2), true, now);
+            enqueueWindow(new Window(dimension, here.x - WINDOW / 2, here.z - WINDOW / 2), true, false, now);
         }
 
+        verifyStep(dimension, now);
         pumpRequests(dimension, now);
     }
 
@@ -173,12 +185,12 @@ public final class SharedExplorationClient {
                 windows.add(new Window(dimension, wx, wz));
             }
         }
-        
+
         windows.sort((a, b) -> Double.compare(distanceSq(a, centerX, centerZ), distanceSq(b, centerX, centerZ)));
 
         long now = System.currentTimeMillis();
         for (int i = 0; i < Math.min(windows.size(), MAX_VISIBLE_WINDOWS); i++) {
-            enqueueWindow(windows.get(i), false, now);
+            enqueueWindow(windows.get(i), false, false, now);
         }
     }
 
@@ -191,7 +203,7 @@ public final class SharedExplorationClient {
         lastAroundX = chunkX;
         lastAroundZ = chunkZ;
         ResourceLocation dimension = Minecraft.getInstance().level.dimension().location();
-        enqueueWindow(new Window(dimension, chunkX - WINDOW / 2, chunkZ - WINDOW / 2), false,
+        enqueueWindow(new Window(dimension, chunkX - WINDOW / 2, chunkZ - WINDOW / 2), false, false,
                 System.currentTimeMillis());
     }
 
@@ -201,18 +213,37 @@ public final class SharedExplorationClient {
         return dx * dx + dz * dz;
     }
 
-    private static void enqueueWindow(Window window, boolean urgent, long now) {
-        if (!urgent) {
+    private static boolean enqueueWindow(Window window, boolean urgent, boolean ignoreRecent, long now) {
+        if (!urgent && !ignoreRecent) {
             Long at = WINDOW_REQUESTED_AT.get(window);
-            if (at != null && now - at < WINDOW_REFRESH_MS) return;
+            if (at != null && now - at < WINDOW_REFRESH_MS) return false;
         }
-        if (WINDOW_QUEUE.contains(window)) return;
+        if (WINDOW_QUEUE.contains(window)) return true;
         if (WINDOW_QUEUE.size() >= MAX_QUEUED_WINDOWS) {
-            if (!urgent) return;
+            if (!urgent) return false;
             WINDOW_QUEUE.pollLast();
         }
         if (urgent) WINDOW_QUEUE.addFirst(window);
         else WINDOW_QUEUE.addLast(window);
+        return true;
+    }
+
+    private static Window alignedWindow(ResourceLocation dimension, int chunkX, int chunkZ) {
+        return new Window(dimension, Math.floorDiv(chunkX, WINDOW) * WINDOW, Math.floorDiv(chunkZ, WINDOW) * WINDOW);
+    }
+
+    private static void verifyStep(ResourceLocation dimension, long now) {
+        if (VERIFY_AT.isEmpty()) return;
+        Iterator<Map.Entry<Window, Long>> it = VERIFY_AT.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<Window, Long> entry = it.next();
+            if (entry.getValue() > now) continue;
+            if (!entry.getKey().dimension().equals(dimension)) {
+                it.remove();
+                continue;
+            }
+            if (enqueueWindow(entry.getKey(), false, true, now)) it.remove();
+        }
     }
 
     private static void pumpRequests(ResourceLocation currentDimension, long now) {
@@ -233,7 +264,7 @@ public final class SharedExplorationClient {
 
     private static boolean sendWindow(Window window) {
         String dimensionName = window.dimension().toString();
-        
+
         ConcurrentHashMap<ChunkKey, PersistentChunkStore.Entry> chunks = PersistentChunkStore.chunksFor(dimensionName);
         if (chunks == null || !PersistentChunkStore.isLoaded(dimensionName)) return false;
 
@@ -254,7 +285,9 @@ public final class SharedExplorationClient {
         List<SharedChunkBlob> blobs = new ArrayList<>();
         int bytes = 0;
 
-        while (!WANTED.isEmpty() && blobs.size() < UPLOAD_MAX_BLOBS && bytes < UPLOAD_MAX_BYTES) {
+        int maxBlobs = uploadBlobsPerStep();
+
+        while (!WANTED.isEmpty() && blobs.size() < maxBlobs && bytes < UPLOAD_MAX_BYTES) {
             ChunkKey key = WANTED.iterator().next();
             WANTED.remove(key);
             synchronized (UPLOAD_QUEUE) {
@@ -264,7 +297,7 @@ public final class SharedExplorationClient {
         }
         synchronized (UPLOAD_QUEUE) {
             Iterator<ChunkKey> it = UPLOAD_QUEUE.iterator();
-            while (it.hasNext() && blobs.size() < UPLOAD_MAX_BLOBS && bytes < UPLOAD_MAX_BYTES) {
+            while (it.hasNext() && blobs.size() < maxBlobs && bytes < UPLOAD_MAX_BYTES) {
                 ChunkKey key = it.next();
                 it.remove();
                 bytes += addBlob(blobs, key, dimension);
@@ -272,10 +305,24 @@ public final class SharedExplorationClient {
         }
 
         if (!blobs.isEmpty()) {
+            long now = System.currentTimeMillis();
             uploadedChunks += blobs.size();
-            lastActivityMillis = System.currentTimeMillis();
+            lastActivityMillis = now;
+            if (UPLOADED_AT.size() > 20_000) UPLOADED_AT.clear();
+            if (VERIFY_AT.size() > 500) VERIFY_AT.clear();
+            for (SharedChunkBlob blob : blobs) {
+                UPLOADED_AT.put(new ChunkKey(dimension, blob.x(), blob.z()), now);
+                VERIFY_AT.put(alignedWindow(dimension, blob.x(), blob.z()), now + VERIFY_DELAY_MS);
+            }
             SolarisNetwork.CHANNEL.sendToServer(new C2SSharedChunksPacket(dimension.toString(), blobs));
         }
+    }
+
+    private static int uploadBlobsPerStep() {
+        int rate = ServerCapabilities.uploadChunksPerSecond();
+        if (rate <= 0) rate = DEFAULT_UPLOAD_RATE;
+        int perStep = (int) Math.floor(rate * UPLOAD_RATE_SHARE * TICK_INTERVAL / 20.0);
+        return Math.max(1, Math.min(UPLOAD_MAX_BLOBS, perStep));
     }
 
     private static int addBlob(List<SharedChunkBlob> blobs, ChunkKey key, ResourceLocation dimension) {
@@ -315,13 +362,29 @@ public final class SharedExplorationClient {
         ResourceLocation dimension = ResourceLocation.tryParse(dimensionName);
         if (dimension == null) return;
 
+        long now = System.currentTimeMillis();
+        boolean any = false;
         for (int row = 0; row < WINDOW; row++) {
             for (int col = 0; col < WINDOW; col++) {
-                if (((want[row] >>> col) & 1L) != 0L && WANTED.size() < MAX_QUEUE &&
-                        WANTED.add(new ChunkKey(dimension, minX + col, minZ + row))) {
-                    requestedUploads++;
-                }
+                if (((want[row] >>> col) & 1L) == 0L) continue;
+                any = true;
+
+                ChunkKey key = new ChunkKey(dimension, minX + col, minZ + row);
+
+                Long uploadedAt = UPLOADED_AT.get(key);
+                if (uploadedAt != null && now - uploadedAt < UPLOAD_ECHO_IGNORE_MS) continue;
+
+                if (WANTED.size() < MAX_QUEUE && WANTED.add(key)) requestedUploads++;
             }
+        }
+
+        if (any) {
+            Window window = new Window(dimension, minX, minZ);
+            if (VERIFY_ATTEMPTS.merge(window, 1, Integer::sum) <= MAX_VERIFY_ATTEMPTS) {
+                VERIFY_AT.put(window, now + VERIFY_DELAY_MS);
+            }
+        } else {
+            VERIFY_ATTEMPTS.remove(new Window(dimension, minX, minZ));
         }
     }
 }

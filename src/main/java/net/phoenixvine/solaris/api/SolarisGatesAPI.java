@@ -6,7 +6,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.phoenixvine.solaris.api.gates.GateCondition;
 import net.phoenixvine.solaris.server.features.ProgressionGates;
 
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

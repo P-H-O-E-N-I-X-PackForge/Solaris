@@ -57,7 +57,7 @@ public final class PlayerPositionBroadcaster {
 
         for (ServerPlayer receiver : players) {
             if (receiver.connection == null) continue;
-            
+
             if (!SolarisNetwork.CHANNEL.isRemotePresent(receiver.connection.connection)) continue;
 
             ResourceLocation dimension = receiver.level().dimension().location();

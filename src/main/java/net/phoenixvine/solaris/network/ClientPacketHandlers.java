@@ -22,12 +22,7 @@ import net.phoenixvine.solaris.common.SharedExplorationClient;
 import net.phoenixvine.solaris.common.SharedVeinClient;
 import net.phoenixvine.solaris.common.SharedVeinEntry;
 import net.phoenixvine.solaris.config.SolarisConfig;
-import net.phoenixvine.solaris.network.S2CClaimsPacket;
-import net.phoenixvine.solaris.network.S2CMarkerPacket;
-import net.phoenixvine.solaris.network.S2CServerWaypointsPacket;
 import net.phoenixvine.solaris.server.ServerCapabilities;
-
-
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -38,7 +33,7 @@ import java.util.Set;
 public final class ClientPacketHandlers {
 
     public static final String SERVER_WAYPOINT_PREFIX = "server:";
-    
+
     public static final String GUILD_WAYPOINT_PREFIX = "guild:";
 
     private ClientPacketHandlers() {}
@@ -56,8 +51,8 @@ public final class ClientPacketHandlers {
         SolarisTexture.invalidateAll();
     }
 
-    public static void serverCapabilities(int flags) {
-        ServerCapabilities.setFlags(flags);
+    public static void serverCapabilities(int flags, int uploadChunksPerSecond) {
+        ServerCapabilities.setFlags(flags, uploadChunksPerSecond);
         PhoenixSolaris.LOGGER.info("[Solaris] Server features: deathMarkers={}, sharedExploration={}, " +
                 "sharedVeins={}, playerPositions={}", ServerCapabilities.serverDeathMarkers(),
                 ServerCapabilities.sharedExploration(), ServerCapabilities.sharedVeins(),
@@ -163,14 +158,14 @@ public final class ClientPacketHandlers {
 
     public static void claims(String dimension, int centerX, int centerZ, int radius,
                               List<S2CClaimsPacket.Owner> owners) {
-        ClaimOverlay.INSTANCE.apply(ResourceLocation.parse(dimension), centerX, centerZ, radius, owners);
+        ClaimOverlay.INSTANCE.apply(new ResourceLocation(dimension), centerX, centerZ, radius, owners);
     }
 
     public static void ping(String sender, String dimension, int x, int y, int z, int durationTicks) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
-        PingTracker.add(sender, ResourceLocation.parse(dimension), x, y, z, durationTicks * 50L);
+        PingTracker.add(sender, new ResourceLocation(dimension), x, y, z, durationTicks * 50L);
         if (!sender.equals(mc.player.getGameProfile().getName())) {
             mc.player.displayClientMessage(Component.literal(sender + " pinged a location"), true);
         }

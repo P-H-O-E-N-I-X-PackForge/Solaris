@@ -18,15 +18,15 @@ import net.phoenixvine.solaris.api.SolarisGatesAPI;
 import net.phoenixvine.solaris.api.SolarisMarkers;
 import net.phoenixvine.solaris.server.ServerWaypointData;
 import net.phoenixvine.solaris.server.SolarisServerAPI;
+import net.phoenixvine.solaris.server.exploration.SharedExplorationService;
+import net.phoenixvine.solaris.server.features.ProgressionGates;
+import net.phoenixvine.solaris.server.guild.GuildWaypointService;
+import net.phoenixvine.solaris.server.waypoint.ServerWaypointService;
 
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.phoenixvine.solaris.server.exploration.SharedExplorationService;
-import net.phoenixvine.solaris.server.features.ProgressionGates;
-import net.phoenixvine.solaris.server.guild.GuildWaypointService;
-import net.phoenixvine.solaris.server.waypoint.ServerWaypointService;
 
 @Mod.EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class SolarisCommands {
@@ -337,7 +337,7 @@ public class SolarisCommands {
     }
 
     private static int guildWaypointAddHere(CommandSourceStack source, String name, String color)
-            throws CommandSyntaxException {
+                                                                                                  throws CommandSyntaxException {
         ServerPlayer player = source.getPlayerOrException();
         return GuildWaypointService.upsert(player, "", name, player.level().dimension().location().toString(),
                 player.getBlockX(), player.getBlockY(), player.getBlockZ(), color, "DOT", "Guild") ? 1 : 0;
@@ -387,7 +387,7 @@ public class SolarisCommands {
     }
 
     private static int serverWaypointAddHere(CommandSourceStack source, String name, String color, String category)
-            throws CommandSyntaxException {
+                                                                                                                    throws CommandSyntaxException {
         ServerPlayer player = source.getPlayerOrException();
         return serverWaypointAdd(source, name, player.level().dimension().location(), player.getBlockX(),
                 player.getBlockY(), player.getBlockZ(), color, category);

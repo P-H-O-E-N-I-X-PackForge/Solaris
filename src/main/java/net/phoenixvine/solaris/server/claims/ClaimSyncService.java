@@ -18,10 +18,10 @@ import net.phoenixvine.solaris.api.claims.ClaimSink;
 import net.phoenixvine.solaris.config.SolarisServerConfig;
 import net.phoenixvine.solaris.network.S2CClaimsPacket;
 import net.phoenixvine.solaris.network.SolarisNetwork;
-
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import net.phoenixvine.solaris.server.SolarisServerAPI;
 import net.phoenixvine.solaris.server.SolarisServerUtil;
+
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,7 +35,7 @@ import java.util.UUID;
 public final class ClaimSyncService {
 
     private static final int MAX_CLAIM_CHUNKS = 20000;
-    
+
     private static final int SNAP_SHIFT = 3;
 
     private static int counter = 0;
@@ -61,6 +61,7 @@ public final class ClaimSyncService {
     }
 
     private static final class Accumulator {
+
         final String name;
         final int argb;
         final LongArrayList chunks = new LongArrayList();
