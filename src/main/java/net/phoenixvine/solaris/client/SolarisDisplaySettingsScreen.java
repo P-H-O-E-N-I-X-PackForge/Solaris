@@ -71,6 +71,10 @@ public class SolarisDisplaySettingsScreen extends Screen {
         this.parent = parent;
     }
 
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    }
+
     private int placeWidgetsFluidly(int startX, int startY, int availableWidth, int[] currentY, int gap,
                                     AbstractWidget... widgets) {
         int xCursor = startX;
