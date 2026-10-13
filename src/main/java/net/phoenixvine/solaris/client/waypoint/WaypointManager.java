@@ -145,7 +145,7 @@ public final class WaypointManager {
 
     public static void save() {
         String key = currentWorldKey();
-        if (key == null) return;
+        if (key == null || !key.equals(loadedWorldKey)) return;
         try {
             SaveData data = new SaveData();
             data.waypoints = WAYPOINTS;
