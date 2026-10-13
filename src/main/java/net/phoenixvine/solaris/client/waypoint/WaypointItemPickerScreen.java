@@ -78,7 +78,7 @@ public class WaypointItemPickerScreen extends Screen {
         searchBox = new EditBox(font, width / 2 - 100, 22, 200, 16, Component.literal("Search"));
         searchBox.setMaxLength(48);
         searchBox.setValue(previousSearch);
-        searchBox.setHint(Component.literal("Search items/blocksâ€¦"));
+        searchBox.setHint(Component.literal("Search items/blocks…"));
         addWidget(searchBox);
         setInitialFocus(searchBox);
 

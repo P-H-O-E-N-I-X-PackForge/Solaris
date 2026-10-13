@@ -77,6 +77,20 @@ public final class PersistentCaveStore {
         String worldKey = WaypointManager.currentWorldKey();
         if (worldKey == null || DIRTY_DIMENSIONS.isEmpty()) return;
 
+        // Still holding the previous world's data until the next access resets it; writing it
+        // now would put the old world's chunks into the new world's save file.
+        if (!worldKey.equals(loadedWorldKey)) return;
+
+        submitDirtyWrites(worldKey);
+    }
+
+    public static void flushOnLogout() {
+        String worldKey = loadedWorldKey;
+        if (worldKey == null || DIRTY_DIMENSIONS.isEmpty()) return;
+        submitDirtyWrites(worldKey);
+    }
+
+    private static void submitDirtyWrites(String worldKey) {
         List<String> toSave = new ArrayList<>(DIRTY_DIMENSIONS);
         for (String dimension : toSave) {
 

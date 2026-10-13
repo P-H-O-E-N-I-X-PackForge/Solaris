@@ -92,7 +92,7 @@ public class WaypointListScreen extends Screen {
         searchBox = new EditBox(font, 8, 52, leftW - 8, 16, Component.literal("Search"));
         searchBox.setMaxLength(48);
         searchBox.setValue(previousSearch);
-        searchBox.setHint(Component.literal("Searchâ€¦"));
+        searchBox.setHint(Component.literal("Search…"));
         addWidget(searchBox);
 
         List<String> categories = WaypointManager.getCategories();
@@ -245,7 +245,7 @@ public class WaypointListScreen extends Screen {
 
     private String truncate(String text, int maxWidth) {
         if (font.width(text) <= maxWidth) return text;
-        return font.plainSubstrByWidth(text, maxWidth - font.width("â€¦")) + "â€¦";
+        return font.plainSubstrByWidth(text, maxWidth - font.width("…")) + "…";
     }
 
     private void shareSelected() {

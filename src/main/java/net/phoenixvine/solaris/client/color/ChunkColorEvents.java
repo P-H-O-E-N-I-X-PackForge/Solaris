@@ -27,6 +27,12 @@ public class ChunkColorEvents {
     static final Map<ChunkKey, Integer> FALLBACK_RETRY_COUNT = new ConcurrentHashMap<>();
 
     @SubscribeEvent
+    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        PersistentChunkStore.flushOnLogout();
+        PersistentCaveStore.flushOnLogout();
+    }
+
+    @SubscribeEvent
     public static void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
         PhoenixSolaris.LOGGER.info("[Solaris] onLoggingIn fired. Clearing in-memory chunk caches");
 
