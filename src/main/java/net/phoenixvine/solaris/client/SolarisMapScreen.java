@@ -83,8 +83,8 @@ public class SolarisMapScreen extends Screen {
     /** The outer panel sits this far from the screen edge; the map area sits BORDER_PAD inside it. */
     private static final int PANEL_INSET = MARGIN - 4;
     private static final int BORDER_PAD = 4;
-    /** Buttons float over the map, this far in from the map area's edges. */
-    private static final int BUTTON_PAD = 6;
+    /** The button row is anchored to the screen edges, so it straddles the panel's bottom border. */
+    private static final int BUTTON_MARGIN = 14;
     private static final int IDEAL_BUTTON_R = 9;
     private static final int IDEAL_BUTTON_GAP = 4;
     private static final int LEFT_BUTTON_GROUP = 4;
@@ -257,7 +257,6 @@ public class SolarisMapScreen extends Screen {
         double keepWorldX = keepCenter ? viewport.toWorldX(lastFrameCenterX, 0) : 0;
         double keepWorldZ = keepCenter ? viewport.toWorldZ(lastFrameCenterY, 0) : 0;
 
-        // Lay the buttons out first (they pick their radius from the window width).
         buildIconButtons();
 
         if (globeCamera == null || sizeChanged) {
@@ -438,11 +437,11 @@ public class SolarisMapScreen extends Screen {
                 () -> runIfStateAtLeast(SolarisAPI.FEATURE_WAYPOINTS, SolarisFeatureState.VISIBLE,
                         () -> Minecraft.getInstance().setScreen(new WaypointListScreen(this)))));
 
-        // ---- layout: derived from the actual number of buttons, aligned to the map area ----
+        // ---- layout: derived from the actual number of buttons, anchored to the screen edges ----
         int buttonCount = specs.size();
         int leftCount = Math.min(LEFT_BUTTON_GROUP, buttonCount);
         int rightCount = buttonCount - leftCount;
-        int availableWidth = frameRight() - frameLeft() - 2 * BUTTON_PAD;
+        int availableWidth = width - 2 * BUTTON_MARGIN;
 
         int idealMinFootprint = groupFootprint(leftCount, IDEAL_BUTTON_R, IDEAL_BUTTON_GAP) +
                 groupFootprint(rightCount, IDEAL_BUTTON_R, IDEAL_BUTTON_GAP);
@@ -456,12 +455,12 @@ public class SolarisMapScreen extends Screen {
         }
         this.buttonR = buttonRadius;
 
-        int bottomY = frameBottom() - BUTTON_PAD - buttonRadius - 1;
+        int bottomY = height - BUTTON_MARGIN - buttonRadius;
         int stride = buttonRadius * 2 + buttonGapPx;
         int rightSpan = Math.max(0, rightCount - 1) * stride;
 
-        int leftStartX = frameLeft() + BUTTON_PAD + 1 + buttonRadius;
-        int rightEndX = frameRight() - BUTTON_PAD - 1 - buttonRadius;
+        int leftStartX = BUTTON_MARGIN + buttonRadius;
+        int rightEndX = width - BUTTON_MARGIN - buttonRadius;
         int rightStartX = rightEndX - rightSpan;
 
         for (int i = 0; i < specs.size(); i++) {
@@ -786,8 +785,7 @@ public class SolarisMapScreen extends Screen {
         super.render(g, mx, my, partialTick);
 
         g.drawCenteredString(font, title, width / 2, 6, C_ACCENT);
-        g.drawCenteredString(font, footerHint(), (int) frameCenterX(), frameBottom() - BUTTON_PAD - (2 * buttonR + 2) - font.lineHeight - 3,
-                C_TEXT);
+        g.drawCenteredString(font, footerHint(), (int) frameCenterX(), frameBottom() + 10, C_TEXT);
 
         String syncText = SharedExplorationClient.activityText();
         if (syncText != null) {
