@@ -12,7 +12,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.phoenixvine.solaris.api.SolarisAPI;
-import net.phoenixvine.solaris.client.JourneyMapSettingsImporter;
+import net.phoenixvine.solaris.client.SettingsImporter;
 import net.phoenixvine.solaris.client.plan.PlanShape;
 import net.phoenixvine.solaris.client.plan.PlanShapeManager;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
@@ -262,7 +262,7 @@ public class WaypointListScreen extends Screen {
     }
 
     private void importSettings() {
-        reportImport(JourneyMapSettingsImporter.importSettings());
+        reportImport(SettingsImporter.importAll());
     }
 
     private void reportImport(String message) {
