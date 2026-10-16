@@ -197,7 +197,10 @@ public final class WaypointImporter {
     private static List<Waypoint> readXaero(Path gameDir, Minecraft mc, Set<String> worldNames) {
         List<Waypoint> out = new ArrayList<>();
         String prefix = mc.getCurrentServer() != null ? "Multiplayer_" : "Singleplayer_";
-        Path worldDir = findChild(gameDir.resolve("xaero").resolve("minimap"), worldNames, prefix);
+        Path minimapRoot = gameDir.resolve("xaero").resolve("minimap");
+        // Older versions name world folders "Singleplayer_<name>"; 1.21.1 uses the bare name.
+        Path worldDir = findChild(minimapRoot, worldNames, prefix);
+        if (worldDir == null) worldDir = findChild(minimapRoot, worldNames, "");
         if (worldDir == null) return out;
 
         try (Stream<Path> dimDirs = Files.list(worldDir)) {
@@ -216,7 +219,8 @@ public final class WaypointImporter {
         try (Stream<Path> files = Files.list(dimDir)) {
             for (Path file : (Iterable<Path>) files::iterator) {
                 String fileName = file.getFileName().toString();
-                if (!fileName.startsWith("mw$") || !fileName.endsWith(".txt")) continue;
+                boolean legacyName = fileName.startsWith("mw$") && fileName.endsWith(".txt");
+                if (!legacyName && !fileName.equals("waypoints.txt")) continue;
                 for (String line : Files.readAllLines(file)) {
                     Waypoint w = parseXaeroLine(line, dimension);
                     if (w != null) out.add(w);
