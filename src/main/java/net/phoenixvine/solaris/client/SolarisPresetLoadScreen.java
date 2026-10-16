@@ -79,10 +79,10 @@ public class SolarisPresetLoadScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         int max = Math.max(0, SolarisPresets.names().size() - MAX_VISIBLE);
         if (max == 0) return false;
-        int next = Math.max(0, Math.min(max, scrollOffset - (int) Math.signum(scrollY)));
+        int next = Math.max(0, Math.min(max, scrollOffset - (int) Math.signum(delta)));
         if (next != scrollOffset) {
             scrollOffset = next;
             init();
