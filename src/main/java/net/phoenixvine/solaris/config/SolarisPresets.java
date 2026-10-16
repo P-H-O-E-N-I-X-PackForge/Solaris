@@ -23,20 +23,96 @@ public final class SolarisPresets {
 
     private SolarisPresets() {}
 
+    // Every field is nullable: a preset only changes the settings it actually defines, which keeps
+    // presets saved before a field existed loadable without zeroing the newer settings.
     private static final class Preset {
 
-        double saturation;
-        double waterOpacity;
-        boolean waterDeepOnly;
-        int waterDeepYThreshold;
-        double waypointIconScale;
-        boolean hillshading;
-        double hillshadingStrength;
+        Double saturation;
+        Double contrast;
+        Double brightness;
+        Double foliageBrightness;
+        Double tintRed;
+        Double tintGreen;
+        Double tintBlue;
+        Boolean blackAndWhite;
+        Boolean vignette;
+        Double vignetteStrength;
+        Double nightModeStrength;
+        Double waterOpacity;
+        Boolean waterDeepOnly;
+        Integer waterDeepYThreshold;
+        Integer waterBlendRadius;
+        Double waypointIconScale;
+        Boolean hillshading;
+        Double hillshadingStrength;
+    }
+
+    // Mirrors the SolarisConfig defaults, so loading it undoes any colour/lighting tweaks.
+    private static Preset solarisDefault() {
+        Preset p = new Preset();
+        p.saturation = 0.85;
+        p.contrast = 1.3;
+        p.brightness = 1.2;
+        p.foliageBrightness = 0.45;
+        p.tintRed = 1.0;
+        p.tintGreen = 1.0;
+        p.tintBlue = 1.0;
+        p.blackAndWhite = false;
+        p.vignette = false;
+        p.vignetteStrength = 0.5;
+        p.nightModeStrength = 0.35;
+        p.waterOpacity = 0.0;
+        p.waterDeepOnly = false;
+        p.waterDeepYThreshold = 50;
+        p.waterBlendRadius = 8;
+        p.waypointIconScale = 1.0;
+        p.hillshading = false;
+        p.hillshadingStrength = 0.7;
+        return p;
+    }
+
+    // The sampled block colours with no saturation/contrast/brightness/tint adjustment at all.
+    private static Preset unadjustedColors() {
+        Preset p = new Preset();
+        p.saturation = 1.0;
+        p.contrast = 1.0;
+        p.brightness = 1.0;
+        p.foliageBrightness = 1.0;
+        p.tintRed = 1.0;
+        p.tintGreen = 1.0;
+        p.tintBlue = 1.0;
+        p.blackAndWhite = false;
+        return p;
+    }
+
+    private static final String DEFAULT_NAME = "Solaris Default";
+    private static final String UNADJUSTED_NAME = "Unadjusted Colors";
+
+    private static Preset builtIn(String name) {
+        return switch (name) {
+            case DEFAULT_NAME -> solarisDefault();
+            case UNADJUSTED_NAME -> unadjustedColors();
+            default -> null;
+        };
+    }
+
+    public static boolean isBuiltIn(String name) {
+        return builtIn(name) != null;
+    }
+
+    /** True when deleting the name would remove something (a user preset rather than a built-in). */
+    public static boolean isDeletable(String name) {
+        ensureLoaded();
+        return presets.containsKey(name);
     }
 
     public static List<String> names() {
         ensureLoaded();
-        return new ArrayList<>(presets.keySet());
+        List<String> names = new ArrayList<>(List.of(DEFAULT_NAME, UNADJUSTED_NAME));
+        for (String name : presets.keySet()) {
+            if (!names.contains(name)) names.add(name);
+        }
+        return names;
     }
 
     public static boolean exists(String name) {
@@ -48,9 +124,20 @@ public final class SolarisPresets {
         ensureLoaded();
         Preset p = new Preset();
         p.saturation = SolarisConfig.SATURATION.get();
+        p.contrast = SolarisConfig.CONTRAST.get();
+        p.brightness = SolarisConfig.BRIGHTNESS.get();
+        p.foliageBrightness = SolarisConfig.FOLIAGE_BRIGHTNESS.get();
+        p.tintRed = SolarisConfig.TINT_RED.get();
+        p.tintGreen = SolarisConfig.TINT_GREEN.get();
+        p.tintBlue = SolarisConfig.TINT_BLUE.get();
+        p.blackAndWhite = SolarisConfig.BLACK_AND_WHITE.get();
+        p.vignette = SolarisConfig.VIGNETTE.get();
+        p.vignetteStrength = SolarisConfig.VIGNETTE_STRENGTH.get();
+        p.nightModeStrength = SolarisConfig.NIGHT_MODE_STRENGTH.get();
         p.waterOpacity = SolarisConfig.WATER_OPACITY.get();
         p.waterDeepOnly = SolarisConfig.WATER_DEEP_ONLY.get();
         p.waterDeepYThreshold = SolarisConfig.WATER_DEEP_Y_THRESHOLD.get();
+        p.waterBlendRadius = SolarisConfig.WATER_BLEND_RADIUS.get();
         p.waypointIconScale = SolarisConfig.WAYPOINT_ICON_SCALE.get();
         p.hillshading = SolarisConfig.HILLSHADING.get();
         p.hillshadingStrength = SolarisConfig.HILLSHADING_STRENGTH.get();
@@ -61,21 +148,81 @@ public final class SolarisPresets {
     public static void load(String name) {
         ensureLoaded();
         Preset p = presets.get(name);
+        if (p == null) p = builtIn(name);
         if (p == null) return;
-        SolarisConfig.SATURATION.set(p.saturation);
-        SolarisConfig.WATER_OPACITY.set(p.waterOpacity);
-        SolarisConfig.WATER_DEEP_ONLY.set(p.waterDeepOnly);
-        SolarisConfig.WATER_DEEP_Y_THRESHOLD.set(p.waterDeepYThreshold);
-        SolarisConfig.WAYPOINT_ICON_SCALE.set(p.waypointIconScale);
-        SolarisConfig.HILLSHADING.set(p.hillshading);
-        SolarisConfig.HILLSHADING_STRENGTH.set(p.hillshadingStrength);
-        SolarisConfig.SATURATION.save();
-        SolarisConfig.WATER_OPACITY.save();
-        SolarisConfig.WATER_DEEP_ONLY.save();
-        SolarisConfig.WATER_DEEP_Y_THRESHOLD.save();
-        SolarisConfig.WAYPOINT_ICON_SCALE.save();
-        SolarisConfig.HILLSHADING.save();
-        SolarisConfig.HILLSHADING_STRENGTH.save();
+
+        if (p.saturation != null) {
+            SolarisConfig.SATURATION.set(p.saturation);
+            SolarisConfig.SATURATION.save();
+        }
+        if (p.contrast != null) {
+            SolarisConfig.CONTRAST.set(p.contrast);
+            SolarisConfig.CONTRAST.save();
+        }
+        if (p.brightness != null) {
+            SolarisConfig.BRIGHTNESS.set(p.brightness);
+            SolarisConfig.BRIGHTNESS.save();
+        }
+        if (p.foliageBrightness != null) {
+            SolarisConfig.FOLIAGE_BRIGHTNESS.set(p.foliageBrightness);
+            SolarisConfig.FOLIAGE_BRIGHTNESS.save();
+        }
+        if (p.tintRed != null) {
+            SolarisConfig.TINT_RED.set(p.tintRed);
+            SolarisConfig.TINT_RED.save();
+        }
+        if (p.tintGreen != null) {
+            SolarisConfig.TINT_GREEN.set(p.tintGreen);
+            SolarisConfig.TINT_GREEN.save();
+        }
+        if (p.tintBlue != null) {
+            SolarisConfig.TINT_BLUE.set(p.tintBlue);
+            SolarisConfig.TINT_BLUE.save();
+        }
+        if (p.blackAndWhite != null) {
+            SolarisConfig.BLACK_AND_WHITE.set(p.blackAndWhite);
+            SolarisConfig.BLACK_AND_WHITE.save();
+        }
+        if (p.vignette != null) {
+            SolarisConfig.VIGNETTE.set(p.vignette);
+            SolarisConfig.VIGNETTE.save();
+        }
+        if (p.vignetteStrength != null) {
+            SolarisConfig.VIGNETTE_STRENGTH.set(p.vignetteStrength);
+            SolarisConfig.VIGNETTE_STRENGTH.save();
+        }
+        if (p.nightModeStrength != null) {
+            SolarisConfig.NIGHT_MODE_STRENGTH.set(p.nightModeStrength);
+            SolarisConfig.NIGHT_MODE_STRENGTH.save();
+        }
+        if (p.waterOpacity != null) {
+            SolarisConfig.WATER_OPACITY.set(p.waterOpacity);
+            SolarisConfig.WATER_OPACITY.save();
+        }
+        if (p.waterDeepOnly != null) {
+            SolarisConfig.WATER_DEEP_ONLY.set(p.waterDeepOnly);
+            SolarisConfig.WATER_DEEP_ONLY.save();
+        }
+        if (p.waterDeepYThreshold != null) {
+            SolarisConfig.WATER_DEEP_Y_THRESHOLD.set(p.waterDeepYThreshold);
+            SolarisConfig.WATER_DEEP_Y_THRESHOLD.save();
+        }
+        if (p.waterBlendRadius != null) {
+            SolarisConfig.WATER_BLEND_RADIUS.set(p.waterBlendRadius);
+            SolarisConfig.WATER_BLEND_RADIUS.save();
+        }
+        if (p.waypointIconScale != null) {
+            SolarisConfig.WAYPOINT_ICON_SCALE.set(p.waypointIconScale);
+            SolarisConfig.WAYPOINT_ICON_SCALE.save();
+        }
+        if (p.hillshading != null) {
+            SolarisConfig.HILLSHADING.set(p.hillshading);
+            SolarisConfig.HILLSHADING.save();
+        }
+        if (p.hillshadingStrength != null) {
+            SolarisConfig.HILLSHADING_STRENGTH.set(p.hillshadingStrength);
+            SolarisConfig.HILLSHADING_STRENGTH.save();
+        }
     }
 
     public static void delete(String name) {
