@@ -90,6 +90,33 @@ public final class XaeroSettingsImporter {
             applied.add("show players");
         }
 
+        Boolean lighting = bool(values, "minimap_lighting");
+        if (lighting != null) {
+            // Lighting off means no night darkening; on keeps whatever darkness is already set
+            // (restoring Solaris's default if it had been zeroed).
+            double current = SolarisConfig.NIGHT_MODE_STRENGTH.get();
+            SolarisConfig.NIGHT_MODE_STRENGTH.set(lighting ? (current == 0.0 ? 0.35 : current) : 0.0);
+            SolarisConfig.NIGHT_MODE_STRENGTH.save();
+            applied.add("night darkness");
+        }
+
+        String slopes = values.get("minimap_terrain_slopes");
+        if (slopes != null) {
+            try {
+                SolarisConfig.HILLSHADING.set(Integer.parseInt(slopes.trim()) > 0);
+                SolarisConfig.HILLSHADING.save();
+                applied.add("relief shading");
+            } catch (NumberFormatException ignored) {}
+        }
+
+        Boolean blending = bool(values, "minimap_biome_blending");
+        if (blending != null) {
+            int current = SolarisConfig.WATER_BLEND_RADIUS.get();
+            SolarisConfig.WATER_BLEND_RADIUS.set(blending ? (current == 0 ? 8 : current) : 0);
+            SolarisConfig.WATER_BLEND_RADIUS.save();
+            applied.add("biome color blending");
+        }
+
         applyInfoDisplay(root.resolve("profiles").resolve("info_display_config").resolve(profile + ".cfg.txt"),
                 applied);
         return applied;

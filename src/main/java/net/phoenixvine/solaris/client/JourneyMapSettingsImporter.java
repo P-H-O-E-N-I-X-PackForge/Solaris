@@ -35,6 +35,8 @@ public final class JourneyMapSettingsImporter {
         if (minimap != null) applyMinimap(mc, minimap, applied);
         applyFullmap(read(configDir.resolve("journeymap.fullmap.config")), applied);
         applyWaypoints(read(configDir.resolve("journeymap.waypoint.config")), applied);
+        applyRendering(read(configDir.resolve("journeymap.core.config")),
+                read(configDir.resolve("journeymap.rendering.config")), applied);
 
         return applied;
     }
@@ -140,6 +142,46 @@ public final class JourneyMapSettingsImporter {
             SolarisConfig.DEATH_MARKERS.set(deathpoints);
             SolarisConfig.DEATH_MARKERS.save();
             applied.add("death markers");
+        }
+    }
+
+    // JourneyMap's defaults for the tweaks below; Solaris's own defaults correspond to these, so
+    // values are scaled relative to them rather than copied across unrelated units.
+    private static final double JM_DEFAULT_MOONLIGHT = 3.5;
+    private static final double SOLARIS_DEFAULT_NIGHT_STRENGTH = 0.35;
+    private static final double JM_DEFAULT_SLOPE_RANGE = 1.2 - 0.65;
+    private static final double SOLARIS_DEFAULT_HILLSHADING_STRENGTH = 0.7;
+
+    private static void applyRendering(JsonObject core, JsonObject rendering, List<String> applied) {
+        if (core != null) {
+            Boolean blendWater = bool(core, "mapBlendWater");
+            if (blendWater != null) {
+                int current = SolarisConfig.WATER_BLEND_RADIUS.get();
+                SolarisConfig.WATER_BLEND_RADIUS.set(blendWater ? (current == 0 ? 8 : current) : 0);
+                SolarisConfig.WATER_BLEND_RADIUS.save();
+                applied.add("water color blending");
+            }
+        }
+
+        if (rendering == null) return;
+
+        Double moonlight = number(rendering, "tweakMoonlightLevel");
+        if (moonlight != null) {
+            double strength = SOLARIS_DEFAULT_NIGHT_STRENGTH * JM_DEFAULT_MOONLIGHT / Math.max(moonlight, 0.1);
+            SolarisConfig.NIGHT_MODE_STRENGTH.set(Mth.clamp(strength, 0.0, 1.0));
+            SolarisConfig.NIGHT_MODE_STRENGTH.save();
+            applied.add("night darkness");
+        }
+
+        Double upslope = number(rendering, "shadingPrimaryUpslopeMultiplier");
+        Double downslope = number(rendering, "shadingPrimaryDownslopeMultiplier");
+        if (upslope != null && downslope != null) {
+            double strength = SOLARIS_DEFAULT_HILLSHADING_STRENGTH * (upslope - downslope) / JM_DEFAULT_SLOPE_RANGE;
+            SolarisConfig.HILLSHADING.set(true);
+            SolarisConfig.HILLSHADING.save();
+            SolarisConfig.HILLSHADING_STRENGTH.set(Mth.clamp(strength, 0.0, 1.0));
+            SolarisConfig.HILLSHADING_STRENGTH.save();
+            applied.add("relief shading");
         }
     }
 
