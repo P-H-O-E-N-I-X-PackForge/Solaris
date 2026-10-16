@@ -81,15 +81,54 @@ public final class SolarisPresets {
         return p;
     }
 
-    private static final String DEFAULT_NAME = "Solaris Default";
-    private static final String UNADJUSTED_NAME = "Unadjusted Colors";
+    // Colour-only look: saturation / contrast / brightness / foliage brightness.
+    private static Preset look(double saturation, double contrast, double brightness, double foliage) {
+        Preset p = new Preset();
+        p.saturation = saturation;
+        p.contrast = contrast;
+        p.brightness = brightness;
+        p.foliageBrightness = foliage;
+        p.tintRed = 1.0;
+        p.tintGreen = 1.0;
+        p.tintBlue = 1.0;
+        p.blackAndWhite = false;
+        return p;
+    }
+
+    private static Map<String, Preset> builtIns() {
+        Map<String, Preset> builtIns = new LinkedHashMap<>();
+        builtIns.put("Solaris Default", solarisDefault());
+        builtIns.put("Unadjusted Colors", unadjustedColors());
+
+        builtIns.put("Vivid", look(1.3, 1.2, 1.1, 0.55));
+        builtIns.put("Muted", look(0.55, 1.15, 1.15, 0.5));
+        builtIns.put("High Contrast", look(0.9, 1.7, 1.15, 0.45));
+
+        Preset cartographic = look(0.7, 1.2, 1.1, 0.5);
+        cartographic.hillshading = true;
+        cartographic.hillshadingStrength = 0.9;
+        cartographic.waterOpacity = 0.4;
+        builtIns.put("Cartographic", cartographic);
+
+        Preset nightFriendly = look(0.85, 1.3, 1.2, 0.45);
+        nightFriendly.nightModeStrength = 0.1;
+        builtIns.put("Night Friendly", nightFriendly);
+
+        Preset sepia = look(0.6, 1.2, 1.15, 0.5);
+        sepia.tintRed = 1.15;
+        sepia.tintGreen = 1.0;
+        sepia.tintBlue = 0.72;
+        builtIns.put("Sepia", sepia);
+
+        Preset blackAndWhite = look(0.85, 1.3, 1.2, 0.45);
+        blackAndWhite.blackAndWhite = true;
+        builtIns.put("Black & White", blackAndWhite);
+
+        return builtIns;
+    }
 
     private static Preset builtIn(String name) {
-        return switch (name) {
-            case DEFAULT_NAME -> solarisDefault();
-            case UNADJUSTED_NAME -> unadjustedColors();
-            default -> null;
-        };
+        return builtIns().get(name);
     }
 
     public static boolean isBuiltIn(String name) {
@@ -103,7 +142,7 @@ public final class SolarisPresets {
 
     public static List<String> names() {
         ensureLoaded();
-        List<String> names = new ArrayList<>(List.of(DEFAULT_NAME, UNADJUSTED_NAME));
+        List<String> names = new ArrayList<>(builtIns().keySet());
         for (String name : presets.keySet()) {
             if (!names.contains(name)) names.add(name);
         }
