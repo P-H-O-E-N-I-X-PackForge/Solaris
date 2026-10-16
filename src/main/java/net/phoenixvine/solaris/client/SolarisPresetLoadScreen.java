@@ -57,10 +57,12 @@ public class SolarisPresetLoadScreen extends Screen {
                 onLoaded.run();
                 onClose();
             }).bounds(x + 10, y, BOX_W - 20 - 40, 18).build());
-            addRenderableWidget(Button.builder(Component.literal("X"), b -> {
-                SolarisPresets.delete(name);
-                init();
-            }).bounds(x + 10 + BOX_W - 20 - 40 + 6, y, 34, 18).build());
+            if (SolarisPresets.isDeletable(name)) {
+                addRenderableWidget(Button.builder(Component.literal("X"), b -> {
+                    SolarisPresets.delete(name);
+                    init();
+                }).bounds(x + 10 + BOX_W - 20 - 40 + 6, y, 34, 18).build());
+            }
             y += ROW_H;
         }
 
