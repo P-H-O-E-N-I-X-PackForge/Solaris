@@ -12,6 +12,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.phoenixvine.solaris.api.SolarisAPI;
+import net.phoenixvine.solaris.client.JourneyMapSettingsImporter;
 import net.phoenixvine.solaris.client.plan.PlanShape;
 import net.phoenixvine.solaris.client.plan.PlanShapeManager;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
@@ -99,8 +100,10 @@ public class WaypointListScreen extends Screen {
             return;
         }
 
-        addRenderableWidget(Button.builder(Component.literal("Import"), b -> importWaypoints())
-                .bounds(176, 6, 80, 18).build());
+        addRenderableWidget(Button.builder(Component.literal("Import WPs"), b -> importWaypoints())
+                .bounds(176, 6, 74, 18).build());
+        addRenderableWidget(Button.builder(Component.literal("Import Settings"), b -> importSettings())
+                .bounds(254, 6, 100, 18).build());
 
         addRenderableWidget(Button.builder(Component.literal("+ Add here"), b -> addHere())
                 .bounds(8, 32, leftW - 90, 18).build());
@@ -253,9 +256,19 @@ public class WaypointListScreen extends Screen {
     private String importStatus = "";
 
     private void importWaypoints() {
-        importStatus = WaypointImporter.describe(WaypointImporter.importForCurrentWorld());
+        reportImport(WaypointImporter.describe(WaypointImporter.importForCurrentWorld()));
         selected = null;
         init();
+    }
+
+    private void importSettings() {
+        reportImport(JourneyMapSettingsImporter.importSettings());
+    }
+
+    private void reportImport(String message) {
+        importStatus = message;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null) mc.player.displayClientMessage(Component.literal("[Solaris] " + message), false);
     }
 
     private void addTabButtons() {
@@ -596,9 +609,9 @@ public class WaypointListScreen extends Screen {
     }
 
     private void renderWaypointsTab(GuiGraphics g, int mx, int my, float pt, int sideW, int leftW) {
-        int statusW = vw - 66 - 264 - 6;
+        int statusW = vw - 66 - 358 - 6;
         if (!importStatus.isEmpty() && statusW > 40) {
-            g.drawString(font, truncate(importStatus, statusW), 264, 10, C_DIM, false);
+            g.drawString(font, truncate(importStatus, statusW), 358, 10, C_DIM, false);
         }
 
         List<Waypoint> visible = visibleList();
