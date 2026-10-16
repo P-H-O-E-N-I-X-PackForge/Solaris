@@ -17,7 +17,6 @@ public class SolarisFeatureStateData extends SavedData {
 
     private final Map<UUID, Map<ResourceLocation, Map<String, SolarisFeatureState>>> byToken = new LinkedHashMap<>();
 
-    // Modern 1.21 SavedData factory definition
     private static final SavedData.Factory<SolarisFeatureStateData> FACTORY = new SavedData.Factory<>(
             SolarisFeatureStateData::new,
             SolarisFeatureStateData::load,

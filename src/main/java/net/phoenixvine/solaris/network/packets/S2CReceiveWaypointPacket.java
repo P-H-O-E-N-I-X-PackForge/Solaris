@@ -60,7 +60,6 @@ public record S2CReceiveWaypointPacket(
             Minecraft mc = Minecraft.getInstance();
             if (mc.player == null) return;
 
-            // Note: In 1.21.1, ResourceLocation parsing uses ResourceLocation.parse(...) or fromNamespaceAndPath
             Waypoint w = new Waypoint(packet.name(), ResourceLocation.parse(packet.dimension()), packet.x(), packet.y(),
                     packet.z(), packet.color());
             w.icon = packet.icon();

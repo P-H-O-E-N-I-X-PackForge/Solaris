@@ -66,7 +66,7 @@ public record S2CServerWaypointsPacket(List<S2CServerWaypointsPacket.Entry> entr
 
     public static void handle(final S2CServerWaypointsPacket packet, final IPayloadContext context) {
         context.enqueueWork(() -> {
-            // Safe client execution handling since this is a S2C packet
+            
             ClientPacketHandlers.serverWaypoints(packet.entries());
         });
     }

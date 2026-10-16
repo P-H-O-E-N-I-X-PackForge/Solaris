@@ -21,7 +21,6 @@ public class ServerWaypointData extends SavedData {
 
     private final Map<String, Entry> entries = new LinkedHashMap<>();
 
-    // Modern 1.21 SavedData factory definition
     private static final SavedData.Factory<ServerWaypointData> FACTORY = new SavedData.Factory<>(
             ServerWaypointData::new,
             ServerWaypointData::load,

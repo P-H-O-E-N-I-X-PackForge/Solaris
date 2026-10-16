@@ -130,7 +130,6 @@ public final class ClaimSyncService {
         if (hash == last) return;
         LAST_HASH.put(player.getUUID(), hash);
 
-        // Modern 1.21 PacketDistributor syntax
         PacketDistributor.sendToPlayer(player,
                 new S2CClaimsPacket(dimension.toString(), centerX, centerZ, radius, out));
     }

@@ -20,7 +20,6 @@ public class ManualGateData extends SavedData {
 
     private final Map<UUID, Set<String>> byToken = new LinkedHashMap<>();
 
-    // Modern 1.21 SavedData factory definition
     private static final SavedData.Factory<ManualGateData> FACTORY = new SavedData.Factory<>(
             ManualGateData::new,
             ManualGateData::load,

@@ -24,7 +24,6 @@ public class WaypointEvent extends Event {
         }
     }
 
-    // Implement ICancellableEvent for events that can be canceled
     public static class Removed extends WaypointEvent implements ICancellableEvent {
 
         public Removed(Waypoint waypoint) {

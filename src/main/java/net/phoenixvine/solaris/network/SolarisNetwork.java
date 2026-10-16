@@ -15,7 +15,6 @@ public class SolarisNetwork {
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar r = event.registrar(PROTOCOL);
 
-        // Client -> Server
         r.playToServer(C2SShareWaypointPacket.TYPE, C2SShareWaypointPacket.STREAM_CODEC,
                 C2SShareWaypointPacket::handle);
         r.playToServer(C2SPingPacket.TYPE, C2SPingPacket.STREAM_CODEC,
@@ -29,7 +28,6 @@ public class SolarisNetwork {
         r.playToServer(C2SSharedVeinsPacket.TYPE, C2SSharedVeinsPacket.STREAM_CODEC,
                 C2SSharedVeinsPacket::handle);
 
-        // Server -> Client
         r.playToClient(S2CReceiveWaypointPacket.TYPE, S2CReceiveWaypointPacket.STREAM_CODEC,
                 S2CReceiveWaypointPacket::handle);
         r.playToClient(S2CSyncFeatureStatePacket.TYPE, S2CSyncFeatureStatePacket.STREAM_CODEC,

@@ -33,7 +33,6 @@ public final class CapabilityService {
         final int uploadRate = SolarisServerConfig.SPEC.isLoaded() ?
                 SolarisServerConfig.SHARED_EXPLORATION_UPLOAD_PER_SECOND.get() : 0;
 
-        // Modernized 1.21 packet dispatch using PacketDistributor directly
         PacketDistributor.sendToPlayer(player, new S2CServerCapabilitiesPacket(sent, uploadRate));
     }
 }

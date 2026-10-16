@@ -49,7 +49,6 @@ public final class ServerWaypointService {
                     e.color(), e.icon(), e.category()));
         }
 
-        // Modernized 1.21 packet dispatch
         PacketDistributor.sendToPlayer(player, new S2CServerWaypointsPacket(out));
     }
 }

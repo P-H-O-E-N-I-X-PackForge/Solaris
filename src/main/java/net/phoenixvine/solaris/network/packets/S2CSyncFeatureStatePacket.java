@@ -24,21 +24,19 @@ public record S2CSyncFeatureStatePacket(
 
     public static final StreamCodec<RegistryFriendlyByteBuf, S2CSyncFeatureStatePacket> STREAM_CODEC = StreamCodec.of(
             (buf, packet) -> {
-                // Encode tiers map
+                
                 buf.writeVarInt(packet.tiers().size());
                 for (Map.Entry<String, Integer> entry : packet.tiers().entrySet()) {
                     buf.writeUtf(entry.getKey(), 128);
                     buf.writeVarInt(entry.getValue());
                 }
 
-                // Encode features map
                 buf.writeVarInt(packet.features().size());
                 for (Map.Entry<String, Boolean> entry : packet.features().entrySet()) {
                     buf.writeUtf(entry.getKey(), 64);
                     buf.writeBoolean(entry.getValue());
                 }
 
-                // Encode nested states map
                 buf.writeVarInt(packet.states().size());
                 for (Map.Entry<String, Map<String, SolarisFeatureState>> dimensionEntry : packet.states().entrySet()) {
                     buf.writeUtf(dimensionEntry.getKey(), 128);
@@ -50,21 +48,19 @@ public record S2CSyncFeatureStatePacket(
                 }
             },
             buf -> {
-                // Decode tiers map
+                
                 int tierCount = buf.readVarInt();
                 Map<String, Integer> tierMap = new HashMap<>();
                 for (int i = 0; i < tierCount; i++) {
                     tierMap.put(buf.readUtf(128), buf.readVarInt());
                 }
 
-                // Decode features map
                 int featureCount = buf.readVarInt();
                 Map<String, Boolean> featureMap = new HashMap<>();
                 for (int i = 0; i < featureCount; i++) {
                     featureMap.put(buf.readUtf(64), buf.readBoolean());
                 }
 
-                // Decode nested states map
                 int dimensionCount = buf.readVarInt();
                 Map<String, Map<String, SolarisFeatureState>> stateMap = new HashMap<>();
                 for (int i = 0; i < dimensionCount; i++) {

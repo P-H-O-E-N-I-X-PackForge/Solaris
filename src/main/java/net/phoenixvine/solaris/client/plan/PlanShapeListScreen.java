@@ -46,10 +46,8 @@ public class PlanShapeListScreen extends Screen {
         this.parent = parent;
     }
 
-
     @Override
-    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-    }
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {}
 
     @Override
     protected void init() {
@@ -153,7 +151,6 @@ public class PlanShapeListScreen extends Screen {
         int mx = Math.round(rawMx / uiScale);
         int my = Math.round(rawMy / uiScale);
 
-        // Updated background rendering call for 1.21.1
         this.renderBackground(g, rawMx, rawMy, pt);
 
         g.pose().pushPose();

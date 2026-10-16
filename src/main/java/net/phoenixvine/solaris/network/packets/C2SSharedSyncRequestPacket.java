@@ -20,7 +20,6 @@ public record C2SSharedSyncRequestPacket(
     public static final Type<C2SSharedSyncRequestPacket> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(PhoenixSolaris.MOD_ID, "c2s_shared_sync_request"));
 
-    // StreamCodec handles encoding and decoding cleanly via StreamCodec.of()
     public static final StreamCodec<RegistryFriendlyByteBuf, C2SSharedSyncRequestPacket> STREAM_CODEC = StreamCodec.of(
             (buf, packet) -> {
                 buf.writeUtf(packet.dimension(), 128);

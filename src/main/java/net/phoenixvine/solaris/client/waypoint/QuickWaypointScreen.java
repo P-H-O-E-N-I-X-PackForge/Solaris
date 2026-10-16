@@ -66,10 +66,8 @@ public class QuickWaypointScreen extends Screen {
         return (vh - BOX_H) / 2;
     }
 
-
     @Override
-    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-    }
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {}
 
     @Override
     protected void init() {

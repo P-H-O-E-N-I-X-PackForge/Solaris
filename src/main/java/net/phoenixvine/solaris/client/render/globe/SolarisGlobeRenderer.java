@@ -25,7 +25,6 @@ public final class SolarisGlobeRenderer {
         pose.pushPose();
         pose.translate(cx, cy, DEPTH);
 
-        // Modernized 1.21 scale and rotation application
         pose.mulPose(new Matrix4f().scaling(screenRadius, screenRadius, -screenRadius));
         pose.mulPose(rotation);
 

@@ -47,7 +47,7 @@ public final class SolarisMarkers {
 
     private static void send(ServerPlayer target, S2CMarkerPacket packet) {
         if (!SolarisServerUtil.hasSolaris(target)) return;
-        // Modern 1.21.1 PacketDistributor syntax
+        
         PacketDistributor.sendToPlayer(target, packet);
     }
 

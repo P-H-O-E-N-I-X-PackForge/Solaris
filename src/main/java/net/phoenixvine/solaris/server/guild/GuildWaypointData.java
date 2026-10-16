@@ -22,7 +22,6 @@ public class GuildWaypointData extends SavedData {
 
     private final Map<UUID, Map<String, Entry>> byGuild = new LinkedHashMap<>();
 
-    // Modern 1.21 SavedData factory definition
     private static final SavedData.Factory<GuildWaypointData> FACTORY = new SavedData.Factory<>(
             GuildWaypointData::new,
             GuildWaypointData::load,

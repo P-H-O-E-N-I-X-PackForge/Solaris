@@ -66,7 +66,6 @@ public final class PingTracker {
             return;
         }
 
-        // Check if the server supports the custom payload channel in 1.21.1
         if (!mc.getConnection().hasChannel(C2SPingPacket.TYPE)) {
             mc.player.displayClientMessage(Component.literal("Pings need Solaris on the server."), true);
             return;
@@ -76,7 +75,6 @@ public final class PingTracker {
         BlockPos pos = hit.getType() == HitResult.Type.BLOCK && hit instanceof BlockHitResult block ?
                 block.getBlockPos() : mc.player.blockPosition();
 
-        // Send the packet to the server using the modern PacketDistributor API
         PacketDistributor.sendToServer(new C2SPingPacket(pos.getX(), pos.getY(), pos.getZ()));
     }
 }

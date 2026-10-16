@@ -45,7 +45,7 @@ public class C2SPingPacket implements CustomPacketPayload {
     }
 
     public static void handle(C2SPingPacket msg, IPayloadContext ctx) {
-        // Runs on the main server thread by default, so no enqueueWork needed.
+        
         if (ctx.player() instanceof ServerPlayer sender) {
             PingService.handle(sender, msg.x, msg.y, msg.z);
         }

@@ -37,7 +37,7 @@ public record S2CDeathMarkerPacket(
 
     public static void handle(final S2CDeathMarkerPacket packet, final IPayloadContext context) {
         context.enqueueWork(() -> {
-            // Safe client execution context
+            
             ClientPacketHandlers.deathMarker(
                     packet.dimension(),
                     packet.x(),

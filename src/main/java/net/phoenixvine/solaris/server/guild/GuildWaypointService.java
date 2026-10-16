@@ -62,7 +62,7 @@ public final class GuildWaypointService {
                         e.color(), e.icon(), e.category()));
             }
         }
-        // Modern 1.21 PacketDistributor static dispatch helper
+        
         PacketDistributor.sendToPlayer(player, new S2CGuildWaypointsPacket(out));
     }
 

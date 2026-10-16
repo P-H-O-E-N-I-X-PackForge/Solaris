@@ -276,7 +276,6 @@ public final class SharedExplorationClient {
             }
         }
 
-        // Updated for 1.21.1: Use PacketDistributor instead of CHANNEL
         PacketDistributor.sendToServer(
                 new C2SSharedSyncRequestPacket(dimensionName, window.minX(), window.minZ(), have));
         return true;
@@ -288,12 +287,11 @@ public final class SharedExplorationClient {
 
         int maxBlobs = uploadBlobsPerStep();
 
-        // Synchronize access to WANTED if it's accessed across multiple threads
         synchronized (WANTED) {
             Iterator<ChunkKey> it = WANTED.iterator();
             while (it.hasNext() && blobs.size() < maxBlobs && bytes < UPLOAD_MAX_BYTES) {
                 ChunkKey key = it.next();
-                it.remove(); // Safely remove using the iterator
+                it.remove(); 
 
                 synchronized (UPLOAD_QUEUE) {
                     UPLOAD_QUEUE.remove(key);

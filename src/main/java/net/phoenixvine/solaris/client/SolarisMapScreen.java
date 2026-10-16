@@ -27,7 +27,6 @@ import net.phoenixvine.solaris.client.perf.SolarisProfiler;
 import net.phoenixvine.solaris.client.ping.PingMarker;
 import net.phoenixvine.solaris.client.ping.PingTracker;
 import net.phoenixvine.solaris.client.plan.PlanShape;
-import net.phoenixvine.solaris.client.plan.PlanShapeListScreen;
 import net.phoenixvine.solaris.client.plan.PlanShapeManager;
 import net.phoenixvine.solaris.client.plan.QuickPlanShapeScreen;
 import net.phoenixvine.solaris.client.player.RemotePlayerTracker;
@@ -75,15 +74,13 @@ import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_TEXT;
 @OnlyIn(Dist.CLIENT)
 public class SolarisMapScreen extends Screen {
 
-    /** Gap between the screen edge and the map frame. Everything layout-related derives from this. */
     private static final int MARGIN = 20;
 
     private static final int MAX_TILE_BUILDS_PER_FRAME = 300;
 
-    /** The outer panel sits this far from the screen edge; the map area sits BORDER_PAD inside it. */
     private static final int PANEL_INSET = MARGIN - 4;
     private static final int BORDER_PAD = 4;
-    /** The button row is anchored to the screen edges, so it straddles the panel's bottom border. */
+    
     private static final int BUTTON_MARGIN = 14;
     private static final int IDEAL_BUTTON_R = 9;
     private static final int IDEAL_BUTTON_GAP = 4;
@@ -134,13 +131,11 @@ public class SolarisMapScreen extends Screen {
     private String hoveredPlayerName;
     private String hoveredMobName;
 
-    /** Actual (possibly scaled-down) button radius, set by {@link #buildIconButtons()}. */
     private int buttonR = IDEAL_BUTTON_R;
 
     private static boolean gtceuBroken = false;
     private final Screen parent;
 
-    // View persistence across init() calls (resize, returning from child screens)
     private boolean viewInitialized = false;
     private int lastWidth = -1;
     private int lastHeight = -1;
@@ -161,10 +156,6 @@ public class SolarisMapScreen extends Screen {
         return texture;
     }
 
-    // ------------------------------------------------------------------
-    // Frame geometry: single source of truth
-    // ------------------------------------------------------------------
-
     private int frameLeft() {
         return MARGIN;
     }
@@ -177,7 +168,6 @@ public class SolarisMapScreen extends Screen {
         return width - MARGIN;
     }
 
-    /** The map fills the whole panel (same inset as the other sides); the buttons are drawn over it. */
     private int frameBottom() {
         return panelBottom() - BORDER_PAD;
     }
@@ -218,15 +208,10 @@ public class SolarisMapScreen extends Screen {
         return mx >= frameLeft() && mx <= frameRight() && my >= frameTop() && my <= frameBottom();
     }
 
-    /** Puts the given world point at the center of the frame at the current zoom. */
     private void centerViewOn(double worldX, double worldZ) {
         viewport.setOffset(frameCenterX() - worldX * viewport.getZoom(),
                 frameCenterY() - worldZ * viewport.getZoom());
     }
-
-    // ------------------------------------------------------------------
-    // Icon buttons
-    // ------------------------------------------------------------------
 
     @FunctionalInterface
     private interface IconDrawer {
@@ -252,7 +237,6 @@ public class SolarisMapScreen extends Screen {
 
         boolean sizeChanged = width != lastWidth || height != lastHeight;
 
-        // World point at the center of the old frame, so it stays centered in the new one.
         boolean keepCenter = viewInitialized && sizeChanged;
         double keepWorldX = keepCenter ? viewport.toWorldX(lastFrameCenterX, 0) : 0;
         double keepWorldZ = keepCenter ? viewport.toWorldZ(lastFrameCenterY, 0) : 0;
@@ -363,7 +347,7 @@ public class SolarisMapScreen extends Screen {
         })));
         specs.add(new IconSpec("Shapes", (g, cx, cy, hover) -> drawItemIcon(g, cx, cy, SHAPES_ICON),
                 () -> runIfEnabled(SolarisAPI.FEATURE_SHAPE_PLANNER,
-                        () -> Minecraft.getInstance().setScreen(new PlanShapeListScreen(this)))));
+                        () -> Minecraft.getInstance().setScreen(new WaypointListScreen(this, true)))));
         specs.add(new IconSpec("Unexplored Style",
                 (g, cx, cy, hover) -> drawUnexploredStyleIcon(g, cx, cy, SolarisConfig.UNEXPLORED_STYLE.get()),
                 () -> runIfEnabled(SolarisAPI.FEATURE_UNEXPLORED_STYLE, () -> {
@@ -437,7 +421,6 @@ public class SolarisMapScreen extends Screen {
                 () -> runIfStateAtLeast(SolarisAPI.FEATURE_WAYPOINTS, SolarisFeatureState.VISIBLE,
                         () -> Minecraft.getInstance().setScreen(new WaypointListScreen(this)))));
 
-        // ---- layout: derived from the actual number of buttons, anchored to the screen edges ----
         int buttonCount = specs.size();
         int leftCount = Math.min(LEFT_BUTTON_GROUP, buttonCount);
         int rightCount = buttonCount - leftCount;
@@ -502,10 +485,6 @@ public class SolarisMapScreen extends Screen {
             if (mc.player != null) mc.player.displayClientMessage(message, false);
         });
     }
-
-    // ------------------------------------------------------------------
-    // Icon drawing (instance methods so they use the real, scaled radius)
-    // ------------------------------------------------------------------
 
     private void drawItemIcon(GuiGraphics g, int cx, int cy, ItemStack stack) {
         int size = buttonR * 2 - 2;
@@ -611,10 +590,6 @@ public class SolarisMapScreen extends Screen {
         }
     }
 
-    // ------------------------------------------------------------------
-    // View helpers
-    // ------------------------------------------------------------------
-
     private boolean isUnderground() {
         return undergroundView;
     }
@@ -623,7 +598,8 @@ public class SolarisMapScreen extends Screen {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mode != ViewMode.GLOBE) return;
 
-        GlobeCamera.SpherePoint sp = globeCamera.screenToSpherePoint(frameCenterX(), frameCenterY(), globeCx(), globeCy());
+        GlobeCamera.SpherePoint sp = globeCamera.screenToSpherePoint(frameCenterX(), frameCenterY(), globeCx(),
+                globeCy());
         if (sp == null) return;
 
         int size = texture().getSizePixels();
@@ -667,10 +643,6 @@ public class SolarisMapScreen extends Screen {
         return true;
     }
 
-    // ------------------------------------------------------------------
-    // Rendering
-    // ------------------------------------------------------------------
-
     private void drawUnexploredCoverImage(GuiGraphics g) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
@@ -683,7 +655,6 @@ public class SolarisMapScreen extends Screen {
                 UnexploredImageStyle.width(), UnexploredImageStyle.height());
     }
 
-    /** Draws the outer panel, then opens the frame scissor and fills the map background. Caller must disableScissor. */
     private void beginFrame(GuiGraphics g) {
         ModernPanel.draw(g, panelLeft(), panelTop(), panelRight() - panelLeft(), panelBottom() - panelTop(),
                 C_BORDER);
@@ -692,10 +663,6 @@ public class SolarisMapScreen extends Screen {
         drawUnexploredCoverImage(g);
     }
 
-    /**
-     * Draws just the map (frame + tiles) for use as a backdrop behind child screens.
-     * Child screens should call the overload that passes their own size.
-     */
     public void renderMapBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         renderBackground(g, mouseX, mouseY, partialTick);
 
@@ -708,11 +675,6 @@ public class SolarisMapScreen extends Screen {
         g.disableScissor();
     }
 
-    /**
-     * Same as above, but first resizes this screen to the child's size. Minecraft only resizes the screen
-     * that is currently open, so without this the parent map keeps its old width/height and draws a stale
-     * frame whenever the window is resized while a child screen is open.
-     */
     public void renderMapBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick, int targetWidth,
                                     int targetHeight) {
         if (minecraft != null && (targetWidth != width || targetHeight != height)) {
@@ -721,7 +683,6 @@ public class SolarisMapScreen extends Screen {
         renderMapBackground(g, mouseX, mouseY, partialTick);
     }
 
-    // The map draws its own background; this also stops 1.21's blur from being applied to it.
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {}
 
@@ -805,8 +766,8 @@ public class SolarisMapScreen extends Screen {
             tooltip = Component.literal(hoveredButton);
         } else if (mode == ViewMode.FLAT && !dragging && toolMode == ToolMode.NAVIGATE &&
                 SolarisConfig.SHOW_BLOCK_TOOLTIP.get()) {
-            tooltip = hoveredBlockName(mx, my);
-        }
+                    tooltip = hoveredBlockName(mx, my);
+                }
         if (tooltip != null) {
             g.renderTooltip(font, tooltip, mx, my);
         }
@@ -1413,10 +1374,6 @@ public class SolarisMapScreen extends Screen {
                 .withStyle(net.minecraft.ChatFormatting.GRAY));
     }
 
-    // ------------------------------------------------------------------
-    // Input
-    // ------------------------------------------------------------------
-
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         if (super.mouseClicked(mx, my, button)) return true;
@@ -1560,6 +1517,15 @@ public class SolarisMapScreen extends Screen {
             return;
         }
 
+        PlanShape shapeHit = hitTestShape(mx, my);
+        if (shapeHit != null) {
+            PlanShapeManager.remove(shapeHit.id);
+            if (mc.player != null) {
+                mc.player.displayClientMessage(Component.literal("Shape removed: " + shapeHit.name), true);
+            }
+            return;
+        }
+
         if (!onMap(mx, my) || mc.player == null || mc.level == null) return;
 
         int blockX = (int) Math.floor(viewport.toWorldX(mx, 0));
@@ -1569,6 +1535,61 @@ public class SolarisMapScreen extends Screen {
 
         Minecraft.getInstance().setScreen(
                 new QuickWaypointScreen(this, mc.level.dimension().location(), blockX, blockY, blockZ));
+    }
+
+    private static final double SHAPE_HIT_TOLERANCE = 6.0;
+
+    private PlanShape hitTestShape(double mx, double my) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return null;
+
+        List<PlanShape> shapes = PlanShapeManager.getVisibleForDimension(mc.level.dimension().location());
+        for (int i = shapes.size() - 1; i >= 0; i--) {
+            PlanShape shape = shapes.get(i);
+            if (shapeOutlineDistance(shape, mx, my) <= SHAPE_HIT_TOLERANCE) return shape;
+        }
+        return null;
+    }
+
+    private double shapeOutlineDistance(PlanShape shape, double mx, double my) {
+        switch (shape.type) {
+            case RECTANGLE -> {
+                if (shape.points.size() < 2) return Double.MAX_VALUE;
+                double x1 = viewport.toScreenX(shape.points.get(0)[0], 0);
+                double y1 = viewport.toScreenY(shape.points.get(0)[1], 0);
+                double x2 = viewport.toScreenX(shape.points.get(1)[0], 0);
+                double y2 = viewport.toScreenY(shape.points.get(1)[1], 0);
+                return Math.min(
+                        Math.min(distToSegment(mx, my, x1, y1, x2, y1), distToSegment(mx, my, x2, y1, x2, y2)),
+                        Math.min(distToSegment(mx, my, x2, y2, x1, y2), distToSegment(mx, my, x1, y2, x1, y1)));
+            }
+            case CIRCLE -> {
+                if (shape.points.isEmpty()) return Double.MAX_VALUE;
+                double cx = viewport.toScreenX(shape.points.get(0)[0], 0);
+                double cy = viewport.toScreenY(shape.points.get(0)[1], 0);
+                double screenRadius = Math.max(2, Math.round(shape.radius * viewport.getZoom()));
+                return Math.abs(Math.hypot(mx - cx, my - cy) - screenRadius);
+            }
+            case LINE -> {
+                double best = Double.MAX_VALUE;
+                for (int i = 1; i < shape.points.size(); i++) {
+                    int[] a = shape.points.get(i - 1);
+                    int[] b = shape.points.get(i);
+                    best = Math.min(best, distToSegment(mx, my, viewport.toScreenX(a[0], 0),
+                            viewport.toScreenY(a[1], 0), viewport.toScreenX(b[0], 0), viewport.toScreenY(b[1], 0)));
+                }
+                return best;
+            }
+        }
+        return Double.MAX_VALUE;
+    }
+
+    private static double distToSegment(double px, double py, double x1, double y1, double x2, double y2) {
+        double dx = x2 - x1;
+        double dy = y2 - y1;
+        double lengthSq = dx * dx + dy * dy;
+        double t = lengthSq == 0 ? 0 : Mth.clamp(((px - x1) * dx + (py - y1) * dy) / lengthSq, 0, 1);
+        return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
     }
 
     private Waypoint hitTestWaypoint(double mx, double my) {

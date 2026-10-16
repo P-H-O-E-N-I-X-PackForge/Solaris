@@ -29,7 +29,6 @@ public final class FramedBlocksIntegration {
             CamoContainer<?, ?> camo = fbe.getCamo();
             if (camo == null || camo.isEmpty()) return null;
 
-            // Retrieve state via the content object (checking for block camo content)
             var content = camo.getContent();
             if (content instanceof BlockCamoContent blockContent) {
                 return blockContent.getState();

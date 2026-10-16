@@ -75,10 +75,8 @@ public class QuickGotoScreen extends Screen {
         }
     }
 
-
     @Override
-    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-    }
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {}
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {

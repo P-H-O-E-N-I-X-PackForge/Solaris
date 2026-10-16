@@ -50,7 +50,7 @@ public final class PlanShapeManager {
 
     public static void save() {
         String key = WaypointManager.currentWorldKey();
-        if (key == null) return;
+        if (key == null || !key.equals(loadedWorldKey)) return;
         try {
             Path file = fileFor(key);
             Files.createDirectories(file.getParent());

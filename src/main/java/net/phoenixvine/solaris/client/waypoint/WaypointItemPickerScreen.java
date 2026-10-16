@@ -62,10 +62,8 @@ public class WaypointItemPickerScreen extends Screen {
         return allItems;
     }
 
-
     @Override
-    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-    }
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {}
 
     @Override
     protected void init() {

@@ -20,7 +20,6 @@ public class StructureWaypointData extends SavedData {
 
     private final Map<UUID, Set<String>> discoveredByPlayer = new LinkedHashMap<>();
 
-    // Modern 1.21 SavedData factory definition
     private static final SavedData.Factory<StructureWaypointData> FACTORY = new SavedData.Factory<>(
             StructureWaypointData::new,
             StructureWaypointData::load,

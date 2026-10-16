@@ -67,7 +67,6 @@ public final class StructureWaypointTracker {
 
                 BlockPos center = start.getBoundingBox().getCenter();
 
-                // Modernized 1.21 PacketDistributor static dispatch helper
                 PacketDistributor.sendToPlayer(player,
                         new S2CStructureDiscoveredPacket(displayName(structureId), dimension.toString(),
                                 center.getX(), pos.getY(), center.getZ()));

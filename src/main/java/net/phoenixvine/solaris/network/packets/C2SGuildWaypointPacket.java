@@ -30,7 +30,6 @@ public record C2SGuildWaypointPacket(
     public static final Type<C2SGuildWaypointPacket> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(PhoenixSolaris.MOD_ID, "c2s_guild_waypoint"));
 
-    // Use StreamCodec.of() for complex/multi-field packets exceeding composite limits
     public static final StreamCodec<RegistryFriendlyByteBuf, C2SGuildWaypointPacket> STREAM_CODEC = StreamCodec.of(
             (buf, packet) -> {
                 buf.writeEnum(packet.op());

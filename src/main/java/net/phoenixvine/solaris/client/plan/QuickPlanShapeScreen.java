@@ -135,7 +135,7 @@ public class QuickPlanShapeScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
-        super.render(g, mx, my, pt); // calls renderBackground above, then registered widgets
+        super.render(g, mx, my, pt); 
 
         if (nameBox != null) nameBox.render(g, mx, my, pt);
         if (colorBox != null) colorBox.render(g, mx, my, pt);
@@ -143,12 +143,10 @@ public class QuickPlanShapeScreen extends Screen {
         if (heightBox != null) heightBox.render(g, mx, my, pt);
     }
 
-
-
     @Override
     public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
         if (parent instanceof SolarisMapScreen mapScreen) {
-            // custom background replaces vanilla's, so no blur is applied
+            
             mapScreen.renderMapBackground(g, mx, my, pt);
             g.fill(0, 0, width, height, 0xE0101014);
         } else {

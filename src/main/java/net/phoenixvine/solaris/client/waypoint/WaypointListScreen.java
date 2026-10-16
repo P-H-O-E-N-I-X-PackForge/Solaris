@@ -12,6 +12,8 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.phoenixvine.solaris.api.SolarisAPI;
+import net.phoenixvine.solaris.client.plan.PlanShape;
+import net.phoenixvine.solaris.client.plan.PlanShapeManager;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
 import net.phoenixvine.solaris.network.ClientPacketHandlers;
@@ -56,15 +58,25 @@ public class WaypointListScreen extends Screen {
     private EditBox categoryBox;
     private EditBox labelColorBox;
 
+    private boolean shapesTab = false;
+    private PlanShape selectedShape;
+    private EditBox shapeNameBox;
+    private EditBox shapeColorBox;
+    private EditBox shapeBaseYBox;
+    private EditBox shapeHeightBox;
+
     public WaypointListScreen(Screen parent) {
         super(Component.literal("Waypoints"));
         this.parent = parent;
     }
 
+    public WaypointListScreen(Screen parent, boolean startOnShapes) {
+        this(parent);
+        this.shapesTab = startOnShapes;
+    }
 
     @Override
-    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-    }
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {}
 
     @Override
     protected void init() {
@@ -76,8 +88,19 @@ public class WaypointListScreen extends Screen {
 
         int sideW = Math.max(180, vw / 3);
         int leftW = vw - sideW - 10;
-        listTop = 96;
+        listTop = shapesTab ? 56 : 96;
         listBottom = vh - 12;
+
+        addTabButtons();
+        if (shapesTab) {
+            initShapesTab(sideW, leftW);
+            addRenderableWidget(Button.builder(Component.literal("Close"), b -> onClose())
+                    .bounds(vw - 66, 6, 56, 18).build());
+            return;
+        }
+
+        addRenderableWidget(Button.builder(Component.literal("Import"), b -> importWaypoints())
+                .bounds(176, 6, 80, 18).build());
 
         addRenderableWidget(Button.builder(Component.literal("+ Add here"), b -> addHere())
                 .bounds(8, 32, leftW - 90, 18).build());
@@ -180,7 +203,7 @@ public class WaypointListScreen extends Screen {
 
             boolean tracked = selected.id.equals(trackedId());
             addRenderableWidget(Button.builder(
-                    Component.literal(tracked ? "Tracked (compass) âœ“" : "Track (compass)"),
+                    Component.literal(tracked ? "Tracking (compass): ON" : "Track (compass)"),
                     b -> {
                         WaypointManager.setTracked(tracked ? null : selected.id);
                         init();
@@ -227,6 +250,187 @@ public class WaypointListScreen extends Screen {
                 .bounds(vw - 66, 6, 56, 18).build());
     }
 
+    private String importStatus = "";
+
+    private void importWaypoints() {
+        importStatus = WaypointImporter.describe(WaypointImporter.importForCurrentWorld());
+        selected = null;
+        init();
+    }
+
+    private void addTabButtons() {
+        Button waypointsTab = Button.builder(Component.literal("Waypoints"), b -> switchTab(false))
+                .bounds(8, 6, 80, 18).build();
+        waypointsTab.active = shapesTab;
+        addRenderableWidget(waypointsTab);
+
+        Button shapes = Button.builder(Component.literal("Shapes"), b -> switchTab(true))
+                .bounds(92, 6, 80, 18).build();
+        shapes.active = !shapesTab;
+        addRenderableWidget(shapes);
+    }
+
+    private void switchTab(boolean toShapes) {
+        shapesTab = toShapes;
+        searchBox = null;
+        scrollOffset = 0;
+        init();
+    }
+
+    private void initShapesTab(int sideW, int leftW) {
+        if (selectedShape != null && !PlanShapeManager.getAll().contains(selectedShape)) selectedShape = null;
+
+        String previousSearch = searchBox != null ? searchBox.getValue() : "";
+        searchBox = new EditBox(font, 8, 32, leftW - 8, 16, Component.literal("Search"));
+        searchBox.setMaxLength(48);
+        searchBox.setValue(previousSearch);
+        searchBox.setHint(Component.literal("Search shapes…"));
+        addWidget(searchBox);
+
+        if (selectedShape == null) return;
+
+        int editX = vw - sideW + 10;
+        int y = 40;
+
+        shapeNameBox = new EditBox(font, editX, y, sideW - 20, 16, Component.literal("Name"));
+        shapeNameBox.setMaxLength(48);
+        shapeNameBox.setValue(selectedShape.name);
+        addWidget(shapeNameBox);
+        y += ROW_H + 10;
+
+        shapeColorBox = new EditBox(font, editX, y, sideW - 20, 16, Component.literal("Color"));
+        shapeColorBox.setMaxLength(8);
+        shapeColorBox.setValue(selectedShape.color);
+        addWidget(shapeColorBox);
+        y += ROW_H + 10;
+
+        int halfW = (sideW - 20 - 8) / 2;
+        shapeBaseYBox = new EditBox(font, editX, y, halfW, 16, Component.literal("Base Y"));
+        shapeBaseYBox.setMaxLength(6);
+        shapeBaseYBox.setFilter(t -> t.isEmpty() || t.equals("-") || t.matches("-?\\d+"));
+        shapeBaseYBox.setValue(String.valueOf(selectedShape.baseY));
+        addWidget(shapeBaseYBox);
+
+        shapeHeightBox = new EditBox(font, editX + halfW + 8, y, halfW, 16, Component.literal("Height"));
+        shapeHeightBox.setMaxLength(4);
+        shapeHeightBox.setFilter(t -> t.isEmpty() || t.matches("\\d+"));
+        shapeHeightBox.setValue(String.valueOf(selectedShape.height));
+        addWidget(shapeHeightBox);
+        y += ROW_H + 14;
+
+        addRenderableWidget(Button.builder(
+                Component.literal(selectedShape.visible ? "Visible: ON" : "Visible: OFF"), b -> {
+                    selectedShape.visible = !selectedShape.visible;
+                    PlanShapeManager.save();
+                    init();
+                }).bounds(editX, y, sideW - 20, 18).build());
+        y += ROW_H + 8;
+
+        addRenderableWidget(Button.builder(Component.literal("Save"), b -> saveSelectedShape())
+                .bounds(editX, y, sideW - 20, 18).build());
+        y += ROW_H + 4;
+
+        addRenderableWidget(Button.builder(Component.literal("Delete"), b -> {
+            PlanShapeManager.remove(selectedShape.id);
+            selectedShape = null;
+            init();
+        }).bounds(editX, y, sideW - 20, 18).build());
+    }
+
+    private void saveSelectedShape() {
+        if (selectedShape == null) return;
+        if (!shapeNameBox.getValue().isBlank()) selectedShape.name = shapeNameBox.getValue();
+        selectedShape.color = shapeColorBox.getValue();
+        selectedShape.baseY = parseInt(shapeBaseYBox.getValue(), selectedShape.baseY);
+        selectedShape.height = Math.max(1, parseInt(shapeHeightBox.getValue(), selectedShape.height));
+        PlanShapeManager.save();
+        init();
+    }
+
+    private static int parseInt(String text, int fallback) {
+        try {
+            return Integer.parseInt(text);
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
+    }
+
+    private static String shapeTypeLabel(PlanShape.Type type) {
+        return switch (type) {
+            case RECTANGLE -> "Rect";
+            case CIRCLE -> "Circle";
+            case LINE -> "Line";
+        };
+    }
+
+    private List<PlanShape> visibleShapes() {
+        String query = searchBox != null ? searchBox.getValue().trim().toLowerCase(Locale.ROOT) : "";
+        List<PlanShape> out = new ArrayList<>();
+        for (PlanShape shape : PlanShapeManager.getAll()) {
+            if (query.isEmpty() || shape.name.toLowerCase(Locale.ROOT).contains(query)) out.add(shape);
+        }
+        out.sort((a, b) -> a.name.compareToIgnoreCase(b.name));
+        return out;
+    }
+
+    private void renderShapesTab(GuiGraphics g, int mx, int my, float pt, int sideW, int leftW) {
+        List<PlanShape> shapes = visibleShapes();
+        int rowY = listTop;
+        int maxVisible = Math.max(1, (listBottom - listTop) / ROW_H);
+        scrollOffset = Mth.clamp(scrollOffset, 0, Math.max(0, shapes.size() - maxVisible));
+
+        for (int i = scrollOffset; i < shapes.size() && rowY + ROW_H <= listBottom; i++) {
+            PlanShape shape = shapes.get(i);
+            boolean sel = shape == selectedShape;
+            boolean hov = mx >= 8 && mx < leftW && my >= rowY && my < rowY + ROW_H;
+            g.fill(8, rowY, leftW, rowY + ROW_H, sel ? 0xFF2A2A44 : hov ? C_HEADER : C_PANEL);
+            g.fill(12, rowY + 4, 20, rowY + 12, shape.colorArgb());
+            String label = "[" + shapeTypeLabel(shape.type) + "] " + shape.name +
+                    (shape.visible ? "" : " §8[hidden]");
+            g.drawString(font, truncate(label, leftW - 32), 26, rowY + 4, sel ? C_ACCENT : C_TEXT, false);
+            rowY += ROW_H;
+        }
+
+        if (shapes.isEmpty()) {
+            String emptyMsg = PlanShapeManager.getAll().isEmpty() ?
+                    "No shapes yet. Use the Plan tool on the map to draw one." : "No shapes match your search.";
+            int emptyY = listTop + 4;
+            for (FormattedCharSequence line : font.split(Component.literal(emptyMsg), leftW - 16)) {
+                g.drawString(font, line, 12, emptyY, C_DIM, false);
+                emptyY += font.lineHeight;
+            }
+        }
+
+        if (searchBox != null) searchBox.render(g, mx, my, pt);
+
+        if (selectedShape != null) {
+            int editX = vw - sideW + 10;
+            g.drawString(font, "Name", editX, 30, C_DIM, false);
+            g.drawString(font, "Color (hex)", editX, 30 + ROW_H + 10, C_DIM, false);
+            g.drawString(font, "Base Y / Height", editX, 30 + 2 * (ROW_H + 10), C_DIM, false);
+            if (shapeNameBox != null) shapeNameBox.render(g, mx, my, pt);
+            if (shapeColorBox != null) shapeColorBox.render(g, mx, my, pt);
+            if (shapeBaseYBox != null) shapeBaseYBox.render(g, mx, my, pt);
+            if (shapeHeightBox != null) shapeHeightBox.render(g, mx, my, pt);
+        }
+    }
+
+    private boolean clickShapeRow(double mx, double my) {
+        int sideW = Math.max(180, vw / 3);
+        int leftW = vw - sideW - 10;
+        List<PlanShape> shapes = visibleShapes();
+        int rowY = listTop;
+        for (int i = scrollOffset; i < shapes.size() && rowY + ROW_H <= listBottom; i++) {
+            if (mx >= 8 && mx < leftW && my >= rowY && my < rowY + ROW_H) {
+                selectedShape = shapes.get(i);
+                init();
+                return true;
+            }
+            rowY += ROW_H;
+        }
+        return false;
+    }
+
     private void addHere() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
@@ -260,7 +464,6 @@ public class WaypointListScreen extends Screen {
             return;
         }
 
-        // Send using modern PacketDistributor
         PacketDistributor.sendToServer(new C2SShareWaypointPacket(
                 selected.name,
                 selected.dimension,
@@ -281,7 +484,6 @@ public class WaypointListScreen extends Screen {
         String name = nameBox.getValue().isBlank() ? selected.name : nameBox.getValue().trim();
         String category = categoryBox != null ? categoryBox.getValue().trim() : selected.category;
 
-        // Updated for 1.21.1: Use PacketDistributor instead of CHANNEL
         PacketDistributor.sendToServer(C2SGuildWaypointPacket.upsert(key, name, selected.dimension,
                 parseCoord(xBox, selected.x), parseCoord(yBox, selected.y), parseCoord(zBox, selected.z),
                 colorBox.getValue().trim(), selected.icon, category));
@@ -379,7 +581,25 @@ public class WaypointListScreen extends Screen {
         g.fill(0, 0, vw, vh, C_PANEL);
         VanillaPanel.draw(g, -8, -8, vw + 16, vh + 16, C_PANEL);
         g.fill(0, 0, vw, 28, C_HEADER);
-        g.drawCenteredString(font, "Waypoints", vw / 2, 10, C_ACCENT);
+
+        if (shapesTab) {
+            renderShapesTab(g, mx, my, pt, sideW, leftW);
+        } else {
+            renderWaypointsTab(g, mx, my, pt, sideW, leftW);
+        }
+
+        g.fill(vw - sideW, 28, vw - sideW + 1, vh, C_BORDER);
+
+        super.render(g, mx, my, pt);
+
+        g.pose().popPose();
+    }
+
+    private void renderWaypointsTab(GuiGraphics g, int mx, int my, float pt, int sideW, int leftW) {
+        int statusW = vw - 66 - 264 - 6;
+        if (!importStatus.isEmpty() && statusW > 40) {
+            g.drawString(font, truncate(importStatus, statusW), 264, 10, C_DIM, false);
+        }
 
         List<Waypoint> visible = visibleList();
         int rowY = listTop;
@@ -393,7 +613,7 @@ public class WaypointListScreen extends Screen {
             boolean hov = mx >= 8 && mx < leftW && my >= rowY && my < rowY + ROW_H;
             g.fill(8, rowY, leftW, rowY + ROW_H, sel ? 0xFF2A2A44 : hov ? C_HEADER : C_PANEL);
             WaypointIconManager.draw(g, w.icon, 16, rowY + 8, 4, w.colorArgb());
-            String label = w.name + "  Â§7(" + w.x + ", " + w.y + ", " + w.z + ")" + (w.visible ? "" : " Â§8[hidden]");
+            String label = w.name + "  §7(" + w.x + ", " + w.y + ", " + w.z + ")" + (w.visible ? "" : " §8[hidden]");
             g.drawString(font, truncate(label, leftW - 32), 28, rowY + 4, sel ? C_ACCENT : C_TEXT, false);
             rowY += ROW_H;
         }
@@ -427,12 +647,6 @@ public class WaypointListScreen extends Screen {
             if (categoryBox != null) categoryBox.render(g, mx, my, pt);
             if (labelColorBox != null) labelColorBox.render(g, mx, my, pt);
         }
-
-        g.fill(vw - sideW, 28, vw - sideW + 1, vh, C_BORDER);
-
-        super.render(g, mx, my, pt);
-
-        g.pose().popPose();
     }
 
     @Override
@@ -440,6 +654,11 @@ public class WaypointListScreen extends Screen {
         double mx = rawMx / uiScale;
         double my = rawMy / uiScale;
         if (button != 0) return super.mouseClicked(mx, my, button);
+
+        if (shapesTab) {
+            if (super.mouseClicked(mx, my, button)) return true;
+            return clickShapeRow(mx, my);
+        }
 
         int sideW = Math.max(180, vw / 3);
         int leftW = vw - sideW - 10;

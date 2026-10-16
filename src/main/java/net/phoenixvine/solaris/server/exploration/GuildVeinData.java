@@ -22,7 +22,6 @@ public class GuildVeinData extends SavedData {
 
     private final Map<UUID, Map<String, SharedVeinEntry>> byGuild = new LinkedHashMap<>();
 
-    // 1.21.1 Factory requirement for computeIfAbsent
     public static SavedData.Factory<GuildVeinData> factory() {
         return new SavedData.Factory<>(
                 GuildVeinData::new,
