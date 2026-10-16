@@ -27,7 +27,6 @@ import net.phoenixvine.solaris.client.perf.SolarisProfiler;
 import net.phoenixvine.solaris.client.ping.PingMarker;
 import net.phoenixvine.solaris.client.ping.PingTracker;
 import net.phoenixvine.solaris.client.plan.PlanShape;
-import net.phoenixvine.solaris.client.plan.PlanShapeListScreen;
 import net.phoenixvine.solaris.client.plan.PlanShapeManager;
 import net.phoenixvine.solaris.client.plan.QuickPlanShapeScreen;
 import net.phoenixvine.solaris.client.player.RemotePlayerTracker;
@@ -288,7 +287,7 @@ public class SolarisMapScreen extends Screen {
         })));
         specs.add(new IconSpec("Shapes", cx -> (g, hover) -> drawItemIcon(g, cx, bottomY, SHAPES_ICON),
                 () -> runIfEnabled(SolarisAPI.FEATURE_SHAPE_PLANNER,
-                        () -> Minecraft.getInstance().setScreen(new PlanShapeListScreen(this)))));
+                        () -> Minecraft.getInstance().setScreen(new WaypointListScreen(this, true)))));
         specs.add(new IconSpec("Unexplored Style",
                 cx -> (g, hover) -> drawUnexploredStyleIcon(g, cx, bottomY, SolarisConfig.UNEXPLORED_STYLE.get()),
                 () -> runIfEnabled(SolarisAPI.FEATURE_UNEXPLORED_STYLE, () -> {
@@ -1470,6 +1469,15 @@ public class SolarisMapScreen extends Screen {
             return;
         }
 
+        PlanShape shapeHit = hitTestShape(mx, my);
+        if (shapeHit != null) {
+            PlanShapeManager.remove(shapeHit.id);
+            if (mc.player != null) {
+                mc.player.displayClientMessage(Component.literal("Shape removed: " + shapeHit.name), true);
+            }
+            return;
+        }
+
         boolean onMap = mx >= MARGIN && mx <= width - MARGIN && my >= MARGIN && my <= height - MARGIN;
         if (!onMap || mc.player == null || mc.level == null) return;
 
@@ -1480,6 +1488,61 @@ public class SolarisMapScreen extends Screen {
 
         Minecraft.getInstance().setScreen(
                 new QuickWaypointScreen(this, mc.level.dimension().location(), blockX, blockY, blockZ));
+    }
+
+    private static final double SHAPE_HIT_TOLERANCE = 6.0;
+
+    private PlanShape hitTestShape(double mx, double my) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return null;
+
+        List<PlanShape> shapes = PlanShapeManager.getVisibleForDimension(mc.level.dimension().location());
+        for (int i = shapes.size() - 1; i >= 0; i--) {
+            PlanShape shape = shapes.get(i);
+            if (shapeOutlineDistance(shape, mx, my) <= SHAPE_HIT_TOLERANCE) return shape;
+        }
+        return null;
+    }
+
+    private double shapeOutlineDistance(PlanShape shape, double mx, double my) {
+        switch (shape.type) {
+            case RECTANGLE -> {
+                if (shape.points.size() < 2) return Double.MAX_VALUE;
+                double x1 = viewport.toScreenX(shape.points.get(0)[0], 0);
+                double y1 = viewport.toScreenY(shape.points.get(0)[1], 0);
+                double x2 = viewport.toScreenX(shape.points.get(1)[0], 0);
+                double y2 = viewport.toScreenY(shape.points.get(1)[1], 0);
+                return Math.min(
+                        Math.min(distToSegment(mx, my, x1, y1, x2, y1), distToSegment(mx, my, x2, y1, x2, y2)),
+                        Math.min(distToSegment(mx, my, x2, y2, x1, y2), distToSegment(mx, my, x1, y2, x1, y1)));
+            }
+            case CIRCLE -> {
+                if (shape.points.isEmpty()) return Double.MAX_VALUE;
+                double cx = viewport.toScreenX(shape.points.get(0)[0], 0);
+                double cy = viewport.toScreenY(shape.points.get(0)[1], 0);
+                double screenRadius = Math.max(2, Math.round(shape.radius * viewport.getZoom()));
+                return Math.abs(Math.hypot(mx - cx, my - cy) - screenRadius);
+            }
+            case LINE -> {
+                double best = Double.MAX_VALUE;
+                for (int i = 1; i < shape.points.size(); i++) {
+                    int[] a = shape.points.get(i - 1);
+                    int[] b = shape.points.get(i);
+                    best = Math.min(best, distToSegment(mx, my, viewport.toScreenX(a[0], 0),
+                            viewport.toScreenY(a[1], 0), viewport.toScreenX(b[0], 0), viewport.toScreenY(b[1], 0)));
+                }
+                return best;
+            }
+        }
+        return Double.MAX_VALUE;
+    }
+
+    private static double distToSegment(double px, double py, double x1, double y1, double x2, double y2) {
+        double dx = x2 - x1;
+        double dy = y2 - y1;
+        double lengthSq = dx * dx + dy * dy;
+        double t = lengthSq == 0 ? 0 : Mth.clamp(((px - x1) * dx + (py - y1) * dy) / lengthSq, 0, 1);
+        return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
     }
 
     private Waypoint hitTestWaypoint(double mx, double my) {
