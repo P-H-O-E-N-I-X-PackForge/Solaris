@@ -24,10 +24,11 @@ public final class JourneyMapSettingsImporter {
 
     private JourneyMapSettingsImporter() {}
 
-    public static String importSettings() {
+    /** Returns the names of the settings applied, or null when no JourneyMap config exists. */
+    public static List<String> apply() {
         Minecraft mc = Minecraft.getInstance();
         Path configDir = newestConfigDir(mc.gameDirectory.toPath().resolve("journeymap").resolve("config"));
-        if (configDir == null) return "No JourneyMap config found in this game directory.";
+        if (configDir == null) return null;
 
         List<String> applied = new ArrayList<>();
         JsonObject minimap = activeMinimap(configDir);
@@ -35,8 +36,7 @@ public final class JourneyMapSettingsImporter {
         applyFullmap(read(configDir.resolve("journeymap.fullmap.config")), applied);
         applyWaypoints(read(configDir.resolve("journeymap.waypoint.config")), applied);
 
-        if (applied.isEmpty()) return "JourneyMap config found, but nothing in it could be imported.";
-        return "Imported " + applied.size() + " JourneyMap setting(s): " + String.join(", ", applied);
+        return applied;
     }
 
     private static void applyMinimap(Minecraft mc, JsonObject minimap, List<String> applied) {
