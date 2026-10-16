@@ -198,7 +198,7 @@ public final class WaypointImporter {
         List<Waypoint> out = new ArrayList<>();
         String prefix = mc.getCurrentServer() != null ? "Multiplayer_" : "Singleplayer_";
         Path minimapRoot = gameDir.resolve("xaero").resolve("minimap");
-        // Older versions name world folders "Singleplayer_<name>"; 1.21.1 uses the bare name.
+        
         Path worldDir = findChild(minimapRoot, worldNames, prefix);
         if (worldDir == null) worldDir = findChild(minimapRoot, worldNames, "");
         if (worldDir == null) return out;
