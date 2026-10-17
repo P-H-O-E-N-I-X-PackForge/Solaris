@@ -42,6 +42,8 @@ public final class LiveChunkRefresh {
 
     private static boolean refreshPending = false;
 
+    private static net.minecraft.resources.ResourceLocation lastDimension = null;
+
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         if (refreshPending) {
@@ -54,6 +56,18 @@ public final class LiveChunkRefresh {
         LocalPlayer player = mc.player;
         Level level = mc.level;
         if (player == null || level == null) return;
+
+        // Switching dimensions doesn't fire LoggingIn, so anything queued for the previous dimension
+        // would otherwise be sampled against the new level and written under the old dimension's keys.
+        net.minecraft.resources.ResourceLocation currentDimension = level.dimension().location();
+        if (!currentDimension.equals(lastDimension)) {
+            lastDimension = currentDimension;
+            PENDING_SWEEP.clear();
+            sweepRefreshedAny = false;
+            tickCounter = 0;
+            taintedRetryTickCounter = 0;
+            ChunkColorEvents.onDimensionChanged();
+        }
 
         boolean writeEnabled = SolarisAPI.getFeatureState(SolarisAPI.FEATURE_WORLD_MAP, level.dimension().location())
                 .atLeast(SolarisFeatureState.ENABLED);
@@ -121,6 +135,15 @@ public final class LiveChunkRefresh {
         long sweepStart = SolarisProfiler.start();
         for (int i = 0; i < CHUNKS_PER_TICK_BUDGET && !PENDING_SWEEP.isEmpty(); i++) {
             ChunkKey key = PENDING_SWEEP.poll();
+            if (!key.dimension().equals(level.dimension().location())) continue;
+
+            // Edge-of-view chunks sample water colour/biome blending against neighbours that aren't loaded
+            // (the client reports those as plains), which gives off-colour water. If we already have data
+            // for this chunk, keep it until the neighbours are actually there.
+            if (!ChunkColorEvents.neighborsLoaded(level, key) &&
+                    (ChunkColorCache.contains(key) || PersistentChunkStore.get(key) != null)) {
+                continue;
+            }
             SolarisProfiler.time("chunkSample", () -> ChunkColorEvents.resample(level, key, key.toChunkPos()));
             sweepRefreshedAny = true;
         }
@@ -137,6 +160,7 @@ public final class LiveChunkRefresh {
 
         boolean refreshedAny = false;
         for (ChunkKey key : List.copyOf(ChunkColorEvents.FALLBACK_TAINTED)) {
+            if (!key.dimension().equals(level.dimension().location())) continue;
             if (!level.hasChunk(key.x(), key.z())) continue;
             ChunkColorSampler.ColorSample colorSample = ChunkColorSampler.sample(level, key.toChunkPos());
             ChunkColorSampler.HeightSample heightSample = ChunkColorSampler.sampleHeights(level, key.toChunkPos());

@@ -77,6 +77,22 @@ public class ChunkColorEvents {
 
     private static final Set<ChunkKey> PENDING_NEIGHBORS = new LinkedHashSet<>();
 
+    /** Drops queued work that belonged to the dimension we just left. */
+    static void onDimensionChanged() {
+        PENDING_NEIGHBORS.clear();
+    }
+
+    /** True if all 8 chunks around {@code key} are loaded (water blend radius never reaches past 1 chunk). */
+    static boolean neighborsLoaded(Level level, ChunkKey key) {
+        for (int dz = -1; dz <= 1; dz++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                if (dx == 0 && dz == 0) continue;
+                if (!level.hasChunk(key.x() + dx, key.z() + dz)) return false;
+            }
+        }
+        return true;
+    }
+
     static void drainNeighborResamples(Level level, int budget) {
         Iterator<ChunkKey> it = PENDING_NEIGHBORS.iterator();
         while (budget > 0 && it.hasNext()) {
