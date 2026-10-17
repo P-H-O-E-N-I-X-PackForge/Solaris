@@ -70,6 +70,7 @@ public class SolarisClientTickHandler {
                 mc.player.displayClientMessage(Component.literal("Waypoints aren't available here."), true);
                 continue;
             }
+            if (!WaypointManager.tryBeginPlacement()) continue;
             String name = "Waypoint " + (WaypointManager.getAll().size() + 1);
             Waypoint w = new Waypoint(name, mc.level.dimension().location(),
                     mc.player.getBlockX(), mc.player.getBlockY(), mc.player.getBlockZ(), "FFFFFFFF");
