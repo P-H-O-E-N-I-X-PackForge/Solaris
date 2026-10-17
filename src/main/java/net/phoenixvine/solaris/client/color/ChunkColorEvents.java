@@ -77,6 +77,48 @@ public class ChunkColorEvents {
 
     private static final Set<ChunkKey> PENDING_NEIGHBORS = new LinkedHashSet<>();
 
+    /** Outermost blocks on a side facing an unloaded chunk get replaced with data from just inside. */
+    private static final int EDGE_TRIM = 2;
+
+    /**
+     * Blocks along a chunk side whose neighbouring chunk isn't loaded can't be sampled reliably (biome and
+     * neighbour lookups return placeholders, which shows up as a thin off-colour line around the edge of
+     * explored terrain). Until that neighbour loads and the chunk is resampled, copy the nearest reliable
+     * blocks outward over them so the edge matches the terrain beside it.
+     */
+    static void trimUnloadedEdges(Level level, ChunkKey key, ChunkColorSampler.ColorSample c,
+                                  ChunkColorSampler.HeightSample h) {
+        boolean west = !level.hasChunk(key.x() - 1, key.z());
+        boolean east = !level.hasChunk(key.x() + 1, key.z());
+        boolean north = !level.hasChunk(key.x(), key.z() - 1);
+        boolean south = !level.hasChunk(key.x(), key.z() + 1);
+        if (!west && !east && !north && !south) return;
+
+        for (int step = 0; step < EDGE_TRIM; step++) {
+            for (int i = 0; i < 16; i++) {
+                if (west) copyCell(c, h, i * 16 + step, i * 16 + EDGE_TRIM);
+                if (east) copyCell(c, h, i * 16 + (15 - step), i * 16 + (15 - EDGE_TRIM));
+            }
+            for (int i = 0; i < 16; i++) {
+                if (north) copyCell(c, h, step * 16 + i, EDGE_TRIM * 16 + i);
+                if (south) copyCell(c, h, (15 - step) * 16 + i, (15 - EDGE_TRIM) * 16 + i);
+            }
+        }
+    }
+
+    private static void copyCell(ChunkColorSampler.ColorSample c, ChunkColorSampler.HeightSample h, int to,
+                                 int from) {
+        c.pixels[to] = c.pixels[from];
+        c.lightEmitting[to] = c.lightEmitting[from];
+        c.waterTint[to] = c.waterTint[from];
+        c.waterDepth[to] = c.waterDepth[from];
+        c.waterOcean[to] = c.waterOcean[from];
+        c.foliage[to] = c.foliage[from];
+        h.heights[to] = h.heights[from];
+        h.water[to] = h.water[from];
+        h.rails[to] = h.rails[from];
+    }
+
     /** Drops queued work that belonged to the dimension we just left. */
     static void onDimensionChanged() {
         PENDING_NEIGHBORS.clear();
@@ -107,6 +149,7 @@ public class ChunkColorEvents {
     public static void resample(Level level, ChunkKey key, net.minecraft.world.level.ChunkPos pos) {
         ChunkColorSampler.ColorSample colorSample = ChunkColorSampler.sample(level, pos);
         ChunkColorSampler.HeightSample heightSample = ChunkColorSampler.sampleHeights(level, pos);
+        trimUnloadedEdges(level, key, colorSample, heightSample);
 
         if (colorSample.hadFallback) {
             FALLBACK_TAINTED.add(key);

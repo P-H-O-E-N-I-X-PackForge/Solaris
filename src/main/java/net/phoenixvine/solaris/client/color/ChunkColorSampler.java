@@ -311,9 +311,18 @@ public final class ChunkColorSampler {
         return surfaceY - minY;
     }
 
+    /** Water tints with luminance below this get their gradient lifted (0..1 scale). */
+    private static final double DARK_WATER_LUMINANCE = 0.30;
+
     public static int compositeWaterTint(int tintPixel, int depth, boolean isOcean, int surfaceY) {
-        int shallowPixel = scaleBrightness(tintPixel, SHALLOW_BRIGHTNESS);
-        int deepPixel = scaleBrightness(tintPixel, ABYSS_BRIGHTNESS);
+        // Very dark water colours (modded dimensions, dark swamps) lose all detail when the deep end is
+        // scaled to 28% brightness: everything collapses to near-black and relief shading turns to noise.
+        // Lift both ends of the gradient in proportion to how dark the tint is.
+        double lum = ((tintPixel & 255) * 0.299 + (tintPixel >> 8 & 255) * 0.587 + (tintPixel >> 16 & 255) * 0.114) /
+                255.0;
+        double darkness = Mth.clamp((DARK_WATER_LUMINANCE - lum) / DARK_WATER_LUMINANCE, 0.0, 1.0);
+        int shallowPixel = scaleBrightness(tintPixel, SHALLOW_BRIGHTNESS + darkness * 0.9);
+        int deepPixel = scaleBrightness(tintPixel, ABYSS_BRIGHTNESS + darkness * 0.45);
 
         if (!isOcean) {
 

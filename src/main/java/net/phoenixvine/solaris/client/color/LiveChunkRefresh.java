@@ -164,6 +164,7 @@ public final class LiveChunkRefresh {
             if (!level.hasChunk(key.x(), key.z())) continue;
             ChunkColorSampler.ColorSample colorSample = ChunkColorSampler.sample(level, key.toChunkPos());
             ChunkColorSampler.HeightSample heightSample = ChunkColorSampler.sampleHeights(level, key.toChunkPos());
+            ChunkColorEvents.trimUnloadedEdges(level, key, colorSample, heightSample);
             if (colorSample.hadFallback) {
                 int attempts = ChunkColorEvents.FALLBACK_RETRY_COUNT.merge(key, 1, Integer::sum);
                 if (attempts >= MAX_FALLBACK_RETRIES) {
