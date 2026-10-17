@@ -24,8 +24,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -183,10 +183,9 @@ public final class PersistentChunkStore {
 
     private static boolean sameContent(Entry e, int[] pixels, int[] heights, boolean[] water, int[] waterTint,
                                        int[] waterDepth, boolean[] waterOcean, boolean[] foliage) {
-        return Arrays.equals(e.pixels, pixels) && Arrays.equals(e.heights, heights)
-                && Arrays.equals(e.water, water) && Arrays.equals(e.waterTint, waterTint)
-                && Arrays.equals(e.waterDepth, waterDepth) && Arrays.equals(e.waterOcean, waterOcean)
-                && Arrays.equals(e.foliage, foliage);
+        return Arrays.equals(e.pixels, pixels) && Arrays.equals(e.heights, heights) && Arrays.equals(e.water, water) &&
+                Arrays.equals(e.waterTint, waterTint) && Arrays.equals(e.waterDepth, waterDepth) &&
+                Arrays.equals(e.waterOcean, waterOcean) && Arrays.equals(e.foliage, foliage);
     }
 
     public static boolean putSharedIfAbsent(ChunkKey key, Entry entry) {
