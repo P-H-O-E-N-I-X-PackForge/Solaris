@@ -80,7 +80,7 @@ public class SolarisMapScreen extends Screen {
 
     private static final int PANEL_INSET = MARGIN - 4;
     private static final int BORDER_PAD = 4;
-    
+
     private static final int BUTTON_MARGIN = 14;
     private static final int IDEAL_BUTTON_R = 9;
     private static final int IDEAL_BUTTON_GAP = 4;

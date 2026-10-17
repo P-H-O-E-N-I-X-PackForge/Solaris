@@ -23,7 +23,6 @@ public class PhoenixSolaris {
     public static final Logger LOGGER = LogManager.getLogger();
 
     public PhoenixSolaris(IEventBus modEventBus, ModContainer modContainer) {
-        
         modContainer.registerConfig(ModConfig.Type.CLIENT, SolarisConfig.SPEC);
         modContainer.registerConfig(ModConfig.Type.SERVER, SolarisServerConfig.SPEC);
 

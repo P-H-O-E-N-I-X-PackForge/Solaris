@@ -62,7 +62,7 @@ public final class GuildWaypointService {
                         e.color(), e.icon(), e.category()));
             }
         }
-        
+
         PacketDistributor.sendToPlayer(player, new S2CGuildWaypointsPacket(out));
     }
 

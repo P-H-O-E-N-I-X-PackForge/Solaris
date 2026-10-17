@@ -45,7 +45,6 @@ public class C2SPingPacket implements CustomPacketPayload {
     }
 
     public static void handle(C2SPingPacket msg, IPayloadContext ctx) {
-        
         if (ctx.player() instanceof ServerPlayer sender) {
             PingService.handle(sender, msg.x, msg.y, msg.z);
         }

@@ -81,7 +81,6 @@ public final class SolarisPresets {
         return p;
     }
 
-    // Colour-only look: saturation / contrast / brightness / foliage brightness.
     private static Preset look(double saturation, double contrast, double brightness, double foliage) {
         Preset p = new Preset();
         p.saturation = saturation;

@@ -291,7 +291,7 @@ public final class SharedExplorationClient {
             Iterator<ChunkKey> it = WANTED.iterator();
             while (it.hasNext() && blobs.size() < maxBlobs && bytes < UPLOAD_MAX_BYTES) {
                 ChunkKey key = it.next();
-                it.remove(); 
+                it.remove();
 
                 synchronized (UPLOAD_QUEUE) {
                     UPLOAD_QUEUE.remove(key);

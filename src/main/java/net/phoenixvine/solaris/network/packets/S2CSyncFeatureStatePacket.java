@@ -24,7 +24,7 @@ public record S2CSyncFeatureStatePacket(
 
     public static final StreamCodec<RegistryFriendlyByteBuf, S2CSyncFeatureStatePacket> STREAM_CODEC = StreamCodec.of(
             (buf, packet) -> {
-                
+
                 buf.writeVarInt(packet.tiers().size());
                 for (Map.Entry<String, Integer> entry : packet.tiers().entrySet()) {
                     buf.writeUtf(entry.getKey(), 128);
@@ -48,7 +48,7 @@ public record S2CSyncFeatureStatePacket(
                 }
             },
             buf -> {
-                
+
                 int tierCount = buf.readVarInt();
                 Map<String, Integer> tierMap = new HashMap<>();
                 for (int i = 0; i < tierCount; i++) {

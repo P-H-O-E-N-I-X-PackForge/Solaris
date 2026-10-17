@@ -108,7 +108,7 @@ public final class ProgressionGates {
 
         ResourceLocation advancementId = ResourceLocation.tryParse(gateId);
         if (advancementId != null) {
-            
+
             AdvancementHolder advancement = server.getAdvancements().get(advancementId);
             if (advancement != null) {
                 return player.getAdvancements().getOrStartProgress(advancement).isDone();

@@ -70,6 +70,22 @@ public final class WaypointManager {
         return SolarisAPI.getFeatureState(SolarisAPI.FEATURE_WAYPOINTS, dimension).atLeast(SolarisFeatureState.ENABLED);
     }
 
+    /** Minimum gap between user-initiated waypoint creations (keybind spam, double-clicks). */
+    private static final long PLACE_COOLDOWN_NANOS = 500_000_000L;
+    private static long lastPlacementNanos = System.nanoTime() - PLACE_COOLDOWN_NANOS;
+
+    /**
+     * Call right before a user-initiated waypoint is created. Returns {@code false} if the last
+     * one was placed less than 0.5s ago, in which case the caller should skip creating it.
+     * Programmatic adds (death markers, imports, server packets) don't go through this.
+     */
+    public static boolean tryBeginPlacement() {
+        long now = System.nanoTime();
+        if (now - lastPlacementNanos < PLACE_COOLDOWN_NANOS) return false;
+        lastPlacementNanos = now;
+        return true;
+    }
+
     public static void add(Waypoint waypoint) {
         ensureLoaded();
         WAYPOINTS.add(waypoint);

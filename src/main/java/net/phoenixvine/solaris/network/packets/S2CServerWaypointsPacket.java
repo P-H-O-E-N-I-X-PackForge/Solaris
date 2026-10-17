@@ -66,7 +66,7 @@ public record S2CServerWaypointsPacket(List<S2CServerWaypointsPacket.Entry> entr
 
     public static void handle(final S2CServerWaypointsPacket packet, final IPayloadContext context) {
         context.enqueueWork(() -> {
-            
+
             ClientPacketHandlers.serverWaypoints(packet.entries());
         });
     }

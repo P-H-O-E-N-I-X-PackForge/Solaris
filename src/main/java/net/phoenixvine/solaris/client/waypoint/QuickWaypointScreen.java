@@ -166,6 +166,7 @@ public class QuickWaypointScreen extends Screen {
             onClose();
             return;
         }
+        if (!WaypointManager.tryBeginPlacement()) return;
         String name = nameBox.getValue().isBlank() ? "Waypoint" : nameBox.getValue();
         String color = colorBox.getValue().isBlank() ? "FFFFFFFF" : colorBox.getValue();
         int wx = coord(xBox, initialX);

@@ -451,6 +451,7 @@ public class WaypointListScreen extends Screen {
             mc.player.displayClientMessage(Component.literal("Waypoints aren't available here."), true);
             return;
         }
+        if (!WaypointManager.tryBeginPlacement()) return;
         List<Waypoint> existing = WaypointManager.getAll();
         String name = "Waypoint " + (existing.size() + 1);
         Waypoint w = new Waypoint(name, mc.level.dimension().location(),
