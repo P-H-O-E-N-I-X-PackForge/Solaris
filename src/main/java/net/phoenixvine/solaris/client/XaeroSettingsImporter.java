@@ -12,16 +12,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Copies the settings that have a Solaris equivalent out of Xaero's Minimap client profile
- * (config/xaero/minimap/profiles/&lt;profile&gt;.cfg and its info display file). Anything without a
- * counterpart is ignored.
- */
 public final class XaeroSettingsImporter {
 
     private XaeroSettingsImporter() {}
 
-    /** Returns the names of the settings applied, or null when no Xaero minimap profile exists. */
     public static List<String> apply() {
         Path root = Minecraft.getInstance().gameDirectory.toPath().resolve("config").resolve("xaero")
                 .resolve("minimap");
@@ -92,8 +86,7 @@ public final class XaeroSettingsImporter {
 
         Boolean lighting = bool(values, "minimap_lighting");
         if (lighting != null) {
-            // Lighting off means no night darkening; on keeps whatever darkness is already set
-            // (restoring Solaris's default if it had been zeroed).
+
             double current = SolarisConfig.NIGHT_MODE_STRENGTH.get();
             SolarisConfig.NIGHT_MODE_STRENGTH.set(lighting ? (current == 0.0 ? 0.35 : current) : 0.0);
             SolarisConfig.NIGHT_MODE_STRENGTH.save();
@@ -122,7 +115,6 @@ public final class XaeroSettingsImporter {
         return applied;
     }
 
-    // Lines look like "infoDisplay:<id>:<enabled>:<colour>:<...>".
     private static void applyInfoDisplay(Path file, List<String> applied) {
         if (!Files.isRegularFile(file)) return;
         Map<String, Boolean> enabled = new HashMap<>();

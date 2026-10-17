@@ -51,8 +51,6 @@ public final class LiveChunkRefresh {
         Level level = mc.level;
         if (player == null || level == null) return;
 
-        // Switching dimensions doesn't fire LoggingIn, so anything queued for the previous dimension
-        // would otherwise be sampled against the new level and written under the old dimension's keys.
         net.minecraft.resources.ResourceLocation currentDimension = level.dimension().location();
         if (!currentDimension.equals(lastDimension)) {
             lastDimension = currentDimension;
@@ -131,9 +129,6 @@ public final class LiveChunkRefresh {
             ChunkKey key = PENDING_SWEEP.poll();
             if (!key.dimension().equals(level.dimension().location())) continue;
 
-            // Edge-of-view chunks sample water colour/biome blending against neighbours that aren't loaded
-            // (the client reports those as plains), which gives off-colour water. If we already have data
-            // for this chunk, keep it until the neighbours are actually there.
             if (!ChunkColorEvents.neighborsLoaded(level, key) &&
                     (ChunkColorCache.contains(key) || PersistentChunkStore.get(key) != null)) {
                 continue;
@@ -158,6 +153,7 @@ public final class LiveChunkRefresh {
             if (!level.hasChunk(key.x(), key.z())) continue;
             ChunkColorSampler.ColorSample colorSample = ChunkColorSampler.sample(level, key.toChunkPos());
             ChunkColorSampler.HeightSample heightSample = ChunkColorSampler.sampleHeights(level, key.toChunkPos());
+            ChunkColorEvents.trimUnloadedEdges(level, key, colorSample, heightSample);
             if (colorSample.hadFallback) {
                 int attempts = ChunkColorEvents.FALLBACK_RETRY_COUNT.merge(key, 1, Integer::sum);
                 if (attempts >= MAX_FALLBACK_RETRIES) {

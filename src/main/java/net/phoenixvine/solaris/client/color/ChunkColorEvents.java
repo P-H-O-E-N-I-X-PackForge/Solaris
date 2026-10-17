@@ -77,12 +77,45 @@ public class ChunkColorEvents {
 
     private static final Set<ChunkKey> PENDING_NEIGHBORS = new LinkedHashSet<>();
 
-    /** Drops queued work that belonged to the dimension we just left. */
+    private static final int EDGE_TRIM = 2;
+
+    static void trimUnloadedEdges(Level level, ChunkKey key, ChunkColorSampler.ColorSample c,
+                                  ChunkColorSampler.HeightSample h) {
+        boolean west = !level.hasChunk(key.x() - 1, key.z());
+        boolean east = !level.hasChunk(key.x() + 1, key.z());
+        boolean north = !level.hasChunk(key.x(), key.z() - 1);
+        boolean south = !level.hasChunk(key.x(), key.z() + 1);
+        if (!west && !east && !north && !south) return;
+
+        for (int step = 0; step < EDGE_TRIM; step++) {
+            for (int i = 0; i < 16; i++) {
+                if (west) copyCell(c, h, i * 16 + step, i * 16 + EDGE_TRIM);
+                if (east) copyCell(c, h, i * 16 + (15 - step), i * 16 + (15 - EDGE_TRIM));
+            }
+            for (int i = 0; i < 16; i++) {
+                if (north) copyCell(c, h, step * 16 + i, EDGE_TRIM * 16 + i);
+                if (south) copyCell(c, h, (15 - step) * 16 + i, (15 - EDGE_TRIM) * 16 + i);
+            }
+        }
+    }
+
+    private static void copyCell(ChunkColorSampler.ColorSample c, ChunkColorSampler.HeightSample h, int to,
+                                 int from) {
+        c.pixels[to] = c.pixels[from];
+        c.lightEmitting[to] = c.lightEmitting[from];
+        c.waterTint[to] = c.waterTint[from];
+        c.waterDepth[to] = c.waterDepth[from];
+        c.waterOcean[to] = c.waterOcean[from];
+        c.foliage[to] = c.foliage[from];
+        h.heights[to] = h.heights[from];
+        h.water[to] = h.water[from];
+        h.rails[to] = h.rails[from];
+    }
+
     static void onDimensionChanged() {
         PENDING_NEIGHBORS.clear();
     }
 
-    /** True if all 8 chunks around {@code key} are loaded (water blend radius never reaches past 1 chunk). */
     static boolean neighborsLoaded(Level level, ChunkKey key) {
         for (int dz = -1; dz <= 1; dz++) {
             for (int dx = -1; dx <= 1; dx++) {
@@ -107,6 +140,7 @@ public class ChunkColorEvents {
     public static void resample(Level level, ChunkKey key, net.minecraft.world.level.ChunkPos pos) {
         ChunkColorSampler.ColorSample colorSample = ChunkColorSampler.sample(level, pos);
         ChunkColorSampler.HeightSample heightSample = ChunkColorSampler.sampleHeights(level, pos);
+        trimUnloadedEdges(level, key, colorSample, heightSample);
 
         if (colorSample.hadFallback) {
             FALLBACK_TAINTED.add(key);
