@@ -314,7 +314,6 @@ public final class ChunkColorSampler {
     private static final double DARK_WATER_LUMINANCE = 0.30;
 
     public static int compositeWaterTint(int tintPixel, int depth, boolean isOcean, int surfaceY) {
-
         double lum = ((tintPixel & 255) * 0.299 + (tintPixel >> 8 & 255) * 0.587 + (tintPixel >> 16 & 255) * 0.114) /
                 255.0;
         double darkness = Mth.clamp((DARK_WATER_LUMINANCE - lum) / DARK_WATER_LUMINANCE, 0.0, 1.0);

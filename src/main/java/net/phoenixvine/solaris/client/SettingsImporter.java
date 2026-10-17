@@ -7,7 +7,6 @@ public final class SettingsImporter {
     private SettingsImporter() {}
 
     public static String importAll() {
-        
         List<String> journeyMap = JourneyMapSettingsImporter.apply();
         List<String> xaero = XaeroSettingsImporter.apply();
 
