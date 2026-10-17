@@ -335,6 +335,16 @@ public final class ChunkColorSampler {
         return blendAbgr(shallowPixel, deepPixel, blendFactor);
     }
 
+    /**
+     * Biome at {@code pos}, or {@code fallback} if that chunk isn't loaded. The client reports biomes of
+     * unloaded chunks as plains, so blending against them tints the outermost explored chunks with plains
+     * colours (visible as off-colour bands along the edge of the map until you walk up to them).
+     */
+    private static Biome biomeOr(Level level, BlockPos.MutableBlockPos pos, Biome fallback) {
+        if (!level.hasChunk(pos.getX() >> 4, pos.getZ() >> 4)) return fallback;
+        return level.getBiome(pos).value();
+    }
+
     private static final int WATER_BLEND_STEP = 4;
 
     private static int blendedWaterColor(Level level, int worldX, int worldZ, int surfaceY, Biome centerBiome) {
@@ -353,7 +363,7 @@ public final class ChunkColorSampler {
                     rgb = centerBiome.getWaterColor();
                 } else {
                     samplePos.set(worldX + dx, surfaceY, worldZ + dz);
-                    rgb = level.getBiome(samplePos).value().getWaterColor();
+                    rgb = biomeOr(level, samplePos, centerBiome).getWaterColor();
                 }
                 r += rgb >> 16 & 255;
                 g += rgb >> 8 & 255;
@@ -380,7 +390,7 @@ public final class ChunkColorSampler {
             int sampleX = worldX + dxs[i];
             int sampleZ = worldZ + dzs[i];
             samplePos.set(sampleX, surfaceY, sampleZ);
-            int rgb = level.getBiome(samplePos).value().getGrassColor(sampleX, sampleZ);
+            int rgb = biomeOr(level, samplePos, centerBiome).getGrassColor(sampleX, sampleZ);
             r += rgb >> 16 & 255;
             g += rgb >> 8 & 255;
             b += rgb & 255;
@@ -401,7 +411,7 @@ public final class ChunkColorSampler {
         int[] dzs = { 0, 0, -LAND_BLEND_DISTANCE, LAND_BLEND_DISTANCE };
         for (int i = 0; i < dxs.length; i++) {
             samplePos.set(worldX + dxs[i], surfaceY, worldZ + dzs[i]);
-            int rgb = level.getBiome(samplePos).value().getFoliageColor();
+            int rgb = biomeOr(level, samplePos, centerBiome).getFoliageColor();
             r += rgb >> 16 & 255;
             g += rgb >> 8 & 255;
             b += rgb & 255;
