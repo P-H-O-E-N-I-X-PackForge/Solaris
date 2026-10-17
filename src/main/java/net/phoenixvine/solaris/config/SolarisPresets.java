@@ -23,6 +23,8 @@ public final class SolarisPresets {
 
     private SolarisPresets() {}
 
+    // Every field is nullable: a preset only changes the settings it actually defines, which keeps
+    // presets saved before a field existed loadable without zeroing the newer settings.
     private static final class Preset {
 
         Double saturation;
@@ -45,6 +47,7 @@ public final class SolarisPresets {
         Double hillshadingStrength;
     }
 
+    // Mirrors the SolarisConfig defaults, so loading it undoes any colour/lighting tweaks.
     private static Preset solarisDefault() {
         Preset p = new Preset();
         p.saturation = 0.85;
@@ -68,6 +71,7 @@ public final class SolarisPresets {
         return p;
     }
 
+    // The sampled block colours with no saturation/contrast/brightness/tint adjustment at all.
     private static Preset unadjustedColors() {
         Preset p = new Preset();
         p.saturation = 1.0;
@@ -81,6 +85,7 @@ public final class SolarisPresets {
         return p;
     }
 
+    // Colour-only look: saturation / contrast / brightness / foliage brightness.
     private static Preset look(double saturation, double contrast, double brightness, double foliage) {
         Preset p = new Preset();
         p.saturation = saturation;
@@ -134,6 +139,7 @@ public final class SolarisPresets {
         return builtIn(name) != null;
     }
 
+    /** True when deleting the name would remove something (a user preset rather than a built-in). */
     public static boolean isDeletable(String name) {
         ensureLoaded();
         return presets.containsKey(name);

@@ -24,8 +24,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -93,16 +93,18 @@ public final class PersistentChunkStore {
         }
     }
 
+    /** Chunks per region side is 1 << REGION_SHIFT (32x32 chunks per region file, same as vanilla). */
     private static final int REGION_SHIFT = 5;
 
+    /** Don't submit routine background saves more often than this. Logout flushes ignore it. */
     private static final long MIN_SAVE_INTERVAL_MS = 30_000L;
 
     private static final Map<String, ConcurrentHashMap<ChunkKey, Entry>> DIMENSIONS = new ConcurrentHashMap<>();
     private static final Set<String> LOADING = ConcurrentHashMap.newKeySet();
-
+    /** dimension -> region keys that changed since they were last written. Guarded by itself. */
     private static final Map<String, Set<Long>> DIRTY_REGIONS = new HashMap<>();
     private static final Set<String> SAVING = ConcurrentHashMap.newKeySet();
-
+    /** Dimensions that were loaded from the old single-file format and still need migrating. */
     private static final Set<String> LEGACY_PENDING = ConcurrentHashMap.newKeySet();
     private static volatile long lastSubmitMillis = 0L;
     private static String loadedWorldKey = null;
@@ -163,6 +165,8 @@ public final class PersistentChunkStore {
         ConcurrentHashMap<ChunkKey, Entry> chunks = DIMENSIONS.computeIfAbsent(dimension,
                 d -> new ConcurrentHashMap<>());
 
+        // The live-refresh sweep resamples every nearby chunk on a timer, and most of the time nothing
+        // changed. Don't mark anything dirty (and so don't rewrite anything) unless the data differs.
         Entry existing = chunks.get(key);
         if (existing != null && sameContent(existing, pixels, heights, water, waterTint, waterDepth,
                 waterOcean, foliage)) {
@@ -179,9 +183,10 @@ public final class PersistentChunkStore {
 
     private static boolean sameContent(Entry e, int[] pixels, int[] heights, boolean[] water, int[] waterTint,
                                        int[] waterDepth, boolean[] waterOcean, boolean[] foliage) {
-        return Arrays.equals(e.pixels, pixels) && Arrays.equals(e.heights, heights) && Arrays.equals(e.water, water) &&
-                Arrays.equals(e.waterTint, waterTint) && Arrays.equals(e.waterDepth, waterDepth) &&
-                Arrays.equals(e.waterOcean, waterOcean) && Arrays.equals(e.foliage, foliage);
+        return Arrays.equals(e.pixels, pixels) && Arrays.equals(e.heights, heights)
+                && Arrays.equals(e.water, water) && Arrays.equals(e.waterTint, waterTint)
+                && Arrays.equals(e.waterDepth, waterDepth) && Arrays.equals(e.waterOcean, waterOcean)
+                && Arrays.equals(e.foliage, foliage);
     }
 
     public static boolean putSharedIfAbsent(ChunkKey key, Entry entry) {
@@ -273,6 +278,8 @@ public final class PersistentChunkStore {
                 return existing;
             });
 
+            // Data that came from the old single-file format has no region files yet: mark every region
+            // it touches dirty so the first save writes them all, then the old file gets archived.
             if (Files.exists(legacyFileFor(worldKey, dimension))) {
                 LEGACY_PENDING.add(dimension);
                 for (ChunkKey key : loaded.keySet()) markRegionDirty(dimension, regionKey(key.x(), key.z()));
@@ -297,6 +304,7 @@ public final class PersistentChunkStore {
             }
         }
 
+        // Old single-file format: anything not already in a region file.
         Path legacy = legacyFileFor(worldKey, dimension);
         if (Files.exists(legacy)) {
             ConcurrentHashMap<ChunkKey, Entry> old = new ConcurrentHashMap<>();
@@ -377,6 +385,7 @@ public final class PersistentChunkStore {
         }
     }
 
+    /** Rewrites only the given regions of a dimension. Everything else on disk is left alone. */
     private static void writeRegions(String worldKey, String dimension, Map<ChunkKey, Entry> chunks,
                                      Set<Long> regions) {
         Map<Long, List<Map.Entry<ChunkKey, Entry>>> byRegion = new HashMap<>();

@@ -311,9 +311,13 @@ public final class ChunkColorSampler {
         return surfaceY - minY;
     }
 
+    /** Water tints with luminance below this get their gradient lifted (0..1 scale). */
     private static final double DARK_WATER_LUMINANCE = 0.30;
 
     public static int compositeWaterTint(int tintPixel, int depth, boolean isOcean, int surfaceY) {
+        // Very dark water colours (modded dimensions, dark swamps) lose all detail when the deep end is
+        // scaled to 28% brightness: everything collapses to near-black and relief shading turns to noise.
+        // Lift both ends of the gradient in proportion to how dark the tint is.
         double lum = ((tintPixel & 255) * 0.299 + (tintPixel >> 8 & 255) * 0.587 + (tintPixel >> 16 & 255) * 0.114) /
                 255.0;
         double darkness = Mth.clamp((DARK_WATER_LUMINANCE - lum) / DARK_WATER_LUMINANCE, 0.0, 1.0);
@@ -340,6 +344,11 @@ public final class ChunkColorSampler {
         return blendAbgr(shallowPixel, deepPixel, blendFactor);
     }
 
+    /**
+     * Biome at {@code pos}, or {@code fallback} if that chunk isn't loaded. The client reports biomes of
+     * unloaded chunks as plains, so blending against them tints the outermost explored chunks with plains
+     * colours (visible as off-colour bands along the edge of the map until you walk up to them).
+     */
     private static Biome biomeOr(Level level, BlockPos.MutableBlockPos pos, Biome fallback) {
         if (!level.hasChunk(pos.getX() >> 4, pos.getZ() >> 4)) return fallback;
         return level.getBiome(pos).value();

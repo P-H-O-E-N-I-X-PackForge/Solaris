@@ -16,10 +16,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+/**
+ * Copies the settings that have a Solaris equivalent out of JourneyMap's config files in the game
+ * directory (journeymap/config/&lt;version&gt;/*.config). Anything without a counterpart is ignored.
+ */
 public final class JourneyMapSettingsImporter {
 
     private JourneyMapSettingsImporter() {}
 
+    /** Returns the names of the settings applied, or null when no JourneyMap config exists. */
     public static List<String> apply() {
         Minecraft mc = Minecraft.getInstance();
         Path configDir = newestConfigDir(mc.gameDirectory.toPath().resolve("journeymap").resolve("config"));
@@ -140,6 +145,8 @@ public final class JourneyMapSettingsImporter {
         }
     }
 
+    // JourneyMap's defaults for the tweaks below; Solaris's own defaults correspond to these, so
+    // values are scaled relative to them rather than copied across unrelated units.
     private static final double JM_DEFAULT_MOONLIGHT = 3.5;
     private static final double SOLARIS_DEFAULT_NIGHT_STRENGTH = 0.35;
     private static final double JM_DEFAULT_SLOPE_RANGE = 1.2 - 0.65;
@@ -196,6 +203,7 @@ public final class JourneyMapSettingsImporter {
         }
     }
 
+    // "5.10" must sort above "5.9", so compare numerically per segment.
     private static int compareVersions(Path a, Path b) {
         List<Integer> left = versionKey(a);
         List<Integer> right = versionKey(b);
