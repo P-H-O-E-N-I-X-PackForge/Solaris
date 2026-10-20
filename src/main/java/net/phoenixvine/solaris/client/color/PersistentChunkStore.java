@@ -157,8 +157,9 @@ public final class PersistentChunkStore {
         return DIMENSIONS.containsKey(dimension);
     }
 
-    public static void put(ChunkKey key, int[] pixels, int[] heights, boolean[] water, int[] waterTint,
-                           int[] waterDepth, boolean[] waterOcean, boolean[] foliage) {
+    /** Returns true when the stored data was new or different, false when it was already identical. */
+    public static boolean put(ChunkKey key, int[] pixels, int[] heights, boolean[] water, int[] waterTint,
+                              int[] waterDepth, boolean[] waterOcean, boolean[] foliage) {
         String dimension = key.dimension().toString();
         ensureLoading(dimension);
 
@@ -171,7 +172,7 @@ public final class PersistentChunkStore {
         if (existing != null && sameContent(existing, pixels, heights, water, waterTint, waterDepth,
                 waterOcean, foliage)) {
             existing.touch();
-            return;
+            return false;
         }
 
         Entry previous = chunks.put(key, new Entry(pixels, heights, water, waterTint, waterDepth, waterOcean,
@@ -179,6 +180,7 @@ public final class PersistentChunkStore {
         markRegionDirty(dimension, regionKey(key.x(), key.z()));
 
         if (previous == null) SharedExplorationClient.onLocalChunk(key);
+        return true;
     }
 
     private static boolean sameContent(Entry e, int[] pixels, int[] heights, boolean[] water, int[] waterTint,

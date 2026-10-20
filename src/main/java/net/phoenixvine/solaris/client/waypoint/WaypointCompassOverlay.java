@@ -27,10 +27,7 @@ public class WaypointCompassOverlay {
 
         if (mc.player == null || mc.level == null || mc.options.hideGui || mc.screen != null) return;
 
-        Waypoint target = WaypointManager.getTracked();
-        if (target == null || !target.dimension.equals(mc.level.dimension().location().toString())) {
-            target = nearest(mc);
-        }
+        Waypoint target = chooseTarget(mc);
         if (target == null) return;
 
         double dx = (target.x + 0.5) - mc.player.getX();
@@ -50,6 +47,30 @@ public class WaypointCompassOverlay {
         String label = target.name + " (" + Math.round(distance) + "m)";
         int textWidth = mc.font.width(label);
         g.drawString(mc.font, label, cx - textWidth / 2, cy + 10, C_TEXT);
+    }
+
+    private static Waypoint chooseTarget(Minecraft mc) {
+        Waypoint target = null;
+        switch (SolarisConfig.WAYPOINT_COMPASS_TARGET.get()) {
+            case NEWEST -> target = newest(mc);
+            case TRACKED -> {
+                Waypoint tracked = WaypointManager.getTracked();
+                if (tracked != null && tracked.dimension.equals(mc.level.dimension().location().toString())) {
+                    target = tracked;
+                }
+            }
+            case NEAREST -> {}
+        }
+        return target != null ? target : nearest(mc);
+    }
+
+    private static Waypoint newest(Minecraft mc) {
+        List<Waypoint> visible = WaypointManager.getVisibleForDimension(mc.level.dimension().location());
+        List<Waypoint> all = WaypointManager.getAll();
+        for (int i = all.size() - 1; i >= 0; i--) {
+            if (visible.contains(all.get(i))) return all.get(i);
+        }
+        return null;
     }
 
     private static Waypoint nearest(Minecraft mc) {

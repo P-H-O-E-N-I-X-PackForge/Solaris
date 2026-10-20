@@ -51,6 +51,7 @@ import net.phoenixvine.solaris.client.waypoint.Waypoint;
 import net.phoenixvine.solaris.client.waypoint.WaypointIconManager;
 import net.phoenixvine.solaris.client.waypoint.WaypointListScreen;
 import net.phoenixvine.solaris.client.waypoint.WaypointManager;
+import net.phoenixvine.solaris.client.waypoint.WaypointPlacement;
 import net.phoenixvine.solaris.common.SharedExplorationClient;
 import net.phoenixvine.solaris.config.SolarisConfig;
 import net.phoenixvine.solaris.integration.gtceu.GtceuIntegration;
@@ -1418,7 +1419,7 @@ public class SolarisMapScreen extends Screen {
             centroidX = drawAnchor[0];
             centroidZ = drawAnchor[1];
         }
-        int baseY = mc.level.getHeight(Heightmap.Types.WORLD_SURFACE, centroidX, centroidZ) - 1;
+        int baseY = WaypointPlacement.groundY(mc.level, centroidX, centroidZ, playerYHint(mc));
 
         drawAnchor = null;
         drawCurrent = null;
@@ -1440,11 +1441,15 @@ public class SolarisMapScreen extends Screen {
         }
         int centroidX = sumX / points.size();
         int centroidZ = sumZ / points.size();
-        int baseY = mc.level.getHeight(Heightmap.Types.WORLD_SURFACE, centroidX, centroidZ) - 1;
+        int baseY = WaypointPlacement.groundY(mc.level, centroidX, centroidZ, playerYHint(mc));
 
         lineDrawPoints.clear();
         Minecraft.getInstance().setScreen(new QuickPlanShapeScreen(this, mc.level.dimension().location(),
                 PlanShape.Type.LINE, points, 0, baseY));
+    }
+
+    private static int playerYHint(Minecraft mc) {
+        return mc.player != null ? mc.player.getBlockY() : 64;
     }
 
     private void handleRightClick(double mx, double my) {
@@ -1484,7 +1489,7 @@ public class SolarisMapScreen extends Screen {
         int blockX = (int) Math.floor(viewport.toWorldX(mx, 0));
         int blockZ = (int) Math.floor(viewport.toWorldZ(my, 0));
 
-        int blockY = mc.level.getHeight(Heightmap.Types.WORLD_SURFACE, blockX, blockZ) - 1;
+        int blockY = WaypointPlacement.groundY(mc.level, blockX, blockZ, playerYHint(mc));
 
         Minecraft.getInstance().setScreen(
                 new QuickWaypointScreen(this, mc.level.dimension().location(), blockX, blockY, blockZ));
@@ -1587,7 +1592,7 @@ public class SolarisMapScreen extends Screen {
 
         int blockX = (int) Math.floor(sp.u * size - radiusPixels + (anchorChunkX << 4));
         int blockZ = (int) Math.floor(sp.v * size - radiusPixels + (anchorChunkZ << 4));
-        int blockY = mc.level.getHeight(Heightmap.Types.WORLD_SURFACE, blockX, blockZ) - 1;
+        int blockY = WaypointPlacement.groundY(mc.level, blockX, blockZ, playerYHint(mc));
 
         Minecraft.getInstance().setScreen(
                 new QuickWaypointScreen(this, mc.level.dimension().location(), blockX, blockY, blockZ));
