@@ -2,18 +2,14 @@ package net.phoenixvine.solaris.integration.kineticwaypoints;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.ModList;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.minecraft.world.phys.Vec3;
 import net.phoenixvine.solaris.PhoenixSolaris;
-import net.phoenixvine.solaris.api.SolarisMarkerSyncEvent;
-import net.phoenixvine.solaris.api.SolarisMarkers;
+import net.phoenixvine.solaris.integration.MarkerSync;
+import net.phoenixvine.solaris.integration.ModMarkerSource;
+import net.phoenixvine.solaris.integration.ModPresence;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -27,101 +23,51 @@ import java.util.UUID;
  * Solaris doesn't need that mod to build or run, and the mod's own visibility rules stay the single
  * source of truth.
  */
-@EventBusSubscriber()
-public final class KineticWaypointsIntegration {
+public final class KineticWaypointsIntegration implements ModMarkerSource {
 
     public static final String MOD_ID = "create_kinetic_waypoints";
+    public static final KineticWaypointsIntegration INSTANCE = new KineticWaypointsIntegration();
 
-    private static final String KEY_PREFIX = MOD_ID + ":";
-    private static final String CATEGORY = "Kinetic Waypoints";
-    private static final String COLOR = "E0A030";
-    private static final String ICON = "STAR";
-    private static final int SYNC_INTERVAL_TICKS = 100;
+    private final MarkerSync markers = new MarkerSync("E0A030", "STAR", "Kinetic Waypoints");
 
-    // player -> marker key -> what was last sent for it, so only changes and removals cost a packet
-    private static final Map<UUID, Map<String, String>> SENT = new HashMap<>();
-
-    private static Bridge bridge;
-    private static boolean bridgeFailed = false;
+    private Bridge bridge;
+    private boolean failed = false;
 
     private KineticWaypointsIntegration() {}
 
-    public static boolean isAvailable() {
-        return ModList.get().isLoaded(MOD_ID);
+    @Override
+    public boolean isAvailable() {
+        return ModPresence.isLoaded(MOD_ID);
     }
 
-    @SubscribeEvent
-    public static void onMarkerSync(SolarisMarkerSyncEvent event) {
-        SENT.remove(event.getPlayer().getUUID());
-        sync(event.getPlayer());
+    @Override
+    public void reset(UUID player) {
+        markers.reset(player);
     }
 
-    @SubscribeEvent
-    public static void onPlayerTick(PlayerTickEvent.Post event) {
-        if (event.getEntity() instanceof ServerPlayer player && player.tickCount % SYNC_INTERVAL_TICKS == 0) {
-            sync(player);
-        }
-    }
-
-    @SubscribeEvent
-    public static void onLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        SENT.remove(event.getEntity().getUUID());
-    }
-
-    private static void sync(ServerPlayer player) {
-        if (bridgeFailed || !isAvailable()) return;
-
-        Bridge b = bridge();
-        if (b == null) return;
+    @Override
+    public void sync(ServerPlayer player) {
+        if (failed || !isAvailable()) return;
 
         try {
-            Map<String, String> previous = SENT.computeIfAbsent(player.getUUID(), id -> new HashMap<>());
-            Map<String, String> current = new HashMap<>();
+            if (bridge == null) bridge = new Bridge();
 
-            for (Object record : b.records(player.serverLevel())) {
-                if (!b.canSee(player, record)) continue;
+            Map<String, MarkerSync.Marker> desired = new HashMap<>();
+            for (Object record : bridge.records(player.serverLevel())) {
+                if (!bridge.canSee(player, record)) continue;
 
-                String key = KEY_PREFIX + b.id(record);
-                String rawName = b.name(record);
+                String rawName = bridge.name(record);
                 String name = rawName == null || rawName.isBlank() ? "Kinetic Waypoint" : rawName;
-                ResourceLocation dimension = b.dimension(record).location();
-                BlockPos pos = b.pos(record);
-                String signature = name + "|" + dimension + "|" + pos.asLong();
-                current.put(key, signature);
-
-                if (!signature.equals(previous.get(key))) {
-                    SolarisMarkers.marker(key)
-                            .name(name)
-                            .at(dimension, pos.getX(), pos.getY(), pos.getZ())
-                            .color(COLOR)
-                            .icon(ICON)
-                            .category(CATEGORY)
-                            .sendTo(player);
-                }
+                ResourceKey<Level> dimension = bridge.dimension(record);
+                desired.put(MOD_ID + ":" + bridge.id(record),
+                        new MarkerSync.Marker(name, dimension.location(), bridge.position(player, record)));
             }
-
-            for (String key : previous.keySet()) {
-                if (!current.containsKey(key)) SolarisMarkers.remove(player, key);
-            }
-            previous.clear();
-            previous.putAll(current);
+            markers.apply(player, desired);
         } catch (ReflectiveOperationException | RuntimeException e) {
-            bridgeFailed = true;
-            PhoenixSolaris.LOGGER.error("Create: Kinetic Waypoints is present but reading its waypoints failed; " +
-                    "they won't be shown on the map this session.", e);
+            failed = true;
+            PhoenixSolaris.LOGGER.error("Create: Kinetic Waypoints is present but reading its waypoints failed " +
+                    "(its API may not match what Solaris expects); they won't be shown on the map this session.", e);
         }
-    }
-
-    private static Bridge bridge() {
-        if (bridge != null) return bridge;
-        try {
-            bridge = new Bridge();
-        } catch (ReflectiveOperationException e) {
-            bridgeFailed = true;
-            PhoenixSolaris.LOGGER.error("Create: Kinetic Waypoints is present but its API didn't match what " +
-                    "Solaris expects; its waypoints won't be shown on the map.", e);
-        }
-        return bridge;
     }
 
     private static final class Bridge {
@@ -135,6 +81,10 @@ public final class KineticWaypointsIntegration {
         private final Method name;
         private final Method dimension;
         private final Method pos;
+        // Newer versions can have waypoints on moving structures, whose stored pos is local to
+        // that structure; the resolver turns it into a real world position. Absent in older ones.
+        private final Method resolve;
+        private final Method resolvedGlobalPosition;
 
         Bridge() throws ReflectiveOperationException {
             Class<?> savedData = Class.forName(NETWORK + "WaypointNetworkSavedData");
@@ -148,6 +98,17 @@ public final class KineticWaypointsIntegration {
             name = record.getMethod("name");
             dimension = record.getMethod("dimension");
             pos = record.getMethod("pos");
+
+            Method resolveMethod = null;
+            Method globalMethod = null;
+            try {
+                Class<?> resolver = Class.forName(NETWORK + "WaypointPositionResolver");
+                Class<?> resolved = Class.forName(NETWORK + "WaypointPositionResolver$ResolvedWaypoint");
+                resolveMethod = resolver.getMethod("resolve", ServerLevel.class, record);
+                globalMethod = resolved.getMethod("globalPosition");
+            } catch (ReflectiveOperationException ignored) {}
+            resolve = resolveMethod;
+            resolvedGlobalPosition = globalMethod;
         }
 
         @SuppressWarnings("unchecked")
@@ -172,7 +133,17 @@ public final class KineticWaypointsIntegration {
             return (ResourceKey<Level>) dimension.invoke(record);
         }
 
-        BlockPos pos(Object record) throws ReflectiveOperationException {
+        BlockPos position(ServerPlayer player, Object record) throws ReflectiveOperationException {
+            if (resolve != null) {
+                ServerLevel level = player.server.getLevel(dimension(record));
+                if (level != null) {
+                    Object resolved = resolve.invoke(null, level, record);
+                    if (resolved != null) {
+                        Vec3 global = (Vec3) resolvedGlobalPosition.invoke(resolved);
+                        if (global != null) return BlockPos.containing(global);
+                    }
+                }
+            }
             return (BlockPos) pos.invoke(record);
         }
     }
