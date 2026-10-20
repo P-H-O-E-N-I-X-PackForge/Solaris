@@ -207,6 +207,10 @@ dependencies {
     compileOnly("curse.maven:kubejs-238086:8843626")
     compileOnly("curse.maven:rhino-416294:8463898")
 
+    // Optional integrations (compile-only; the mods are not required at runtime)
+    compileOnly("curse.maven:create-kinetic-waypoints-1610005:8753462")
+    compileOnly("curse.maven:waystones-245755:8969751")
+
 
 
 
