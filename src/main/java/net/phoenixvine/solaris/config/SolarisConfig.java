@@ -45,6 +45,7 @@ public final class SolarisConfig {
     public static final ModConfigSpec.BooleanValue WAYPOINT_BEAMS;
     public static final ModConfigSpec.IntValue WAYPOINT_BEAM_RANGE;
     public static final ModConfigSpec.BooleanValue WAYPOINT_COMPASS;
+    public static final ModConfigSpec.EnumValue<CompassTarget> WAYPOINT_COMPASS_TARGET;
     public static final ModConfigSpec.BooleanValue DEATH_MARKERS;
     public static final ModConfigSpec.BooleanValue AUTO_STRUCTURE_WAYPOINTS;
     public static final ModConfigSpec.BooleanValue SHOW_PLAN_SHAPES;
@@ -368,6 +369,11 @@ public final class SolarisConfig {
                         "nearest one, if none is explicitly tracked). Lets you navigate toward it without " +
                         "opening the map.")
                 .define("compass", true);
+        WAYPOINT_COMPASS_TARGET = builder
+                .comment("Which waypoint the HUD compass points at. TRACKED = the one you marked \"Track\" in " +
+                        "the waypoint list (nearest if none), NEAREST = always the closest, NEWEST = the " +
+                        "waypoint you added most recently in this dimension.")
+                .defineEnum("compassTarget", CompassTarget.TRACKED);
         DEATH_MARKERS = builder
                 .comment("Automatically add a waypoint at your position whenever you die, so you can find " +
                         "your way back to lost items.")

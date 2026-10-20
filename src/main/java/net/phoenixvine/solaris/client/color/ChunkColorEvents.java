@@ -146,7 +146,8 @@ public class ChunkColorEvents {
         }
     }
 
-    public static void resample(Level level, ChunkKey key, net.minecraft.world.level.ChunkPos pos) {
+    /** Returns true when the chunk's map data was new or actually different from what we already had. */
+    public static boolean resample(Level level, ChunkKey key, net.minecraft.world.level.ChunkPos pos) {
         ChunkColorSampler.ColorSample colorSample = ChunkColorSampler.sample(level, pos);
         ChunkColorSampler.HeightSample heightSample = ChunkColorSampler.sampleHeights(level, pos);
         trimUnloadedEdges(level, key, colorSample, heightSample);
@@ -154,12 +155,13 @@ public class ChunkColorEvents {
         if (colorSample.hadFallback) {
             FALLBACK_TAINTED.add(key);
 
-            if (ChunkColorCache.contains(key) || PersistentChunkStore.get(key) != null) return;
+            if (ChunkColorCache.contains(key) || PersistentChunkStore.get(key) != null) return false;
         } else {
             FALLBACK_TAINTED.remove(key);
         }
 
-        if (!ChunkColorCache.contains(key)) SolarisTexture.markChunkDataChanged();
+        boolean cachedBefore = ChunkColorCache.contains(key);
+        if (!cachedBefore) SolarisTexture.markChunkDataChanged();
 
         ChunkColorCache.put(key, colorSample.pixels);
         ChunkLightCache.put(key, colorSample.lightEmitting);
@@ -171,8 +173,10 @@ public class ChunkColorEvents {
         ChunkWaterOceanCache.put(key, colorSample.waterOcean);
         ChunkFoliageCache.put(key, colorSample.foliage);
 
-        PersistentChunkStore.put(key, colorSample.pixels, heightSample.heights, heightSample.water,
-                colorSample.waterTint, colorSample.waterDepth, colorSample.waterOcean, colorSample.foliage);
-        MapTileCache.markDirty(key);
+        boolean changed = PersistentChunkStore.put(key, colorSample.pixels, heightSample.heights,
+                heightSample.water, colorSample.waterTint, colorSample.waterDepth, colorSample.waterOcean,
+                colorSample.foliage) || !cachedBefore;
+        if (changed) MapTileCache.markDirty(key);
+        return changed;
     }
 }

@@ -144,8 +144,9 @@ public final class LiveChunkRefresh {
                     (ChunkColorCache.contains(key) || PersistentChunkStore.get(key) != null)) {
                 continue;
             }
-            SolarisProfiler.time("chunkSample", () -> ChunkColorEvents.resample(level, key, key.toChunkPos()));
-            sweepRefreshedAny = true;
+            Boolean changed = SolarisProfiler.time("chunkSample",
+                    () -> ChunkColorEvents.resample(level, key, key.toChunkPos()));
+            if (Boolean.TRUE.equals(changed)) sweepRefreshedAny = true;
         }
         SolarisProfiler.end("liveRefreshSweep:batch", sweepStart);
 
