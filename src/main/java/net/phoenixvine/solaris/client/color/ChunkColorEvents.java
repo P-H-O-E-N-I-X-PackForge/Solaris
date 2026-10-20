@@ -9,6 +9,7 @@ import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
+import net.phoenixvine.solaris.client.DimensionModes;
 import net.phoenixvine.solaris.client.perf.SolarisProfiler;
 import net.phoenixvine.solaris.client.render.MapTileCache;
 import net.phoenixvine.solaris.client.render.SolarisTexture;
@@ -57,7 +58,7 @@ public class ChunkColorEvents {
         if (!(event.getLevel() instanceof Level level) || !level.isClientSide()) return;
         if (!(event.getChunk() instanceof net.minecraft.world.level.chunk.LevelChunk)) return;
 
-        if (level.dimensionType().hasCeiling()) return;
+        if (DimensionModes.isCaveDimension(level)) return;
 
         if (!SolarisAPI.getFeatureState(SolarisAPI.FEATURE_WORLD_MAP, level.dimension().location())
                 .atLeast(SolarisFeatureState.ENABLED)) {

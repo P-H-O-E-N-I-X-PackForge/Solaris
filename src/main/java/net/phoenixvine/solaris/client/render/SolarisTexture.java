@@ -14,6 +14,7 @@ import net.minecraft.world.level.Level;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
+import net.phoenixvine.solaris.client.DimensionModes;
 import net.phoenixvine.solaris.client.SolarisThemeUtils;
 import net.phoenixvine.solaris.client.color.CaveColorSampler;
 import net.phoenixvine.solaris.client.color.ChunkColorCache;
@@ -196,7 +197,7 @@ public class SolarisTexture implements AutoCloseable {
             return false;
         }
 
-        if (level.dimensionType().hasCeiling()) return true;
+        if (DimensionModes.isCaveDimension(level)) return true;
 
         if (player != null && SolarisConfig.MINIMAP_AUTO_UNDERGROUND.get() &&
                 !level.canSeeSky(player.blockPosition())) {

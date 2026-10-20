@@ -71,6 +71,8 @@ public final class SolarisConfig {
     public static final ModConfigSpec.IntValue MINIMAP_MAX_WAYPOINTS;
     public static final ModConfigSpec.BooleanValue MINIMAP_SHOW_WAYPOINT_DIRECTIONS;
     public static final ModConfigSpec.BooleanValue MINIMAP_AUTO_UNDERGROUND;
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> CAVE_MODE_DIMENSIONS;
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SURFACE_MODE_DIMENSIONS;
     public static final ModConfigSpec.BooleanValue MINIMAP_SHOW_TEXT_LABELS;
     public static final ModConfigSpec.BooleanValue SHOW_CLAIMS_MINIMAP;
     public static final ModConfigSpec.BooleanValue SHOW_CHUNK_GRID;
@@ -140,6 +142,15 @@ public final class SolarisConfig {
                         "same as it already does unconditionally in ceilinged dimensions like the Nether. " +
                         "Turn off to keep the minimap on the surface render even while underground.")
                 .define("autoUnderground", false);
+        CAVE_MODE_DIMENSIONS = builder
+                .comment("Dimensions to map in cave (layer-by-layer) mode, like the Nether, even though they " +
+                        "don't report a ceiling. Entries are dimension ids (\"the_bumblezone:the_bumblezone\") " +
+                        "or a whole mod namespace (\"the_bumblezone:*\").")
+                .defineList("caveModeDimensions", java.util.List.of(), o -> o instanceof String);
+        SURFACE_MODE_DIMENSIONS = builder
+                .comment("Dimensions to map as an open-sky surface map even if they report a ceiling. Takes " +
+                        "priority over caveModeDimensions. Same entry format.")
+                .defineList("surfaceModeDimensions", java.util.List.of(), o -> o instanceof String);
         MINIMAP_SHOW_TEXT_LABELS = builder
                 .comment("Prefix the minimap's time/coords lines with their labels (\"Time: 20:13\", " +
                         "\"x: -219, y: 116, z: -488\") instead of showing just the bare values (\"20:13\", " +
