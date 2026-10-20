@@ -19,6 +19,11 @@ public final class CaveColorSampler {
     private static final int SCAN_ABOVE = 3;
     private static final int SCAN_BELOW = 12;
 
+    // A column that is all air inside the slice (a cavern floor further down) used to stay blank.
+    // Keep looking this much deeper and draw what's found, dimmed so it reads as "below this layer".
+    private static final int FALLBACK_SCAN_DEPTH = 40;
+    private static final double FALLBACK_DIM = 0.8;
+
     private static final int TERRAIN_SCAN_LIMIT = 192;
     private static final int ROOF_AIR_LOOKAHEAD = 3;
 
@@ -71,6 +76,8 @@ public final class CaveColorSampler {
         int[] foundYs = new int[stride * stride];
         int[] foundRgb = new int[stride * stride];
         boolean[] foundBlock = new boolean[stride * stride];
+        boolean[] foundDeeper = new boolean[stride * stride];
+        int deepest = Math.max(level.getMinBuildHeight() + 1, bottom - FALLBACK_SCAN_DEPTH);
         for (int lz = -1; lz <= 16; lz++) {
             for (int lx = -1; lx <= 16; lx++) {
                 int worldX = pos.getMinBlockX() + lx;
@@ -93,7 +100,24 @@ public final class CaveColorSampler {
                     foundY = y;
                     break;
                 }
+                boolean deeper = false;
+                if (!found) {
+                    for (int y = bottom - 1; y >= deepest; y--) {
+                        cursor.set(worldX, y, worldZ);
+                        BlockState state = level.getBlockState(cursor);
+                        if (state.isAir() || isLikelyStructure(level, cursor, state)) continue;
+
+                        MapColor mapColor = state.getMapColor(level, cursor);
+                        rgb = mapColor != MapColor.NONE ? mapColor.calculateRGBColor(MapColor.Brightness.NORMAL) :
+                                packAbgr(BlockTextureColors.get(state));
+                        found = true;
+                        deeper = true;
+                        foundY = y;
+                        break;
+                    }
+                }
                 int idx = (lz + 1) * stride + (lx + 1);
+                foundDeeper[idx] = deeper;
                 foundYs[idx] = foundY;
                 foundRgb[idx] = rgb;
                 foundBlock[idx] = found;
@@ -114,7 +138,8 @@ public final class CaveColorSampler {
                 int northFoundY = foundBlock[northIdx] ? foundYs[northIdx] : foundY;
                 double relief = (foundY - northFoundY) * 0.8 + (((lx + lz) & 1) - 0.5) * 0.4;
 
-                pixels[lz * 16 + lx] = scaleBrightness(foundRgb[idx], ChunkColorSampler.relief(relief));
+                double shade = ChunkColorSampler.relief(relief) * (foundDeeper[idx] ? FALLBACK_DIM : 1.0);
+                pixels[lz * 16 + lx] = scaleBrightness(foundRgb[idx], shade);
             }
         }
 

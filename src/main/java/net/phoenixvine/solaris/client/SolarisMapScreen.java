@@ -183,7 +183,7 @@ public class SolarisMapScreen extends Screen {
             anchorChunkZ = blockPos.getZ() >> 4;
             centerKey = ChunkKey.of(mc.level, new ChunkPos(anchorChunkX, anchorChunkZ));
 
-            undergroundView = mc.level.dimensionType().hasCeiling();
+            undergroundView = DimensionModes.isCaveDimension(mc.level);
 
             hasPlayerMarker = true;
 

@@ -11,6 +11,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
+import net.phoenixvine.solaris.client.DimensionModes;
 import net.phoenixvine.solaris.client.perf.SolarisProfiler;
 import net.phoenixvine.solaris.client.render.MapTileCache;
 import net.phoenixvine.solaris.client.render.SolarisTexture;
@@ -65,7 +66,7 @@ public final class LiveChunkRefresh {
 
         boolean writeEnabled = SolarisAPI.getFeatureState(SolarisAPI.FEATURE_WORLD_MAP, level.dimension().location())
                 .atLeast(SolarisFeatureState.ENABLED);
-        boolean surfaceMap = writeEnabled && !level.dimensionType().hasCeiling();
+        boolean surfaceMap = writeEnabled && !DimensionModes.isCaveDimension(level);
 
         if (surfaceMap) MapTileCache.checkNightFactor(level);
 
