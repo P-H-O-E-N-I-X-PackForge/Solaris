@@ -17,6 +17,18 @@ public final class SolarisThemeUtils {
     public static int C_DIM;
     public static int C_FAINT;
 
+    private static Integer accentOverride;
+
+    /**
+     * Lets another mod tint Solaris's accent colour (for example per dimension or per faction)
+     * without replacing the whole shared theme. Pass null to go back to the theme's own accent.
+     */
+    public static void setAccentOverride(Integer argb) {
+        if (java.util.Objects.equals(accentOverride, argb)) return;
+        accentOverride = argb;
+        refreshCache();
+    }
+
     public static void refreshCache() {
         PhoenixTheme current = PhoenixTheme.current();
         if (current == null) return;
@@ -25,7 +37,7 @@ public final class SolarisThemeUtils {
         C_PANEL = current.panel.getColor();
         C_HEADER = current.header.getColor();
         C_BORDER = current.border.getColor();
-        C_ACCENT = current.accent.getColor();
+        C_ACCENT = accentOverride != null ? accentOverride : current.accent.getColor();
         C_TEXT = current.text.getColor();
         C_DIM = current.textDim.getColor();
         C_FAINT = current.textFaint.getColor();
