@@ -145,6 +145,7 @@ public class SolarisPageScreen extends Screen {
         g.drawCenteredString(font, hint, width / 2, bottom() + 8, C_TEXT);
 
         PageTabs.render(g, font, mx, my, page);
+        page.renderOverlay(g, left(), top(), right() - left(), bottom() - top(), mx, my);
 
         if (hovered != null) {
             List<Component> lines = new ArrayList<>();
@@ -157,6 +158,7 @@ public class SolarisPageScreen extends Screen {
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         if (button == 0 && PageTabs.click(mx, my, font, page, parent)) return true;
+        if (page.mouseClicked(mx, my, button)) return true;
         if (button == 0 && variantClick(mx, my)) return true;
         if (button == 0 && mx >= left() && mx <= right() && my >= top() && my <= bottom()) {
             dragging = true;
