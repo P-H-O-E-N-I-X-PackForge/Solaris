@@ -355,10 +355,15 @@ public class SolarisMapScreen extends Screen {
                 () -> runIfEnabled(SolarisAPI.FEATURE_SHAPE_PLANNER,
                         () -> Minecraft.getInstance().setScreen(new WaypointListScreen(this, true)))));
         specs.add(new IconSpec("Unexplored Style",
-                (g, cx, cy, hover) -> drawUnexploredStyleIcon(g, cx, cy, SolarisConfig.UNEXPLORED_STYLE.get()),
+                (g, cx, cy, hover) -> drawUnexploredStyleIcon(g, cx, cy, currentUnexploredStyle()),
                 () -> runIfEnabled(SolarisAPI.FEATURE_UNEXPLORED_STYLE, () -> {
-                    SolarisConfig.UNEXPLORED_STYLE.set(SolarisConfig.UNEXPLORED_STYLE.get().next());
-                    SolarisConfig.UNEXPLORED_STYLE.save();
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc.level != null) {
+                        SolarisAPI.cycleUnexploredStyle(mc.level.dimension().location());
+                    } else {
+                        SolarisConfig.UNEXPLORED_STYLE.set(SolarisConfig.UNEXPLORED_STYLE.get().next());
+                        SolarisConfig.UNEXPLORED_STYLE.save();
+                    }
                     MapTileCache.clearAll();
                     CaveTileCache.clearAll();
                 })));
@@ -563,6 +568,12 @@ public class SolarisMapScreen extends Screen {
         g.fill(cx, cy - r, cx + r, cy + r, 0xFF000000);
     }
 
+    private UnexploredStyle currentUnexploredStyle() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.level != null ? SolarisAPI.getUnexploredStyle(mc.level.dimension().location()) :
+                SolarisConfig.UNEXPLORED_STYLE.get();
+    }
+
     private void drawUnexploredStyleIcon(GuiGraphics g, int cx, int cy, UnexploredStyle style) {
         int r = buttonR - 2;
         switch (style) {
@@ -585,6 +596,12 @@ public class SolarisMapScreen extends Screen {
                 g.fill(cx - r + 1, cy - 1, cx + r - 2, cy + 2, 0x90D8D8DC);
                 g.fill(cx - r + 3, cy - r + 3, cx + 1, cy - 1, 0x60D0D0D8);
                 g.fill(cx - 1, cy + 1, cx + r - 2, cy + r - 2, 0x50D0D0D8);
+            }
+            case BACKDROP -> {
+                g.fill(cx - r, cy - r, cx + r, cy, 0xFF1B1038);
+                g.fill(cx - r, cy, cx + r, cy + r, 0xFF3A1A5C);
+                g.fill(cx - r + 2, cy - 2, cx + r - 2, cy - 1, 0xFFB080FF);
+                g.fill(cx - 2, cy - r + 2, cx - 1, cy - r + 3, 0xFFFFFFFF);
             }
             case IMAGE -> {
                 g.fill(cx - r, cy - r, cx + r, cy + r, 0xFF20242C);
