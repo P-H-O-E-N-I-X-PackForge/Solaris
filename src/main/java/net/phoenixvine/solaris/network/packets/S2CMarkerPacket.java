@@ -26,7 +26,7 @@ public record S2CMarkerPacket(
 
     public static final StreamCodec<RegistryFriendlyByteBuf, S2CMarkerPacket> STREAM_CODEC = StreamCodec.of(
             (buf, packet) -> packet.encode(buf),
-            S2CMarkerPacket::new);
+            S2CMarkerPacket::decode);
 
     public enum Op {
         PUT,
@@ -47,19 +47,21 @@ public record S2CMarkerPacket(
         return new S2CMarkerPacket(Op.CLEAR, keyPrefix, "", "", 0, 0, 0, "", "", "", 0);
     }
 
-    public S2CMarkerPacket(RegistryFriendlyByteBuf buf) {
-        this(
-                buf.readEnum(Op.class),
-                buf.readUtf(64),
-                buf.readBoolean() ? buf.readUtf(48) : "",
-                buf.readBoolean() ? buf.readUtf(128) : "",
-                buf.readBoolean() ? buf.readInt() : 0,
-                buf.readBoolean() ? buf.readInt() : 0,
-                buf.readBoolean() ? buf.readInt() : 0,
-                buf.readBoolean() ? buf.readUtf(8) : "",
-                buf.readBoolean() ? buf.readUtf(32) : "",
-                buf.readBoolean() ? buf.readUtf(32) : "",
-                buf.readBoolean() ? buf.readVarInt() : 0);
+    /** Reads what {@link #encode} wrote: one "has fields" flag, then the fields of a PUT. */
+    public static S2CMarkerPacket decode(RegistryFriendlyByteBuf buf) {
+        Op op = buf.readEnum(Op.class);
+        String key = buf.readUtf(64);
+        if (!buf.readBoolean()) return new S2CMarkerPacket(op, key, "", "", 0, 0, 0, "", "", "", 0);
+        String name = buf.readUtf(48);
+        String dimension = buf.readUtf(128);
+        int x = buf.readInt();
+        int y = buf.readInt();
+        int z = buf.readInt();
+        String color = buf.readUtf(8);
+        String icon = buf.readUtf(32);
+        String category = buf.readUtf(32);
+        int duration = buf.readVarInt();
+        return new S2CMarkerPacket(op, key, name, dimension, x, y, z, color, icon, category, duration);
     }
 
     public void encode(RegistryFriendlyByteBuf buf) {
