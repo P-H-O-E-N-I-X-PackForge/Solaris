@@ -204,6 +204,7 @@ public class SolarisPageScreen extends Screen {
 
     @Override
     public boolean keyPressed(int key, int scan, int mods) {
+        if (page.keyPressed(key, scan, mods)) return true;
         if (key == GLFW.GLFW_KEY_Q) {
             shift(-1);
             return true;
