@@ -41,6 +41,8 @@ import net.phoenixvine.solaris.client.render.ModernPanel;
 import net.phoenixvine.solaris.client.render.PlayerArrow;
 import net.phoenixvine.solaris.client.render.SmoothShapes;
 import net.phoenixvine.solaris.client.render.SolarisTexture;
+import net.phoenixvine.solaris.client.render.UnexploredBackdrop;
+import net.phoenixvine.solaris.client.render.UnexploredBackdrops;
 import net.phoenixvine.solaris.client.render.UnexploredImageStyle;
 import net.phoenixvine.solaris.client.render.UnexploredStyle;
 import net.phoenixvine.solaris.client.render.globe.GlobeCamera;
@@ -590,7 +592,17 @@ public class SolarisMapScreen extends Screen {
     private void drawUnexploredCoverImage(GuiGraphics g) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
-        if (SolarisAPI.getUnexploredStyle(mc.level.dimension().location()) != UnexploredStyle.IMAGE) return;
+        UnexploredStyle style = SolarisAPI.getUnexploredStyle(mc.level.dimension().location());
+        if (style == UnexploredStyle.BACKDROP) {
+            UnexploredBackdrop backdrop = UnexploredBackdrops.get(mc.level.dimension().location());
+            if (backdrop != null) {
+                backdrop.render(g, frameLeft(), frameTop(), frameRight(), frameBottom(),
+                        viewport.toWorldX(frameCenterX(), 0), viewport.toWorldZ(frameCenterY(), 0),
+                        mc.getTimer().getGameTimeDeltaPartialTick(false));
+            }
+            return;
+        }
+        if (style != UnexploredStyle.IMAGE) return;
         if (!SolarisConfig.UNEXPLORED_IMAGE_COVER.get()) return;
         if (!UnexploredImageStyle.isAvailable()) return;
 

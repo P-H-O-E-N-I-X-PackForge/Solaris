@@ -229,6 +229,7 @@ public final class CaveTileCache {
                                     unexploredBrightness);
                             case CLOUD -> MapTileCache.cloudPixel(worldX, worldZ, unexploredDensity,
                                     unexploredBrightness);
+                            case BACKDROP -> 0;
                             case IMAGE -> {
                                 if (unexploredImageCover) yield 0;
                                 int imgColor = UnexploredImageStyle.getPixel(worldX, worldZ);
@@ -338,6 +339,7 @@ public final class CaveTileCache {
                                             unexploredBrightness);
                                     case CLOUD -> MapTileCache.cloudPixel(worldPx, worldPz, unexploredDensity,
                                             unexploredBrightness);
+                                    case BACKDROP -> 0;
                                     case IMAGE -> {
                                         if (unexploredImageCover) yield 0;
                                         int imgColor = UnexploredImageStyle.getPixel(worldPx, worldPz);
