@@ -21,6 +21,8 @@ public class SolarisNetwork {
                 C2SPingPacket::handle);
         r.playToServer(C2SGuildWaypointPacket.TYPE, C2SGuildWaypointPacket.STREAM_CODEC,
                 C2SGuildWaypointPacket::handle);
+        r.playToServer(C2SRemoveServerWaypointPacket.TYPE, C2SRemoveServerWaypointPacket.STREAM_CODEC,
+                C2SRemoveServerWaypointPacket::handle);
         r.playToServer(C2SSharedChunksPacket.TYPE, C2SSharedChunksPacket.STREAM_CODEC,
                 C2SSharedChunksPacket::handle);
         r.playToServer(C2SSharedSyncRequestPacket.TYPE, C2SSharedSyncRequestPacket.STREAM_CODEC,
