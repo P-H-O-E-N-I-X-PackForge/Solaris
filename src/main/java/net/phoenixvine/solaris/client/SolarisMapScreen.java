@@ -33,6 +33,9 @@ import net.phoenixvine.solaris.client.player.RemotePlayerTracker;
 import net.phoenixvine.solaris.client.render.CaveTileCache;
 import net.phoenixvine.solaris.client.render.LabelSide;
 import net.phoenixvine.solaris.client.render.LineRenderer;
+import net.phoenixvine.solaris.client.render.MapLayer;
+import net.phoenixvine.solaris.client.render.MapLayers;
+import net.phoenixvine.solaris.client.render.MapProjection;
 import net.phoenixvine.solaris.client.render.MapTileCache;
 import net.phoenixvine.solaris.client.render.MapViewport;
 import net.phoenixvine.solaris.client.render.MinimapShape;
@@ -855,6 +858,8 @@ public class SolarisMapScreen extends Screen {
             SolarisProfiler.time("railNetworkRender", () -> drawRailNetwork(g, dimension));
         }
 
+        if (mc.level != null && !MapLayers.all().isEmpty()) drawMapLayers(g, mc.level.dimension().location());
+
         double iconScale = SolarisConfig.WAYPOINT_ICON_SCALE.get();
         int iconR = (int) Math.round(Mth.clamp(3f * viewport.getZoom(), 2f, 10f) * iconScale);
         int playerR = Math.max(4, Math.min(12, Math.round(3.5f * viewport.getZoom())));
@@ -1141,6 +1146,28 @@ public class SolarisMapScreen extends Screen {
         if ((x1 < MARGIN && x2 < MARGIN) || (x1 > width - MARGIN && x2 > width - MARGIN)) return;
         if ((y1 < MARGIN && y2 < MARGIN) || (y1 > height - MARGIN && y2 > height - MARGIN)) return;
         LineRenderer.drawLine(g, x1, y1, x2, y2, thickness, RAIL_LINE_COLOR);
+    }
+
+    private void drawMapLayers(GuiGraphics g, ResourceLocation dimension) {
+        MapProjection projection = new MapProjection() {
+
+            @Override
+            public double screenX(double worldX) {
+                return viewport.toScreenX(worldX, 0);
+            }
+
+            @Override
+            public double screenY(double worldZ) {
+                return viewport.toScreenY(worldZ, 0);
+            }
+
+            @Override
+            public float zoom() {
+                return viewport.getZoom();
+            }
+        };
+        float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
+        for (MapLayer layer : MapLayers.all()) layer.render(g, dimension, projection, partialTick);
     }
 
     private void drawShapeFlat(GuiGraphics g, PlanShape shape, int color, int thickness) {
