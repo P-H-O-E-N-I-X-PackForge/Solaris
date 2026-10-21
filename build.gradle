@@ -188,6 +188,10 @@ dependencies {
     modRuntimeOnly("dev.toma.configuration:configuration-forge-${minecraft_version}:${configuration_version}")
 
     modCompileOnly("curse.maven:create-328085:${create_file_id}") { transitive = false }
+
+    // Optional integrations (compile-only; the mods are not required at runtime)
+    modCompileOnly("curse.maven:create-kinetic-waypoints-1610005:8753459") { transitive = false }
+    modCompileOnly("curse.maven:waystones-245755:8849482") { transitive = false }
     modRuntimeOnly("curse.maven:create-328085:${create_file_id}") { transitive = false }
 
     modCompileOnly('net.phoenixvine.guilds:phoenix_guilds:1.6.6')
