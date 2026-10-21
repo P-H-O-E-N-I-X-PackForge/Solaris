@@ -764,6 +764,8 @@ public class SolarisMapScreen extends Screen {
         g.drawCenteredString(font, title, width / 2, 6, C_ACCENT);
         g.drawCenteredString(font, footerHint(), (int) frameCenterX(), frameBottom() + 10, C_TEXT);
 
+        net.phoenixvine.solaris.client.page.PageTabs.render(g, font, mx, my, null);
+
         String syncText = SharedExplorationClient.activityText();
         if (syncText != null) {
             g.drawString(font, syncText, frameRight() - 6 - font.width(syncText), frameTop() + 6, C_ACCENT, false);
@@ -1417,6 +1419,8 @@ public class SolarisMapScreen extends Screen {
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         if (super.mouseClicked(mx, my, button)) return true;
+
+        if (button == 0 && net.phoenixvine.solaris.client.page.PageTabs.click(mx, my, font, null, parent)) return true;
 
         if (button == 0) {
             for (IconButton b : iconButtons) {
