@@ -62,7 +62,15 @@ public class MinimapHudOverlay {
     }
 
     private static boolean isVisible(Minecraft mc) {
-        if (mc.player == null || mc.level == null || mc.options.hideGui || mc.screen != null) return false;
+        return isVisible(mc, false);
+    }
+
+    /** @param allowChat keep the minimap on screen while the chat window is open */
+    private static boolean isVisible(Minecraft mc, boolean allowChat) {
+        if (mc.player == null || mc.level == null || mc.options.hideGui) return false;
+        if (mc.screen != null && !(allowChat && mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) {
+            return false;
+        }
         return SolarisAPI.getFeatureState(SolarisAPI.FEATURE_MINIMAP, mc.level.dimension().location())
                 .atLeast(SolarisFeatureState.VISIBLE);
     }
@@ -98,7 +106,7 @@ public class MinimapHudOverlay {
         if (!event.getName().equals(VanillaGuiLayers.HOTBAR)) return;
 
         Minecraft mc = Minecraft.getInstance();
-        if (!isVisible(mc)) return;
+        if (!isVisible(mc, true)) return;
 
         SolarisProfiler.time("minimapRender", () -> onRenderHudImpl(event, mc));
     }
