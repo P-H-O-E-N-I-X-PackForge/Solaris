@@ -9,13 +9,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Keeps one player's Solaris markers for a mod in step with what that mod says they should see:
- * only new, renamed or moved markers are sent, and ones that are no longer wanted are removed.
- */
 public final class MarkerSync {
 
-    /** color, icon and category are optional per-marker overrides of the MarkerSync's defaults. */
     public record Marker(String name, ResourceLocation dimension, BlockPos pos, String color, String icon,
                          String category) {
 
@@ -64,7 +59,6 @@ public final class MarkerSync {
         previous.putAll(current);
     }
 
-    /** Forget what was sent, so the next apply resends everything (the client's markers were reset). */
     public void reset(UUID player) {
         sent.remove(player);
     }

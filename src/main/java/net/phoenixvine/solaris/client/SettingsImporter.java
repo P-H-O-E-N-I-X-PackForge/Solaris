@@ -2,13 +2,11 @@ package net.phoenixvine.solaris.client;
 
 import java.util.List;
 
-/** Imports minimap settings from whichever of JourneyMap / Xaero's Minimap configs are present. */
 public final class SettingsImporter {
 
     private SettingsImporter() {}
 
     public static String importAll() {
-        // JourneyMap first so Xaero's values win where both define the same setting.
         List<String> journeyMap = JourneyMapSettingsImporter.apply();
         List<String> xaero = XaeroSettingsImporter.apply();
 

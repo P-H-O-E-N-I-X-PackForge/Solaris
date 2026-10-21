@@ -19,10 +19,6 @@ public final class SolarisThemeUtils {
 
     private static Integer accentOverride;
 
-    /**
-     * Lets another mod tint Solaris's accent colour (for example per dimension or per faction)
-     * without replacing the whole shared theme. Pass null to go back to the theme's own accent.
-     */
     public static void setAccentOverride(Integer argb) {
         if (java.util.Objects.equals(accentOverride, argb)) return;
         accentOverride = argb;

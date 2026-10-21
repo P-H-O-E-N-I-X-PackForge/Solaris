@@ -23,7 +23,6 @@ import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_BORDER;
 import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_PANEL;
 import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_TEXT;
 
-/** Shows one {@link MapPage} fullscreen with the same chrome as the world map: tabs, drag to pan, scroll to zoom. */
 @OnlyIn(Dist.CLIENT)
 public class SolarisPageScreen extends Screen {
 
@@ -72,7 +71,7 @@ public class SolarisPageScreen extends Screen {
         double fh = bottom() - top();
         float target = (float) Math.max(0.05, Math.min(fw / page.width(), fh / page.height()) * 0.96);
         viewport.setOffset(0, 0);
-        // bring the zoom to the target through the viewport's own (logarithmic) zoom step
+
         double steps = Math.log(target / viewport.getZoom()) / Math.log(1.1);
         viewport.adjustZoomToAnchor(steps, (int) centreX(), (int) centreY(), (int) centreX(), (int) centreY());
         viewport.setOffset(0, 0);

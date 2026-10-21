@@ -9,12 +9,6 @@ import net.phoenixvine.solaris.integration.ModPresence;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Shows Create: Kinetic Waypoints machines on the Solaris map as markers, for the players who are
- * allowed to see them (global ones, their own, and ones they've discovered), using the mod's own
- * visibility rules. This class never names the mod's types; {@link KineticWaypointsBridge} does,
- * and is only reached when the mod is loaded.
- */
 public final class KineticWaypointsIntegration implements ModMarkerSource {
 
     public static final String MOD_ID = "create_kinetic_waypoints";

@@ -3,7 +3,6 @@ package net.phoenixvine.solaris.client.render;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/** The pages other mods have added next to the world map. */
 public final class MapPages {
 
     private static final List<MapPage> PAGES = new CopyOnWriteArrayList<>();

@@ -9,11 +9,6 @@ import net.phoenixvine.solaris.integration.ModPresence;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Shows Waystones (by BlayTheNinth) on the Solaris map: the waystones a player has activated plus
- * any global ones. This class never names the mod's types; {@link WaystonesBridge} does, and is
- * only reached when the mod is loaded.
- */
 public final class WaystonesIntegration implements ModMarkerSource {
 
     public static final String MOD_ID = "waystones";

@@ -65,7 +65,6 @@ public class MinimapHudOverlay {
         return isVisible(mc, false);
     }
 
-    /** @param allowChat keep the minimap on screen while the chat window is open */
     private static boolean isVisible(Minecraft mc, boolean allowChat) {
         if (mc.player == null || mc.level == null || mc.options.hideGui) return false;
         if (mc.screen != null && !(allowChat && mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) {
