@@ -15,7 +15,14 @@ import java.util.UUID;
  */
 public final class MarkerSync {
 
-    public record Marker(String name, ResourceLocation dimension, BlockPos pos) {}
+    /** color, icon and category are optional per-marker overrides of the MarkerSync's defaults. */
+    public record Marker(String name, ResourceLocation dimension, BlockPos pos, String color, String icon,
+                         String category) {
+
+        public Marker(String name, ResourceLocation dimension, BlockPos pos) {
+            this(name, dimension, pos, null, null, null);
+        }
+    }
 
     private final String color;
     private final String icon;
@@ -35,16 +42,17 @@ public final class MarkerSync {
         for (Map.Entry<String, Marker> entry : desired.entrySet()) {
             String key = entry.getKey();
             Marker marker = entry.getValue();
-            String signature = marker.name() + "|" + marker.dimension() + "|" + marker.pos().asLong();
+            String signature = marker.name() + "|" + marker.dimension() + "|" + marker.pos().asLong() + "|" +
+                    marker.color() + "|" + marker.icon() + "|" + marker.category();
             current.put(key, signature);
 
             if (!signature.equals(previous.get(key))) {
                 SolarisMarkers.marker(key)
                         .name(marker.name())
                         .at(marker.dimension(), marker.pos().getX(), marker.pos().getY(), marker.pos().getZ())
-                        .color(color)
-                        .icon(icon)
-                        .category(category)
+                        .color(marker.color() != null ? marker.color() : color)
+                        .icon(marker.icon() != null ? marker.icon() : icon)
+                        .category(marker.category() != null ? marker.category() : category)
                         .sendTo(player);
             }
         }
