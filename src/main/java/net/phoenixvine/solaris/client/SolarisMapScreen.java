@@ -601,7 +601,7 @@ public class SolarisMapScreen extends Screen {
             if (backdrop != null) {
                 backdrop.render(g, frameLeft(), frameTop(), frameRight(), frameBottom(),
                         viewport.toWorldX(frameCenterX(), 0), viewport.toWorldZ(frameCenterY(), 0),
-                        mc.getTimer().getGameTimeDeltaPartialTick(false));
+                        mc.getFrameTime());
             }
             return;
         }
@@ -1168,7 +1168,7 @@ public class SolarisMapScreen extends Screen {
                 return viewport.getZoom();
             }
         };
-        float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
+        float partialTick = Minecraft.getInstance().getFrameTime();
         for (MapLayer layer : MapLayers.all()) layer.render(g, dimension, projection, partialTick);
     }
 

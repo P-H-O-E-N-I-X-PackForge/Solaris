@@ -3,8 +3,8 @@ package net.phoenixvine.solaris.client.page;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.phoenixvine.solaris.client.render.MapPage;
 import net.phoenixvine.solaris.client.render.MapProjection;
 import net.phoenixvine.solaris.client.render.MapViewport;
@@ -81,7 +81,7 @@ public class SolarisPageScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics g, int mx, int my, float partialTick) {
+    public void renderBackground(GuiGraphics g) {
         g.fill(0, 0, width, height, C_BG);
     }
 
@@ -111,7 +111,7 @@ public class SolarisPageScreen extends Screen {
     public void render(GuiGraphics g, int mx, int my, float partialTick) {
         if (!fitted || fittedVariant != page.selectedVariant()) fit();
 
-        renderBackground(g, mx, my, partialTick);
+        renderBackground(g);
         g.fill(left() - 4, top() - 4, right() + 4, bottom() + 4, C_PANEL);
         ModernPanel.draw(g, left() - 4, top() - 4, right() - left() + 8, bottom() - top() + 8, C_BORDER);
 
@@ -195,7 +195,7 @@ public class SolarisPageScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mx, double my, double scrollX, double scrollY) {
+    public boolean mouseScrolled(double mx, double my, double scrollY) {
         viewport.adjustZoomToAnchor(scrollY, mx, my, (int) centreX(), (int) centreY());
         return true;
     }
