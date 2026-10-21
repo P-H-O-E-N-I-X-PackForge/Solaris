@@ -301,6 +301,7 @@ public final class MapTileCache {
                     ctx.starDim(), ctx.starSpace());
             case PHOENIX -> phoenixPixel(worldPx, worldPz, ctx.density(), ctx.brightness());
             case CLOUD -> cloudPixel(worldPx, worldPz, ctx.density(), ctx.brightness());
+            case BACKDROP -> 0;
             case IMAGE -> {
                 if (ctx.imageCover()) yield 0;
                 int imgColor = UnexploredImageStyle.getPixel(worldPx, worldPz);
@@ -564,6 +565,7 @@ public final class MapTileCache {
                                 case PHOENIX -> phoenixPixel(worldPx, worldPz, unexploredDensity,
                                         unexploredBrightness);
                                 case CLOUD -> cloudPixel(worldPx, worldPz, unexploredDensity, unexploredBrightness);
+                                case BACKDROP -> 0;
                                 case IMAGE -> {
                                     if (unexploredImageCover) yield 0;
                                     int imgColor = UnexploredImageStyle.getPixel(worldPx, worldPz);
