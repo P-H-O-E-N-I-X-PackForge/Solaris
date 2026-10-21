@@ -599,8 +599,8 @@ public class SolarisMapScreen extends Screen {
         if (style == UnexploredStyle.BACKDROP) {
             UnexploredBackdrop backdrop = UnexploredBackdrops.get(mc.level.dimension().location());
             if (backdrop != null) {
-                backdrop.render(g, frameLeft(), frameTop(), frameRight(), frameBottom(),
-                        viewport.toWorldX(frameCenterX(), 0), viewport.toWorldZ(frameCenterY(), 0),
+                backdrop.render(g, MARGIN, MARGIN, width - MARGIN, height - MARGIN,
+                        viewport.toWorldX(width / 2.0, 0), viewport.toWorldZ(height / 2.0, 0),
                         mc.getFrameTime());
             }
             return;
