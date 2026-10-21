@@ -65,6 +65,14 @@ public interface MapPage {
         return List.of();
     }
 
+    /** Draws on top of everything (panels, lists). Called every frame with the mouse position, outside the map clip. */
+    default void renderOverlay(GuiGraphics g, int x, int y, int w, int h, int mouseX, int mouseY) {}
+
+    /** A click anywhere on the page screen, before it is treated as the start of a drag. Return true to consume it. */
+    default boolean mouseClicked(double mouseX, double mouseY, int button) {
+        return false;
+    }
+
     /** A line of text under the map, or null. */
     default @Nullable Component footer() {
         return null;
