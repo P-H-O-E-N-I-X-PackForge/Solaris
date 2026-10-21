@@ -17,6 +17,7 @@ import net.phoenixvine.solaris.client.plan.PlanShapeManager;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
 import net.phoenixvine.solaris.network.C2SGuildWaypointPacket;
+import net.phoenixvine.solaris.network.C2SRemoveServerWaypointPacket;
 import net.phoenixvine.solaris.network.C2SShareWaypointPacket;
 import net.phoenixvine.solaris.network.ClientPacketHandlers;
 import net.phoenixvine.solaris.network.SolarisNetwork;
@@ -235,14 +236,25 @@ public class WaypointListScreen extends Screen {
                     .bounds(editX, y, sideW - 20, 18).build());
             y += ROW_H + 4;
 
+            boolean serverEntry = selected.id != null &&
+                    selected.id.startsWith(ClientPacketHandlers.SERVER_WAYPOINT_PREFIX);
+            boolean canDeleteServer = serverEntry && minecraft != null && minecraft.player != null &&
+                    minecraft.player.hasPermissions(2);
+            boolean deletable = !selected.locked || canDeleteServer;
             Button deleteButton = Button.builder(
-                    Component.literal(selected.locked ? "Delete (locked)" : "Delete"), b -> {
-                        if (selected.locked) return;
+                    Component.literal(canDeleteServer ? "Delete (server)" : selected.locked ? "Delete (locked)" :
+                            "Delete"),
+                    b -> {
+                        if (!deletable) return;
+                        if (canDeleteServer) {
+                            SolarisNetwork.CHANNEL.sendToServer(new C2SRemoveServerWaypointPacket(
+                                    selected.id.substring(ClientPacketHandlers.SERVER_WAYPOINT_PREFIX.length())));
+                        }
                         WaypointManager.remove(selected.id);
                         selected = null;
                         init();
                     }).bounds(editX, y, sideW - 20, 18).build();
-            deleteButton.active = !selected.locked;
+            deleteButton.active = deletable;
             addRenderableWidget(deleteButton);
         }
 

@@ -178,5 +178,12 @@ public final class SolarisNetwork {
                 S2CSharedVeinsPacket::new,
                 S2CSharedVeinsPacket::handle,
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+
+        CHANNEL.registerMessage(id++,
+                C2SRemoveServerWaypointPacket.class,
+                C2SRemoveServerWaypointPacket::encode,
+                C2SRemoveServerWaypointPacket::new,
+                C2SRemoveServerWaypointPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 }
