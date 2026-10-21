@@ -80,6 +80,10 @@ public class SolarisPageScreen extends Screen {
         fittedVariant = page.selectedVariant();
     }
 
+    /** No 1.21 background blur: this screen paints its own backdrop. */
+    @Override
+    protected void renderBlurredBackground(float partialTick) {}
+
     @Override
     public void renderBackground(GuiGraphics g, int mx, int my, float partialTick) {
         g.fill(0, 0, width, height, C_BG);
