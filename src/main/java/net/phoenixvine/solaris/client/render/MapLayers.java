@@ -3,7 +3,6 @@ package net.phoenixvine.solaris.client.render;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/** Registry of {@link MapLayer}s drawn on the flat fullscreen map. Client side. */
 public final class MapLayers {
 
     private static final List<MapLayer> LAYERS = new CopyOnWriteArrayList<>();

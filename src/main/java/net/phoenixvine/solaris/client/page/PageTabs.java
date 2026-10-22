@@ -18,7 +18,6 @@ import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_BORDER;
 import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_HEADER;
 import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_TEXT;
 
-/** The tab row shared by the world map and the page screens: "World" plus every available page. */
 public final class PageTabs {
 
     private static final int HEIGHT = 14;
@@ -44,7 +43,6 @@ public final class PageTabs {
         return chips;
     }
 
-    /** True if there is anything to switch to. */
     public static boolean any() {
         return !MapPages.available().isEmpty();
     }
@@ -62,11 +60,6 @@ public final class PageTabs {
         }
     }
 
-    /**
-     * Handles a click on the tab row, opening the world map or a page. {@code parent} is the screen to return to.
-     *
-     * @return true if a tab was hit
-     */
     public static boolean click(double mx, double my, Font font, @Nullable MapPage active, @Nullable Screen parent) {
         if (!any() || my < Y || my >= Y + HEIGHT) return false;
         for (Chip chip : layout(font)) {

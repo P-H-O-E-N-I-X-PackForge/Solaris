@@ -10,7 +10,6 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.server.waypoint.ServerWaypointService;
 
-/** An operator asks the server to delete one of the server-wide waypoints. */
 public record C2SRemoveServerWaypointPacket(String key) implements CustomPacketPayload {
 
     public static final Type<C2SRemoveServerWaypointPacket> TYPE = new Type<>(

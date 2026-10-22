@@ -47,7 +47,6 @@ public record S2CMarkerPacket(
         return new S2CMarkerPacket(Op.CLEAR, keyPrefix, "", "", 0, 0, 0, "", "", "", 0);
     }
 
-    /** Reads what {@link #encode} wrote: one "has fields" flag, then the fields of a PUT. */
     public static S2CMarkerPacket decode(RegistryFriendlyByteBuf buf) {
         Op op = buf.readEnum(Op.class);
         String key = buf.readUtf(64);

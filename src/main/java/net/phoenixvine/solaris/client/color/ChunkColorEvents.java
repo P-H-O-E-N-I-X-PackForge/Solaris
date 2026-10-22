@@ -80,23 +80,11 @@ public class ChunkColorEvents {
 
     private static final Set<ChunkKey> PENDING_NEIGHBORS = new LinkedHashSet<>();
 
-    /**
-     * A chunk's biomes aren't always in place yet when its load event fires (modded dimensions can fill
-     * them in a moment later), so the first sample can see the placeholder plains biome and bake plains
-     * blue into the water. Every freshly loaded chunk is sampled once more after this delay.
-     */
     private static final long LATE_RESAMPLE_DELAY_MS = 1500L;
     private static final Map<ChunkKey, Long> LATE_RESAMPLES = new java.util.LinkedHashMap<>();
 
-    /** Outermost blocks on a side facing an unloaded chunk get replaced with data from just inside. */
     private static final int EDGE_TRIM = 2;
 
-    /**
-     * Blocks along a chunk side whose neighbouring chunk isn't loaded can't be sampled reliably (biome and
-     * neighbour lookups return placeholders, which shows up as a thin off-colour line around the edge of
-     * explored terrain). Until that neighbour loads and the chunk is resampled, copy the nearest reliable
-     * blocks outward over them so the edge matches the terrain beside it.
-     */
     static void trimUnloadedEdges(Level level, ChunkKey key, ChunkColorSampler.ColorSample c,
                                   ChunkColorSampler.HeightSample h) {
         boolean west = !level.hasChunk(key.x() - 1, key.z());
@@ -130,13 +118,11 @@ public class ChunkColorEvents {
         h.rails[to] = h.rails[from];
     }
 
-    /** Drops queued work that belonged to the dimension we just left. */
     static void onDimensionChanged() {
         PENDING_NEIGHBORS.clear();
         LATE_RESAMPLES.clear();
     }
 
-    /** True if all 8 chunks around {@code key} are loaded (water blend radius never reaches past 1 chunk). */
     static boolean neighborsLoaded(Level level, ChunkKey key) {
         for (int dz = -1; dz <= 1; dz++) {
             for (int dx = -1; dx <= 1; dx++) {
@@ -174,7 +160,6 @@ public class ChunkColorEvents {
         }
     }
 
-    /** Returns true when the chunk's map data was new or actually different from what we already had. */
     public static boolean resample(Level level, ChunkKey key, net.minecraft.world.level.ChunkPos pos) {
         ChunkColorSampler.ColorSample colorSample = ChunkColorSampler.sample(level, pos);
         ChunkColorSampler.HeightSample heightSample = ChunkColorSampler.sampleHeights(level, pos);

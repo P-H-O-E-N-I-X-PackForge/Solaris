@@ -14,10 +14,6 @@ import com.victorio.createkineticwaypoints.content.network.WaypointRecord;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * The only class that touches Create: Kinetic Waypoints types. Keep it that way: it must only be
- * reached once the mod is known to be loaded, so nothing else may reference it from a signature.
- */
 final class KineticWaypointsBridge {
 
     private KineticWaypointsBridge() {}
@@ -34,7 +30,6 @@ final class KineticWaypointsBridge {
         return desired;
     }
 
-    // A waypoint on a moving structure stores a position local to it; the resolver gives the real one.
     private static BlockPos position(ServerPlayer player, WaypointRecord record) {
         ServerLevel level = player.server.getLevel(record.dimension());
         if (level != null) {

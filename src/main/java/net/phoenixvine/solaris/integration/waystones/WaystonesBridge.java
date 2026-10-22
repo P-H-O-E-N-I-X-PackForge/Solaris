@@ -10,10 +10,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-/**
- * The only class that touches Waystones types. It must only be reached once the mod is known to be
- * loaded, so nothing else may reference it from a signature.
- */
 final class WaystonesBridge {
 
     private WaystonesBridge() {}

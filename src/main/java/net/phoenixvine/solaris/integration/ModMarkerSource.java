@@ -4,7 +4,6 @@ import net.minecraft.server.level.ServerPlayer;
 
 import java.util.UUID;
 
-/** A third-party mod whose locations are mirrored onto the Solaris map as markers. */
 public interface ModMarkerSource {
 
     boolean isAvailable();

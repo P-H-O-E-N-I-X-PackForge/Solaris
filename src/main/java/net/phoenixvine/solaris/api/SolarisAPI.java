@@ -308,17 +308,12 @@ public final class SolarisAPI {
         MapTileCache.clearAll();
     }
 
-    /**
-     * The style in effect for a dimension: what the player chose for it, otherwise the default another mod set with
-     * {@link #setUnexploredStyle(ResourceLocation, UnexploredStyle)}, otherwise the global setting.
-     */
     public static UnexploredStyle getUnexploredStyle(ResourceLocation dimension) {
         UnexploredStyle chosen = getPlayerUnexploredStyle(dimension);
         if (chosen != null) return chosen;
         return DIMENSION_UNEXPLORED_STYLE.getOrDefault(dimension, SolarisConfig.UNEXPLORED_STYLE.get());
     }
 
-    /** The style the player picked for this dimension with the map button, or null if they have not. */
     public static @org.jetbrains.annotations.Nullable UnexploredStyle getPlayerUnexploredStyle(ResourceLocation dimension) {
         String prefix = dimension + "=";
         for (String entry : SolarisConfig.UNEXPLORED_STYLE_BY_DIMENSION.get()) {
@@ -332,7 +327,8 @@ public final class SolarisAPI {
         return null;
     }
 
-    public static void setPlayerUnexploredStyle(ResourceLocation dimension, @org.jetbrains.annotations.Nullable UnexploredStyle style) {
+    public static void setPlayerUnexploredStyle(ResourceLocation dimension,
+                                                @org.jetbrains.annotations.Nullable UnexploredStyle style) {
         String prefix = dimension + "=";
         java.util.List<String> entries = new java.util.ArrayList<>();
         for (String entry : SolarisConfig.UNEXPLORED_STYLE_BY_DIMENSION.get()) {
@@ -344,11 +340,6 @@ public final class SolarisAPI {
         MapTileCache.clearAll();
     }
 
-    /**
-     * Advances the style for a dimension, the way the map's Unexplored Style button does. A dimension that has its own
-     * default (set by another mod) or a registered backdrop keeps the player's choice per dimension and includes
-     * BACKDROP in the cycle; any other dimension changes the global style.
-     */
     public static UnexploredStyle cycleUnexploredStyle(ResourceLocation dimension) {
         UnexploredStyle current = getUnexploredStyle(dimension);
         boolean special = DIMENSION_UNEXPLORED_STYLE.containsKey(dimension) ||

@@ -9,12 +9,6 @@ public final class WaypointPlacement {
 
     private WaypointPlacement() {}
 
-    /**
-     * The Y of the block to put a waypoint on at (x, z). Open-sky dimensions use the surface
-     * heightmap. Under a ceiling (the Nether) that heightmap is the bedrock roof, which left
-     * waypoints floating far above the player, so there it finds the floor nearest {@code hintY}
-     * (the player's own Y) instead, falling back to the hint when the column isn't loaded.
-     */
     public static int groundY(Level level, int x, int z, int hintY) {
         if (!level.dimensionType().hasCeiling()) {
             return level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;

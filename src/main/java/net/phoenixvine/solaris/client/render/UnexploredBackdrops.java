@@ -7,7 +7,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Per-dimension backdrops for {@link UnexploredStyle#BACKDROP}. Client side. */
 public final class UnexploredBackdrops {
 
     private static final Map<ResourceLocation, UnexploredBackdrop> BACKDROPS = new ConcurrentHashMap<>();

@@ -19,8 +19,6 @@ public final class CaveColorSampler {
     private static final int SCAN_ABOVE = 3;
     private static final int SCAN_BELOW = 12;
 
-    // A column that is all air inside the slice (a cavern floor further down) used to stay blank.
-    // Keep looking this much deeper and draw what's found, dimmed so it reads as "below this layer".
     private static final int FALLBACK_SCAN_DEPTH = 40;
     private static final double FALLBACK_DIM = 0.8;
 

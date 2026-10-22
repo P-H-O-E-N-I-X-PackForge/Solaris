@@ -11,7 +11,6 @@ import net.phoenixvine.solaris.integration.waystones.WaystonesIntegration;
 
 import java.util.List;
 
-/** Drives the mod marker sources: a full resend on marker sync, then a cheap diff every few seconds. */
 @EventBusSubscriber()
 public final class ModMarkerEvents {
 
