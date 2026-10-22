@@ -49,6 +49,7 @@ public class ChunkColorEvents {
         FALLBACK_TAINTED.clear();
         FALLBACK_RETRY_COUNT.clear();
         PENDING_NEIGHBORS.clear();
+        LATE_RESAMPLES.clear();
         MapTileCache.clearAll();
         SolarisTexture.invalidateAll();
     }
@@ -69,6 +70,7 @@ public class ChunkColorEvents {
 
         ChunkKey key = ChunkKey.of(level, pos);
         SolarisProfiler.time("chunkSample", () -> resample(level, key, pos));
+        LATE_RESAMPLES.put(key, System.currentTimeMillis() + LATE_RESAMPLE_DELAY_MS);
 
         for (int[] d : new int[][] { { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 } }) {
             ChunkKey neighborKey = new ChunkKey(key.dimension(), key.x() + d[0], key.z() + d[1]);
@@ -77,6 +79,14 @@ public class ChunkColorEvents {
     }
 
     private static final Set<ChunkKey> PENDING_NEIGHBORS = new LinkedHashSet<>();
+
+    /**
+     * A chunk's biomes aren't always in place yet when its load event fires (modded dimensions can fill
+     * them in a moment later), so the first sample can see the placeholder plains biome and bake plains
+     * blue into the water. Every freshly loaded chunk is sampled once more after this delay.
+     */
+    private static final long LATE_RESAMPLE_DELAY_MS = 1500L;
+    private static final Map<ChunkKey, Long> LATE_RESAMPLES = new java.util.LinkedHashMap<>();
 
     private static final int EDGE_TRIM = 2;
 
@@ -115,6 +125,7 @@ public class ChunkColorEvents {
 
     static void onDimensionChanged() {
         PENDING_NEIGHBORS.clear();
+        LATE_RESAMPLES.clear();
     }
 
     static boolean neighborsLoaded(Level level, ChunkKey key) {
@@ -128,6 +139,22 @@ public class ChunkColorEvents {
     }
 
     static void drainNeighborResamples(Level level, int budget) {
+        if (!LATE_RESAMPLES.isEmpty()) {
+            long now = System.currentTimeMillis();
+            Iterator<Map.Entry<ChunkKey, Long>> late = LATE_RESAMPLES.entrySet().iterator();
+            while (budget > 0 && late.hasNext()) {
+                Map.Entry<ChunkKey, Long> entry = late.next();
+                if (entry.getValue() > now) break;
+                late.remove();
+                ChunkKey key = entry.getKey();
+                if (!key.dimension().equals(level.dimension().location()) || !level.hasChunk(key.x(), key.z())) {
+                    continue;
+                }
+                budget--;
+                SolarisProfiler.time("chunkSample", () -> resample(level, key, key.toChunkPos()));
+            }
+        }
+
         Iterator<ChunkKey> it = PENDING_NEIGHBORS.iterator();
         while (budget > 0 && it.hasNext()) {
             ChunkKey key = it.next();
