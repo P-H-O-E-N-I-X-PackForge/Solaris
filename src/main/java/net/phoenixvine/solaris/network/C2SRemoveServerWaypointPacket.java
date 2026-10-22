@@ -8,7 +8,6 @@ import net.phoenixvine.solaris.server.waypoint.ServerWaypointService;
 
 import java.util.function.Supplier;
 
-/** An operator asks the server to delete one of the server-wide waypoints. */
 public class C2SRemoveServerWaypointPacket {
 
     private final String key;

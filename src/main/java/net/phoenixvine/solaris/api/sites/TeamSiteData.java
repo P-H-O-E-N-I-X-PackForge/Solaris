@@ -12,11 +12,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Places a mod wants to show to a whole team (a launch pad, a network node, a terminal), kept per team and per kind so
- * the markers can be rebuilt when a player joins. Solaris only stores them; the mod that owns a site decides when to
- * register and remove it, and turns the sites into markers with {@link net.phoenixvine.solaris.api.SolarisMarkers}.
- */
 public class TeamSiteData extends SavedData {
 
     private static final String DATA_NAME = "solaris_team_sites";
@@ -35,7 +30,6 @@ public class TeamSiteData extends SavedData {
         return overworld.getDataStorage().computeIfAbsent(TeamSiteData::load, TeamSiteData::new, DATA_NAME);
     }
 
-    /** Registers a site of the given kind. Keys are {@code kind/dimension/packedPos}, so one place registers once. */
     public static void registerSite(ServerLevel level, UUID team, String kind, BlockPos pos) {
         TeamSiteData data = get(level);
         String dimension = level.dimension().location().toString();

@@ -80,11 +80,6 @@ public class ChunkColorEvents {
 
     private static final Set<ChunkKey> PENDING_NEIGHBORS = new LinkedHashSet<>();
 
-    /**
-     * A chunk's biomes aren't always in place yet when its load event fires (modded dimensions can fill
-     * them in a moment later), so the first sample can see the placeholder plains biome and bake plains
-     * blue into the water. Every freshly loaded chunk is sampled once more after this delay.
-     */
     private static final long LATE_RESAMPLE_DELAY_MS = 1500L;
     private static final Map<ChunkKey, Long> LATE_RESAMPLES = new java.util.LinkedHashMap<>();
 
