@@ -15,7 +15,6 @@ import net.phoenixvine.solaris.client.render.MapTileCache;
 import net.phoenixvine.solaris.client.render.SolarisTexture;
 
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,7 +47,6 @@ public class ChunkColorEvents {
         ChunkFoliageCache.clear();
         FALLBACK_TAINTED.clear();
         FALLBACK_RETRY_COUNT.clear();
-        PENDING_NEIGHBORS.clear();
         LATE_RESAMPLES.clear();
         MapTileCache.clearAll();
         SolarisTexture.invalidateAll();
@@ -70,18 +68,25 @@ public class ChunkColorEvents {
 
         ChunkKey key = ChunkKey.of(level, pos);
         SolarisProfiler.time("chunkSample", () -> resample(level, key, pos));
-        LATE_RESAMPLES.put(key, System.currentTimeMillis() + LATE_RESAMPLE_DELAY_MS);
+        queueLateResample(key);
 
         for (int[] d : new int[][] { { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 } }) {
             ChunkKey neighborKey = new ChunkKey(key.dimension(), key.x() + d[0], key.z() + d[1]);
-            if (ChunkColorCache.contains(neighborKey)) PENDING_NEIGHBORS.add(neighborKey);
+            if (ChunkColorCache.contains(neighborKey)) queueLateResample(neighborKey);
         }
     }
 
-    private static final Set<ChunkKey> PENDING_NEIGHBORS = new LinkedHashSet<>();
-
     private static final long LATE_RESAMPLE_DELAY_MS = 1500L;
     private static final Map<ChunkKey, Long> LATE_RESAMPLES = new java.util.LinkedHashMap<>();
+
+    /**
+     * Also what refreshes a loaded chunk's neighbours, whose edges and blended colours depend on it. One
+     * pending entry per chunk is enough: it runs after everything that queued it, so a chunk surrounded by
+     * loading neighbours is sampled once more rather than once per neighbour.
+     */
+    private static void queueLateResample(ChunkKey key) {
+        LATE_RESAMPLES.putIfAbsent(key, System.currentTimeMillis() + LATE_RESAMPLE_DELAY_MS);
+    }
 
     private static final int EDGE_TRIM = 2;
 
@@ -119,7 +124,6 @@ public class ChunkColorEvents {
     }
 
     static void onDimensionChanged() {
-        PENDING_NEIGHBORS.clear();
         LATE_RESAMPLES.clear();
     }
 
@@ -148,15 +152,6 @@ public class ChunkColorEvents {
                 budget--;
                 SolarisProfiler.time("chunkSample", () -> resample(level, key, key.toChunkPos()));
             }
-        }
-
-        Iterator<ChunkKey> it = PENDING_NEIGHBORS.iterator();
-        while (budget > 0 && it.hasNext()) {
-            ChunkKey key = it.next();
-            it.remove();
-            if (!key.dimension().equals(level.dimension().location()) || !level.hasChunk(key.x(), key.z())) continue;
-            budget--;
-            SolarisProfiler.time("chunkSample", () -> resample(level, key, key.toChunkPos()));
         }
     }
 

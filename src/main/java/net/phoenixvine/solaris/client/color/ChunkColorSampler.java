@@ -179,9 +179,6 @@ public final class ChunkColorSampler {
                     }
                 }
 
-                Holder<Biome> biomeHolder = level.getBiome(cursor);
-                Biome biome = biomeHolder.value();
-
                 double reliefFactor = 1.0;
                 if (!isAquaticPlant(state) && !isIce(state) && level.hasChunk(worldX >> 4, (worldZ - 1) >> 4)) {
                     int northY = level.getHeight(Heightmap.Types.WORLD_SURFACE, worldX, worldZ - 1) - 1;
@@ -206,6 +203,8 @@ public final class ChunkColorSampler {
 
                     finalPixel = scaleBrightness(packAbgr(override, 255), reliefFactor);
                 } else if (mapColor == MapColor.WATER || state.is(Blocks.ICE)) {
+                    Holder<Biome> biomeHolder = level.getBiome(cursor);
+                    Biome biome = biomeHolder.value();
 
                     int tintPixel = packAbgr(blendedWaterColor(level, worldX, worldZ, surfaceY, biome), 255);
 
@@ -214,9 +213,11 @@ public final class ChunkColorSampler {
                     waterDepth[lz * 16 + lx] = sampleWaterDepth(level, cursor, worldX, worldZ, surfaceY);
                     waterOcean[lz * 16 + lx] = biomeHolder.is(BiomeTags.IS_OCEAN);
                 } else if (mapColor == MapColor.GRASS) {
+                    Biome biome = level.getBiome(cursor).value();
                     finalPixel = scaleBrightness(
                             packAbgr(blendedGrassColor(level, worldX, worldZ, surfaceY, biome), 255), reliefFactor);
                 } else if (mapColor == MapColor.PLANT) {
+                    Biome biome = level.getBiome(cursor).value();
                     finalPixel = scaleBrightness(
                             packAbgr(blendedFoliageColor(level, worldX, worldZ, surfaceY, biome), 255), reliefFactor);
                     foliage[lz * 16 + lx] = true;
