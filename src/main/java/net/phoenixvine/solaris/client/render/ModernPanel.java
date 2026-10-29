@@ -14,10 +14,12 @@ public final class ModernPanel {
         int t = Math.min(THICKNESS, Math.min(w, h) / 2);
         int light = shade(color, SHADE_AMOUNT);
         int dark = shade(color, -SHADE_AMOUNT);
-        g.fill(x, y, x + w, y + t, light);
-        g.fill(x, y + h - t, x + w, y + h, dark);
-        g.fill(x, y + t, x + t, y + h - t, light);
-        g.fill(x + w - t, y + t, x + w, y + h - t, dark);
+        g.drawManaged(() -> {
+            g.fill(x, y, x + w, y + t, light);
+            g.fill(x, y + h - t, x + w, y + h, dark);
+            g.fill(x, y + t, x + t, y + h - t, light);
+            g.fill(x + w - t, y + t, x + w, y + h - t, dark);
+        });
     }
 
     public static int shade(int argb, int amount) {

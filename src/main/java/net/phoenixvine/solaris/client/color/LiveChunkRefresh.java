@@ -34,6 +34,7 @@ public final class LiveChunkRefresh {
     /** Each retry is a full chunk sample, so only a few are done per pass; the rest wait for the next one. */
     private static final int TAINTED_RETRIES_PER_PASS = 4;
     private static int taintedRetryCursor = 0;
+    private static int taintedPass = 0;
 
     private static final int CHUNKS_PER_TICK_BUDGET = 16;
     private static final int NEIGHBOR_RESAMPLES_PER_TICK = 4;
@@ -69,6 +70,7 @@ public final class LiveChunkRefresh {
             sweepRefreshedAny = false;
             tickCounter = 0;
             taintedRetryTickCounter = 0;
+            taintedRetryCursor = 0;
             ChunkColorEvents.onDimensionChanged();
         }
 
@@ -160,6 +162,7 @@ public final class LiveChunkRefresh {
         if (ChunkColorEvents.FALLBACK_TAINTED.isEmpty()) return;
 
         boolean refreshedAny = false;
+        taintedPass++;
         List<ChunkKey> tainted = List.copyOf(ChunkColorEvents.FALLBACK_TAINTED);
         int start = taintedRetryCursor % tainted.size();
         taintedRetryCursor = start;
@@ -169,13 +172,19 @@ public final class LiveChunkRefresh {
             taintedRetryCursor = start + n + 1;
             if (!key.dimension().equals(level.dimension().location())) continue;
             if (!level.hasChunk(key.x(), key.z())) continue;
+
+            // A chunk that keeps coming back tainted usually has air columns for good (sky islands, void),
+            // so the more it has failed the less often it is worth another full sample.
+            int attempts = ChunkColorEvents.FALLBACK_RETRY_COUNT.getOrDefault(key, 0);
+            int interval = attempts < 3 ? 1 : attempts < 6 ? 4 : 16;
+            if (taintedPass % interval != 0) continue;
             retried++;
             ChunkColorSampler.ColorSample colorSample = ChunkColorSampler.sample(level, key.toChunkPos());
             ChunkColorSampler.HeightSample heightSample = ChunkColorSampler.sampleHeights(level, key.toChunkPos());
             ChunkColorEvents.trimUnloadedEdges(level, key, colorSample, heightSample);
             if (colorSample.hadFallback) {
-                int attempts = ChunkColorEvents.FALLBACK_RETRY_COUNT.merge(key, 1, Integer::sum);
-                if (attempts >= MAX_FALLBACK_RETRIES) {
+                int failures = ChunkColorEvents.FALLBACK_RETRY_COUNT.merge(key, 1, Integer::sum);
+                if (failures >= MAX_FALLBACK_RETRIES) {
                     ChunkColorEvents.FALLBACK_TAINTED.remove(key);
                     ChunkColorEvents.FALLBACK_RETRY_COUNT.remove(key);
                 }
