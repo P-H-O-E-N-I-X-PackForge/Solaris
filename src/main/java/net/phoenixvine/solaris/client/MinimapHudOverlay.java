@@ -200,6 +200,7 @@ public class MinimapHudOverlay {
             if (waypoints.size() > maxWaypoints) waypoints = waypoints.subList(0, maxWaypoints);
 
             boolean showDirections = SolarisConfig.MINIMAP_SHOW_WAYPOINT_DIRECTIONS.get();
+            List<int[]> dots = new ArrayList<>();
             for (Waypoint w : waypoints) {
                 double wPixelX = radiusPixels + (w.x - (chunkX << 4));
                 double wPixelZ = radiusPixels + (w.z - (chunkZ << 4));
@@ -214,13 +215,22 @@ public class MinimapHudOverlay {
                 int wy = y + (int) ((wPixelZ - v) * scale);
 
                 if (shape != MinimapShape.SQUARE && !containsPoint(shape, wx - x, wy - y, screenSize)) continue;
-                g.fill(wx - 3, wy - 3, wx + 3, wy + 3, 0xFF000000);
-                g.fill(wx - 2, wy - 2, wx + 2, wy + 2, w.colorArgb());
+                dots.add(new int[] { wx, wy, w.colorArgb() });
 
                 int[] finalPos = rotate ? rotateAroundCenter(wx, wy, cx, cy, contentAngle) : new int[] { wx, wy };
                 double hdx = finalPos[0] - mouseX;
                 double hdy = finalPos[1] - mouseY;
                 if (hdx * hdx + hdy * hdy <= HOVER_RADIUS_SQ) hoveredWaypoint = w;
+            }
+
+            // Every dot is the same render type, so they go out as one draw instead of one per fill.
+            if (!dots.isEmpty()) {
+                g.drawManaged(() -> {
+                    for (int[] dot : dots) {
+                        g.fill(dot[0] - 3, dot[1] - 3, dot[0] + 3, dot[1] + 3, 0xFF000000);
+                        g.fill(dot[0] - 2, dot[1] - 2, dot[0] + 2, dot[1] + 2, dot[2]);
+                    }
+                });
             }
         }
 
@@ -295,8 +305,12 @@ public class MinimapHudOverlay {
         }
 
         if (offScreenWaypoints != null) {
+            g.drawManaged(() -> {
+                for (Waypoint w : offScreenWaypoints) {
+                    drawWaypointDirection(g, w, mc, cx, cy, radius, rotate, contentAngle);
+                }
+            });
             for (Waypoint w : offScreenWaypoints) {
-                drawWaypointDirection(g, w, mc, cx, cy, radius, rotate, contentAngle);
                 int[] pos = waypointEdgePosition(w, mc, cx, cy, radius, rotate, contentAngle);
                 if (pos == null) continue;
                 double hdx = pos[0] - mouseX;
