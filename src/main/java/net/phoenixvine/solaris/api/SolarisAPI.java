@@ -330,7 +330,8 @@ public final class SolarisAPI {
         return null;
     }
 
-    public static void setPlayerUnexploredStyle(ResourceLocation dimension, @org.jetbrains.annotations.Nullable UnexploredStyle style) {
+    public static void setPlayerUnexploredStyle(ResourceLocation dimension,
+                                                @org.jetbrains.annotations.Nullable UnexploredStyle style) {
         String prefix = dimension + "=";
         java.util.List<String> entries = new java.util.ArrayList<>();
         for (String entry : SolarisConfig.UNEXPLORED_STYLE_BY_DIMENSION.get()) {
