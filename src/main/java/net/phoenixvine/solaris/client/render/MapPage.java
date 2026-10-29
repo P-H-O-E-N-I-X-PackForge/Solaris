@@ -52,6 +52,12 @@ public interface MapPage {
         return false;
     }
 
+    /** A key press on the page screen, before the built-in keys (Q / E, Esc). Return true to consume it. */
+    default boolean keyPressed(int key, int scanCode, int modifiers) {
+        return false;
+    }
+
+    /** A line of text under the map, or null. */
     default @Nullable Component footer() {
         return null;
     }

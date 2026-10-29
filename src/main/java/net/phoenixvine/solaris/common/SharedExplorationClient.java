@@ -113,7 +113,9 @@ public final class SharedExplorationClient {
         synchronized (UPLOAD_QUEUE) {
             UPLOAD_QUEUE.clear();
         }
-        WANTED.clear();
+        synchronized (WANTED) {
+            WANTED.clear();
+        }
         WINDOW_QUEUE.clear();
         WINDOW_REQUESTED_AT.clear();
         VERIFY_AT.clear();
@@ -287,13 +289,17 @@ public final class SharedExplorationClient {
 
         int maxBlobs = uploadBlobsPerStep();
 
-        while (!WANTED.isEmpty() && blobs.size() < maxBlobs && bytes < UPLOAD_MAX_BYTES) {
-            ChunkKey key = WANTED.iterator().next();
-            WANTED.remove(key);
-            synchronized (UPLOAD_QUEUE) {
-                UPLOAD_QUEUE.remove(key);
+        synchronized (WANTED) {
+            Iterator<ChunkKey> it = WANTED.iterator();
+            while (it.hasNext() && blobs.size() < maxBlobs && bytes < UPLOAD_MAX_BYTES) {
+                ChunkKey key = it.next();
+                it.remove();
+
+                synchronized (UPLOAD_QUEUE) {
+                    UPLOAD_QUEUE.remove(key);
+                }
+                bytes += addBlob(blobs, key, dimension);
             }
-            bytes += addBlob(blobs, key, dimension);
         }
         synchronized (UPLOAD_QUEUE) {
             Iterator<ChunkKey> it = UPLOAD_QUEUE.iterator();
@@ -374,7 +380,9 @@ public final class SharedExplorationClient {
                 Long uploadedAt = UPLOADED_AT.get(key);
                 if (uploadedAt != null && now - uploadedAt < UPLOAD_ECHO_IGNORE_MS) continue;
 
-                if (WANTED.size() < MAX_QUEUE && WANTED.add(key)) requestedUploads++;
+                synchronized (WANTED) {
+                    if (WANTED.size() < MAX_QUEUE && WANTED.add(key)) requestedUploads++;
+                }
             }
         }
 

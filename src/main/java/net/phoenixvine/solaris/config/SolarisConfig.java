@@ -28,6 +28,7 @@ public final class SolarisConfig {
     public static final ForgeConfigSpec.DoubleValue VIGNETTE_STRENGTH;
     public static final ForgeConfigSpec.BooleanValue BLACK_AND_WHITE;
     public static final ForgeConfigSpec.EnumValue<net.phoenixvine.solaris.client.render.UnexploredStyle> UNEXPLORED_STYLE;
+    public static final ForgeConfigSpec.ConfigValue<java.util.List<? extends String>> UNEXPLORED_STYLE_BY_DIMENSION;
     public static final ForgeConfigSpec.DoubleValue UNEXPLORED_DENSITY;
     public static final ForgeConfigSpec.DoubleValue UNEXPLORED_BRIGHTNESS;
     public static final ForgeConfigSpec.ConfigValue<String> UNEXPLORED_IMAGE_PATH;
@@ -261,6 +262,11 @@ public final class SolarisConfig {
                         "are stable across rebuilds and get pushed back by real terrain as you explore. Purely " +
                         "cosmetic.")
                 .defineEnum("unexploredStyle", net.phoenixvine.solaris.client.render.UnexploredStyle.FOG);
+        UNEXPLORED_STYLE_BY_DIMENSION = builder
+                .comment("Unexplored style chosen per dimension with the map's Unexplored Style button, as " +
+                        "\"namespace:dimension=STYLE\" entries. Used instead of unexploredStyle for those dimensions, " +
+                        "so a dimension whose own backdrop is its default can still be switched.")
+                .defineList("unexploredStyleByDimension", java.util.List.of(), o -> o instanceof String);
         UNEXPLORED_DENSITY = builder
                 .comment("Multiplier on how many stars/embers appear for the starfield/phoenix unexploredStyle. " +
                         "1.0 = default, higher = denser, lower = sparser. No effect when unexploredStyle is FOG.")
