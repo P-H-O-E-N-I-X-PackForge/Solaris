@@ -245,6 +245,7 @@ processResources {
 
 tasks.register('publishToDomains', Copy) {
     group = 'phoenix'
+    dependsOn tasks.named('jar')
     description = 'Builds this mod and copies the jar into ../Phoenix-Domains/libs, so Domains picks up local changes.'
     from(layout.buildDirectory.dir('libs')) {
         include '*.jar'
