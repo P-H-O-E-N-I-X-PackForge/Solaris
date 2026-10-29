@@ -305,11 +305,7 @@ public class MinimapHudOverlay {
         }
 
         if (offScreenWaypoints != null) {
-            g.drawManaged(() -> {
-                for (Waypoint w : offScreenWaypoints) {
-                    drawWaypointDirection(g, w, mc, cx, cy, radius, rotate, contentAngle);
-                }
-            });
+            drawWaypointDirections(g, offScreenWaypoints, mc, cx, cy, radius, rotate, contentAngle);
             for (Waypoint w : offScreenWaypoints) {
                 int[] pos = waypointEdgePosition(w, mc, cx, cy, radius, rotate, contentAngle);
                 if (pos == null) continue;
@@ -343,6 +339,13 @@ public class MinimapHudOverlay {
             g.fill(tx - 2, ty - 2, tx + tw + 2, ty + mc.font.lineHeight + 2, 0xCC000000);
             g.drawString(mc.font, name, tx, ty, 0xFFFFFFFF, false);
         }
+    }
+
+    private static void drawWaypointDirections(GuiGraphics g, List<Waypoint> waypoints, Minecraft mc, int cx, int cy,
+                                               int radius, boolean rotate, float contentAngle) {
+        g.drawManaged(() -> {
+            for (Waypoint w : waypoints) drawWaypointDirection(g, w, mc, cx, cy, radius, rotate, contentAngle);
+        });
     }
 
     private static void drawWaypointDirection(GuiGraphics g, Waypoint w, Minecraft mc, int cx, int cy, int radius,
