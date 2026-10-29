@@ -113,7 +113,9 @@ public final class SharedExplorationClient {
         synchronized (UPLOAD_QUEUE) {
             UPLOAD_QUEUE.clear();
         }
-        WANTED.clear();
+        synchronized (WANTED) {
+            WANTED.clear();
+        }
         WINDOW_QUEUE.clear();
         WINDOW_REQUESTED_AT.clear();
         VERIFY_AT.clear();
@@ -382,7 +384,9 @@ public final class SharedExplorationClient {
                 Long uploadedAt = UPLOADED_AT.get(key);
                 if (uploadedAt != null && now - uploadedAt < UPLOAD_ECHO_IGNORE_MS) continue;
 
-                if (WANTED.size() < MAX_QUEUE && WANTED.add(key)) requestedUploads++;
+                synchronized (WANTED) {
+                    if (WANTED.size() < MAX_QUEUE && WANTED.add(key)) requestedUploads++;
+                }
             }
         }
 

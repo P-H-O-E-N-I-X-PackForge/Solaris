@@ -37,7 +37,7 @@ public final class SphereMesh {
             rotatedNormal.set(v[3], v[4], v[5]);
             normalMatrix.transform(rotatedNormal);
             float rim = Mth.clamp(rotatedNormal.z(), 0f, 1f);
-            int shade = Math.round(255 - (RIM_DARKEST + (1f - RIM_DARKEST) * rim));
+            int shade = Math.round(255 * (RIM_DARKEST + (1f - RIM_DARKEST) * rim));
 
             consumer.addVertex(positionMatrix, v[0], v[1], v[2])
                     .setColor(shade, shade, shade, 255)

@@ -26,7 +26,7 @@ public class SolarisClientTickHandler {
     private static boolean gtceuBroken = false;
     private static int reachCheckTickCounter = 0;
     private static final int WAYPOINT_REACH_CHECK_INTERVAL_TICKS = 10;
-    private static final double WAYPOINT_REACH_RADIUS_SQ = 9.0;
+    private static final double WAYPOINT_REACH_RADIUS_SQ = 8.0 * 8.0;
     private static final Set<String> NEAR_WAYPOINT_IDS = new HashSet<>();
 
     @SubscribeEvent

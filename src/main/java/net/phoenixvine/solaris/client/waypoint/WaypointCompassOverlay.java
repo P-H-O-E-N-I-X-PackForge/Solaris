@@ -12,6 +12,8 @@ import net.phoenixvine.solaris.config.SolarisConfig;
 
 import java.util.List;
 
+import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_TEXT;
+
 @EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, value = Dist.CLIENT)
 public class WaypointCompassOverlay {
 
@@ -42,7 +44,7 @@ public class WaypointCompassOverlay {
 
         String label = target.name + " (" + Math.round(distance) + "m)";
         int textWidth = mc.font.width(label);
-        g.drawString(mc.font, label, cx - textWidth / 2, cy + 10, -1, false);
+        g.drawString(mc.font, label, cx - textWidth / 2, cy + 10, C_TEXT);
     }
 
     private static Waypoint chooseTarget(Minecraft mc) {
