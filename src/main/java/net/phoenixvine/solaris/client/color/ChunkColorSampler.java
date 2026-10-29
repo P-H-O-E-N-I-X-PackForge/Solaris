@@ -14,6 +14,8 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.MapColor;
 import net.phoenixvine.solaris.config.SolarisConfig;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public final class ChunkColorSampler {
@@ -137,6 +139,7 @@ public final class ChunkColorSampler {
     }
 
     public static ColorSample sample(Level level, ChunkPos pos) {
+        BIOME_CACHE.get().clear();
         int[] pixels = new int[256];
         boolean[] lightEmitting = new boolean[256];
         int[] waterTint = new int[256];
@@ -341,9 +344,20 @@ public final class ChunkColorSampler {
     }
 
     private static Biome biomeOr(Level level, BlockPos.MutableBlockPos pos, Biome fallback) {
-        if (!level.hasChunk(pos.getX() >> 4, pos.getZ() >> 4)) return fallback;
-        return level.getBiome(pos).value();
+        // Blending asks for the same few quarts over and over (every pixel looks a few blocks each way),
+        // and the biome lookup behind it is the most expensive part of sampling a chunk.
+        long key = BlockPos.asLong(pos.getX() >> 2, pos.getY() >> 2, pos.getZ() >> 2);
+        Map<Long, Biome> cache = BIOME_CACHE.get();
+        if (cache.containsKey(key)) {
+            Biome cached = cache.get(key);
+            return cached != null ? cached : fallback;
+        }
+        Biome biome = level.hasChunk(pos.getX() >> 4, pos.getZ() >> 4) ? level.getBiome(pos).value() : null;
+        cache.put(key, biome);
+        return biome != null ? biome : fallback;
     }
+
+    private static final ThreadLocal<Map<Long, Biome>> BIOME_CACHE = ThreadLocal.withInitial(HashMap::new);
 
     private static final int WATER_BLEND_STEP = 4;
 

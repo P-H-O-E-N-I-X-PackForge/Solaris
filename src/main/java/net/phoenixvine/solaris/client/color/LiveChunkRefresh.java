@@ -31,6 +31,10 @@ public final class LiveChunkRefresh {
 
     private static final int MAX_FALLBACK_RETRIES = 10;
 
+    /** Each retry is a full chunk sample, so only a few are done per pass; the rest wait for the next one. */
+    private static final int TAINTED_RETRIES_PER_PASS = 4;
+    private static int taintedRetryCursor = 0;
+
     private static final int CHUNKS_PER_TICK_BUDGET = 16;
     private static final int NEIGHBOR_RESAMPLES_PER_TICK = 4;
     private static final Deque<ChunkKey> PENDING_SWEEP = new ArrayDeque<>();
@@ -156,9 +160,16 @@ public final class LiveChunkRefresh {
         if (ChunkColorEvents.FALLBACK_TAINTED.isEmpty()) return;
 
         boolean refreshedAny = false;
-        for (ChunkKey key : List.copyOf(ChunkColorEvents.FALLBACK_TAINTED)) {
+        List<ChunkKey> tainted = List.copyOf(ChunkColorEvents.FALLBACK_TAINTED);
+        int start = taintedRetryCursor % tainted.size();
+        taintedRetryCursor = start;
+        int retried = 0;
+        for (int n = 0; n < tainted.size() && retried < TAINTED_RETRIES_PER_PASS; n++) {
+            ChunkKey key = tainted.get((start + n) % tainted.size());
+            taintedRetryCursor = start + n + 1;
             if (!key.dimension().equals(level.dimension().location())) continue;
             if (!level.hasChunk(key.x(), key.z())) continue;
+            retried++;
             ChunkColorSampler.ColorSample colorSample = ChunkColorSampler.sample(level, key.toChunkPos());
             ChunkColorSampler.HeightSample heightSample = ChunkColorSampler.sampleHeights(level, key.toChunkPos());
             ChunkColorEvents.trimUnloadedEdges(level, key, colorSample, heightSample);
