@@ -20,7 +20,7 @@ public final class SolarisProfiler {
     private SolarisProfiler() {}
 
     public static <T> T time(String label, Supplier<T> task) {
-        if (!SolarisConfig.PERF_LOGGING.get()) return task.get();
+        if (!perfOn()) return task.get();
         long start = System.nanoTime();
         T result = task.get();
         record(label, System.nanoTime() - start);
@@ -28,7 +28,7 @@ public final class SolarisProfiler {
     }
 
     public static void time(String label, Runnable task) {
-        if (!SolarisConfig.PERF_LOGGING.get()) {
+        if (!perfOn()) {
             task.run();
             return;
         }
@@ -37,12 +37,20 @@ public final class SolarisProfiler {
         record(label, System.nanoTime() - start);
     }
 
+    /**
+     * Whether perf logging is on. A client tick can come before the client config has loaded (while the game is still
+     * loading), and reading a config value then throws, so until it is loaded this is off.
+     */
+    private static boolean perfOn() {
+        return SolarisConfig.SPEC.isLoaded() && SolarisConfig.PERF_LOGGING.get();
+    }
+
     public static long start() {
         return System.nanoTime();
     }
 
     public static void end(String label, long startNanos) {
-        if (!SolarisConfig.PERF_LOGGING.get()) return;
+        if (!perfOn()) return;
         record(label, System.nanoTime() - startNanos);
     }
 
@@ -57,7 +65,7 @@ public final class SolarisProfiler {
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
-        if (!SolarisConfig.PERF_LOGGING.get() || STATS.isEmpty()) return;
+        if (!perfOn() || STATS.isEmpty()) return;
 
         int intervalTicks = SolarisConfig.PERF_SUMMARY_INTERVAL_SECONDS.get() * 20;
         if (++tickCounter < intervalTicks) return;
