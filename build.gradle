@@ -243,6 +243,7 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.register('publishToDomains', Copy) {
     group = 'phoenix'
+    dependsOn tasks.named('jar')
     description = 'Builds this mod and copies the jar into ../Phoenix-Domains/libs, so Domains picks up local changes.'
     dependsOn 'reobfJar'
     from(layout.buildDirectory.dir('libs')) {
