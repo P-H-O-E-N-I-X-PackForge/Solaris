@@ -68,6 +68,10 @@ public final class SmoothShapes {
     }
 
     private static void setTint(int argb) {
+        // Drawing through the normal GUI path (fills, text) leaves blending off, and these are plain texture
+        // blits that never turn it back on, so without this the tint's alpha is ignored and the shape is solid.
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
         float a = ((argb >> 24) & 0xFF) / 255f;
         float r = ((argb >> 16) & 0xFF) / 255f;
         float gr = ((argb >> 8) & 0xFF) / 255f;
