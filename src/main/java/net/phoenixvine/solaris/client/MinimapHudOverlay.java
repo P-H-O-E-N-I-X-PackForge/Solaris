@@ -2,6 +2,7 @@ package net.phoenixvine.solaris.client;
 
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.core.BlockPos;
@@ -23,6 +24,9 @@ import net.phoenixvine.solaris.client.ping.PingMarker;
 import net.phoenixvine.solaris.client.ping.PingTracker;
 import net.phoenixvine.solaris.client.player.RemotePlayerTracker;
 import net.phoenixvine.solaris.client.render.LineRenderer;
+import net.phoenixvine.solaris.client.render.MapLayer;
+import net.phoenixvine.solaris.client.render.MapLayers;
+import net.phoenixvine.solaris.client.render.MapProjection;
 import net.phoenixvine.solaris.client.render.MinimapShape;
 import net.phoenixvine.solaris.client.render.ModernPanel;
 import net.phoenixvine.solaris.client.render.PlayerArrow;
@@ -187,6 +191,11 @@ public class MinimapHudOverlay {
             }
         } else {
             drawClippedTerrain(g, shape, tex, x, y, screenSize, wrappedU, wrappedV, scale);
+        }
+
+        if (!MapLayers.minimap().isEmpty()) {
+            drawMinimapLayers(g, mc, shape, x, y, cx, cy, screenSize, radiusPixels, chunkX, chunkZ, u, v, scale, rotate,
+                    contentAngle);
         }
 
         int radius = screenSize / 2;
@@ -471,6 +480,42 @@ public class MinimapHudOverlay {
         }
 
         BufferUploader.drawWithShader(buffer.buildOrThrow());
+    }
+
+    private static void drawMinimapLayers(GuiGraphics g, Minecraft mc, MinimapShape shape, int x, int y, int cx, int cy,
+                                          int screenSize, int radiusPixels, int chunkX, int chunkZ, float u, float v,
+                                          float scale, boolean rotate, float contentAngle) {
+        MapProjection projection = new MapProjection() {
+
+            @Override
+            public double screenX(double worldX) {
+                return x + (radiusPixels + worldX - (chunkX << 4) - u) * scale;
+            }
+
+            @Override
+            public double screenY(double worldZ) {
+                return y + (radiusPixels + worldZ - (chunkZ << 4) - v) * scale;
+            }
+
+            @Override
+            public float zoom() {
+                return scale;
+            }
+
+            @Override
+            public boolean contains(double sx, double sy) {
+                double px = sx;
+                double py = sy;
+                if (rotate) {
+                    int[] r = rotateAroundCenter((int) sx, (int) sy, cx, cy, contentAngle);
+                    px = r[0];
+                    py = r[1];
+                }
+                return containsPoint(shape, (int) (px - x), (int) (py - y), screenSize);
+            }
+        };
+        ResourceLocation dimension = mc.level.dimension().location();
+        for (MapLayer layer : MapLayers.minimap()) layer.render(g, dimension, projection, 0f);
     }
 
     private static boolean containsPoint(MinimapShape shape, int lx, int ly, int screenSize) {
