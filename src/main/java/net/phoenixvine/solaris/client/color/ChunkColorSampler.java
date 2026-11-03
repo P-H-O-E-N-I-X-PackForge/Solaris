@@ -189,7 +189,10 @@ public final class ChunkColorSampler {
                 if (state.isAir()) {
 
                     finalPixel = 0;
-                    hadFallback = true;
+                    // A column with no ground at all (a chasm, a void gap) is a real answer, not missing data; only
+                    // an air block where something should be marks the chunk as not ready, or the whole chunk would
+                    // be dropped from the map for having one open column in it.
+                    if (surfaceY >= minY) hadFallback = true;
                     pixels[lz * 16 + lx] = finalPixel;
                     lightEmitting[lz * 16 + lx] = false;
                     continue;
