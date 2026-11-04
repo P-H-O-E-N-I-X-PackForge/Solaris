@@ -146,6 +146,7 @@ public final class ChunkColorSampler {
         int[] waterDepth = new int[256];
         boolean[] waterOcean = new boolean[256];
         boolean hadFallback = false;
+        int groundColumns = 0;
         boolean[] foliage = new boolean[256];
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
@@ -197,6 +198,7 @@ public final class ChunkColorSampler {
                     lightEmitting[lz * 16 + lx] = false;
                     continue;
                 }
+                groundColumns++;
                 Integer override = BlockColorOverrides.get(state.getBlock());
                 if (override == null) {
 
@@ -249,6 +251,11 @@ public final class ChunkColorSampler {
                 lightEmitting[lz * 16 + lx] = state.getLightEmission(level, cursor) > 0;
             }
         }
+
+        // Some open columns are fine, but a chunk with no ground in any column is far more likely one that
+        // hasn't received its terrain yet than a chunk that is all void. Storing it would paint over real map
+        // data with blank pixels, so it counts as not ready.
+        if (groundColumns == 0) hadFallback = true;
 
         return new ColorSample(pixels, lightEmitting, waterTint, waterDepth, waterOcean, hadFallback, foliage);
     }

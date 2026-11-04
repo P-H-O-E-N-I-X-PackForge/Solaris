@@ -48,6 +48,7 @@ public class ChunkColorEvents {
         FALLBACK_TAINTED.clear();
         FALLBACK_RETRY_COUNT.clear();
         LATE_RESAMPLES.clear();
+        SETTLE_RESAMPLES.clear();
         MapTileCache.clearAll();
         SolarisTexture.invalidateAll();
     }
@@ -78,6 +79,15 @@ public class ChunkColorEvents {
 
     private static final long LATE_RESAMPLE_DELAY_MS = 1500L;
     private static final Map<ChunkKey, Long> LATE_RESAMPLES = new java.util.LinkedHashMap<>();
+
+    /**
+     * Dimensions that finish their chunks after sending them (biomes, terrain touch-ups) can still be changing
+     * a few seconds in, so each chunk gets one more sample then. Chunks on the outer edge of the loaded circle
+     * are the ones this matters for: they are the first to be left behind, so whatever they were last sampled
+     * as is what the map keeps.
+     */
+    private static final long SETTLE_RESAMPLE_DELAY_MS = 6000L;
+    private static final Map<ChunkKey, Long> SETTLE_RESAMPLES = new java.util.LinkedHashMap<>();
 
     /**
      * Also what refreshes a loaded chunk's neighbours, whose edges and blended colours depend on it. One
@@ -125,6 +135,7 @@ public class ChunkColorEvents {
 
     static void onDimensionChanged() {
         LATE_RESAMPLES.clear();
+        SETTLE_RESAMPLES.clear();
     }
 
     static boolean neighborsLoaded(Level level, ChunkKey key) {
@@ -138,21 +149,27 @@ public class ChunkColorEvents {
     }
 
     static void drainNeighborResamples(Level level, int budget) {
-        if (!LATE_RESAMPLES.isEmpty()) {
-            long now = System.currentTimeMillis();
-            Iterator<Map.Entry<ChunkKey, Long>> late = LATE_RESAMPLES.entrySet().iterator();
-            while (budget > 0 && late.hasNext()) {
-                Map.Entry<ChunkKey, Long> entry = late.next();
-                if (entry.getValue() > now) break;
-                late.remove();
-                ChunkKey key = entry.getKey();
-                if (!key.dimension().equals(level.dimension().location()) || !level.hasChunk(key.x(), key.z())) {
-                    continue;
-                }
-                budget--;
-                SolarisProfiler.time("chunkSample", () -> resample(level, key, key.toChunkPos()));
+        budget = drainDue(level, LATE_RESAMPLES, budget, true);
+        drainDue(level, SETTLE_RESAMPLES, budget, false);
+    }
+
+    private static int drainDue(Level level, Map<ChunkKey, Long> queue, int budget, boolean thenSettle) {
+        if (queue.isEmpty()) return budget;
+        long now = System.currentTimeMillis();
+        Iterator<Map.Entry<ChunkKey, Long>> due = queue.entrySet().iterator();
+        while (budget > 0 && due.hasNext()) {
+            Map.Entry<ChunkKey, Long> entry = due.next();
+            if (entry.getValue() > now) break;
+            due.remove();
+            ChunkKey key = entry.getKey();
+            if (!key.dimension().equals(level.dimension().location()) || !level.hasChunk(key.x(), key.z())) {
+                continue;
             }
+            budget--;
+            SolarisProfiler.time("chunkSample", () -> resample(level, key, key.toChunkPos()));
+            if (thenSettle) SETTLE_RESAMPLES.putIfAbsent(key, now + SETTLE_RESAMPLE_DELAY_MS);
         }
+        return budget;
     }
 
     public static boolean resample(Level level, ChunkKey key, net.minecraft.world.level.ChunkPos pos) {
