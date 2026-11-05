@@ -12,11 +12,13 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.MapColor;
+import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.config.SolarisConfig;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class ChunkColorSampler {
 
@@ -147,6 +149,10 @@ public final class ChunkColorSampler {
         boolean[] waterOcean = new boolean[256];
         boolean hadFallback = false;
         int groundColumns = 0;
+        int dbgGrass = 0;
+        int dbgPlant = 0;
+        int dbgTexFallback = 0;
+        String dbgFirstTinted = null;
         boolean[] foliage = new boolean[256];
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
@@ -219,10 +225,14 @@ public final class ChunkColorSampler {
                     waterOcean[lz * 16 + lx] = biomeHolder.is(BiomeTags.IS_OCEAN);
                 } else if (mapColor == MapColor.GRASS) {
                     Biome biome = level.getBiome(cursor).value();
+                    dbgGrass++;
+                    if (dbgFirstTinted == null) dbgFirstTinted = dbgTint(state, level, cursor, biome, worldX, worldZ);
                     finalPixel = scaleBrightness(
                             packAbgr(blendedGrassColor(level, worldX, worldZ, surfaceY, biome), 255), reliefFactor);
                 } else if (mapColor == MapColor.PLANT) {
                     Biome biome = level.getBiome(cursor).value();
+                    dbgPlant++;
+                    if (dbgFirstTinted == null) dbgFirstTinted = dbgTint(state, level, cursor, biome, worldX, worldZ);
                     finalPixel = scaleBrightness(
                             packAbgr(blendedFoliageColor(level, worldX, worldZ, surfaceY, biome), 255), reliefFactor);
                     foliage[lz * 16 + lx] = true;
@@ -232,6 +242,7 @@ public final class ChunkColorSampler {
                     int abgr;
                     if (textureResult.fallback) {
                         hadFallback = true;
+                        dbgTexFallback++;
 
                         abgr = mapColor != MapColor.NONE ? mapColor.calculateRGBColor(MapColor.Brightness.NORMAL) :
                                 packAbgr(textureResult.rgb, 255);
@@ -256,6 +267,20 @@ public final class ChunkColorSampler {
         // hasn't received its terrain yet than a chunk that is all void. Storing it would paint over real map
         // data with blank pixels, so it counts as not ready.
         if (groundColumns == 0) hadFallback = true;
+
+        if (DBG_LOGS.get() < DBG_LIMIT) {
+            int loaded = 0;
+            for (int dz = -1; dz <= 1; dz++) {
+                for (int dx = -1; dx <= 1; dx++) {
+                    if ((dx != 0 || dz != 0) && level.hasChunk(pos.x + dx, pos.z + dz)) loaded++;
+                }
+            }
+            PhoenixSolaris.LOGGER.info(
+                    "[Solaris dbg] sample dim={} chunk=({},{}) ground={}/256 grass={} plant={} texFallback={} " +
+                            "tainted={} neighbours={}/8 firstTinted={} #{}",
+                    level.dimension().location(), pos.x, pos.z, groundColumns, dbgGrass, dbgPlant, dbgTexFallback,
+                    hadFallback, loaded, dbgFirstTinted, DBG_LOGS.incrementAndGet());
+        }
 
         return new ColorSample(pixels, lightEmitting, waterTint, waterDepth, waterOcean, hadFallback, foliage);
     }
@@ -369,6 +394,16 @@ public final class ChunkColorSampler {
     }
 
     private static final ThreadLocal<Map<Long, Biome>> BIOME_CACHE = ThreadLocal.withInitial(HashMap::new);
+
+    private static final int DBG_LIMIT = 2500;
+    static final AtomicInteger DBG_LOGS = new AtomicInteger();
+
+    /** Temporary diagnostics for edge-of-circle black and green chunks. */
+    private static String dbgTint(BlockState state, Level level, BlockPos pos, Biome biome, int x, int z) {
+        return net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()) + " biome=" +
+                level.getBiome(pos).unwrapKey().map(k -> k.location().toString()).orElse("?") + " grass=#" +
+                String.format("%06X", biome.getGrassColor(x, z) & 0xFFFFFF);
+    }
 
     private static final int WATER_BLEND_STEP = 4;
 

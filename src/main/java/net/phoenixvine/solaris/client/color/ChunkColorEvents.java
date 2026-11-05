@@ -49,6 +49,7 @@ public class ChunkColorEvents {
         FALLBACK_RETRY_COUNT.clear();
         LATE_RESAMPLES.clear();
         SETTLE_RESAMPLES.clear();
+        LOADED_AT.clear();
         MapTileCache.clearAll();
         SolarisTexture.invalidateAll();
     }
@@ -70,6 +71,7 @@ public class ChunkColorEvents {
         ChunkKey key = ChunkKey.of(level, pos);
         SolarisProfiler.time("chunkSample", () -> resample(level, key, pos));
         queueLateResample(key);
+        LOADED_AT.put(key, System.currentTimeMillis());
 
         for (int[] d : new int[][] { { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 } }) {
             ChunkKey neighborKey = new ChunkKey(key.dimension(), key.x() + d[0], key.z() + d[1]);
@@ -88,6 +90,35 @@ public class ChunkColorEvents {
      */
     private static final long SETTLE_RESAMPLE_DELAY_MS = 6000L;
     private static final Map<ChunkKey, Long> SETTLE_RESAMPLES = new java.util.LinkedHashMap<>();
+
+    private static final Map<ChunkKey, Long> LOADED_AT = new ConcurrentHashMap<>();
+
+    /**
+     * A chunk that is left behind soon after it loads never gets its late or settle sample, so whatever it
+     * looked like at load (placeholder biome, unfinished terrain) is what the map keeps. One last sample as it
+     * unloads, while its data is still there, records the settled version instead.
+     */
+    @SubscribeEvent
+    public static void onChunkUnload(ChunkEvent.Unload event) {
+        if (!(event.getLevel() instanceof Level level) || !level.isClientSide()) return;
+        if (!(event.getChunk() instanceof net.minecraft.world.level.chunk.LevelChunk)) return;
+
+        var pos = event.getChunk().getPos();
+        ChunkKey key = ChunkKey.of(level, pos);
+        Long loadedAt = LOADED_AT.remove(key);
+        LATE_RESAMPLES.remove(key);
+        SETTLE_RESAMPLES.remove(key);
+        if (loadedAt == null || System.currentTimeMillis() - loadedAt > SETTLE_RESAMPLE_DELAY_MS + 1500L) return;
+
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+        if (mc.level != level || mc.player == null) return;
+        if (DimensionModes.isCaveDimension(level)) return;
+        if (!SolarisAPI.getFeatureState(SolarisAPI.FEATURE_WORLD_MAP, level.dimension().location())
+                .atLeast(SolarisFeatureState.ENABLED)) {
+            return;
+        }
+        SolarisProfiler.time("chunkSample", () -> resample(level, key, pos));
+    }
 
     /**
      * Also what refreshes a loaded chunk's neighbours, whose edges and blended colours depend on it. One
@@ -136,6 +167,7 @@ public class ChunkColorEvents {
     static void onDimensionChanged() {
         LATE_RESAMPLES.clear();
         SETTLE_RESAMPLES.clear();
+        LOADED_AT.clear();
     }
 
     static boolean neighborsLoaded(Level level, ChunkKey key) {
@@ -177,6 +209,11 @@ public class ChunkColorEvents {
         ChunkColorSampler.HeightSample heightSample = ChunkColorSampler.sampleHeights(level, pos);
         trimUnloadedEdges(level, key, colorSample, heightSample);
 
+        if (ChunkColorSampler.DBG_LOGS.get() < 2500) {
+            PhoenixSolaris.LOGGER.info("[Solaris dbg] resample chunk=({},{}) tainted={} cached={} persisted={}",
+                    key.x(), key.z(), colorSample.hadFallback, ChunkColorCache.contains(key),
+                    PersistentChunkStore.get(key) != null);
+        }
         if (colorSample.hadFallback) {
             FALLBACK_TAINTED.add(key);
 

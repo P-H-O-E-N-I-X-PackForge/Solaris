@@ -25,7 +25,6 @@ public final class MapLayers {
         return MINIMAP_LAYERS;
     }
 
-
     public static void register(MapLayer layer) {
         LAYERS.remove(layer);
         LAYERS.add(layer);

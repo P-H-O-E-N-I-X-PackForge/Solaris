@@ -193,7 +193,7 @@ dependencies {
     // Core Registrate & Phoenix Suite
     implementation "com.tterrag.registrate:Registrate:${registrate_version}"
     implementation "net.phoenixvine.wiki:neoforge:0.6.0"
-    implementation("net.phoenixvine.guilds:phoenix-guilds-neoforge:1.6.9")
+    implementation("net.phoenixvine.guilds:phoenix-guilds-neoforge:2.0")
 
     compileOnly("curse.maven:domum-ornamentum-527361:8784713")
     localRuntime("curse.maven:domum-ornamentum-527361:8784713")
