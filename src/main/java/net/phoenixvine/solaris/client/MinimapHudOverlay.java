@@ -53,6 +53,11 @@ public class MinimapHudOverlay {
 
     private static final int MARGIN = 6;
 
+    /** The player's position and facing for this frame, interpolated between ticks so the map moves smoothly. */
+    private static double frameX;
+    private static double frameZ;
+    private static float frameYaw;
+
     private static SolarisTexture texture;
 
     private static SolarisTexture texture() {
@@ -111,6 +116,10 @@ public class MinimapHudOverlay {
         Minecraft mc = Minecraft.getInstance();
         if (!isVisible(mc, true)) return;
 
+        float pt = event.getPartialTick();
+        frameX = Mth.lerp(pt, mc.player.xo, mc.player.getX());
+        frameZ = Mth.lerp(pt, mc.player.zo, mc.player.getZ());
+        frameYaw = Mth.rotLerp(pt, mc.player.yRotO, mc.player.getYRot());
         SolarisProfiler.time("minimapRender", () -> onRenderHudImpl(event, mc));
     }
 
@@ -121,13 +130,15 @@ public class MinimapHudOverlay {
         int viewPixels = Math.max(16, (int) (tex.getRadiusChunks() * 16 / SolarisConfig.MINIMAP_ZOOM.get()));
 
         BlockPos blockPos = mc.player.blockPosition();
-        int chunkX = blockPos.getX() >> 4;
-        int chunkZ = blockPos.getZ() >> 4;
-        ChunkKey center = ChunkKey.of(mc.level, new ChunkPos(chunkX, chunkZ));
+        ChunkKey center = ChunkKey.of(mc.level, new ChunkPos(blockPos.getX() >> 4, blockPos.getZ() >> 4));
         tex.maybeRebuild(center);
 
-        double fracX = mc.player.getX() - (chunkX << 4);
-        double fracZ = mc.player.getZ() - (chunkZ << 4);
+        // Addressed from the interpolated position; the texture is a ring buffer keyed by absolute chunk, so this
+        // does not need to match the chunk the texture was last built around.
+        int chunkX = Mth.floor(frameX) >> 4;
+        int chunkZ = Mth.floor(frameZ) >> 4;
+        double fracX = frameX - (chunkX << 4);
+        double fracZ = frameZ - (chunkZ << 4);
         int radiusPixels = tex.getRadiusChunks() * 16;
         double playerPixelX = radiusPixels + fracX;
         double playerPixelZ = radiusPixels + fracZ;
@@ -158,7 +169,7 @@ public class MinimapHudOverlay {
         }
 
         boolean rotate = SolarisConfig.MINIMAP_ROTATE.get();
-        float contentAngle = rotate ? 180f - mc.player.getYRot() : 0f;
+        float contentAngle = rotate ? 180f - frameYaw : 0f;
 
         g.enableScissor(x, y, x + screenSize, y + screenSize);
         g.pose().pushPose();
@@ -301,8 +312,8 @@ public class MinimapHudOverlay {
             int[] edgePos = edgePosition(other.x(), other.z(), mc, cx, cy, radius, rotate, contentAngle);
             if (edgePos == null) continue;
 
-            double outX = other.x() - mc.player.getX();
-            double outZ = other.z() - mc.player.getZ();
+            double outX = other.x() - frameX;
+            double outZ = other.z() - frameZ;
             float outward = (float) Math.toDegrees(Math.atan2(-outX, outZ)) + (rotate ? contentAngle : 0f);
             PlayerArrow.draw(g, edgePos[0], edgePos[1], 3, outward, 0xFFAAAAAA, other.skin());
 
@@ -334,7 +345,7 @@ public class MinimapHudOverlay {
             }
         }
 
-        PlayerArrow.draw(g, cx, cy, 6, rotate ? 180f : mc.player.getYRot(), C_ACCENT,
+        PlayerArrow.draw(g, cx, cy, 6, rotate ? 180f : frameYaw, C_ACCENT,
                 mc.player.getSkinTextureLocation());
 
         drawInfoText(g, mc, x, y, screenSize);
@@ -372,8 +383,8 @@ public class MinimapHudOverlay {
 
     private static int[] edgePosition(double targetX, double targetZ, Minecraft mc, int cx, int cy, int radius,
                                       boolean rotate, float contentAngle) {
-        double dx = targetX - mc.player.getX();
-        double dz = targetZ - mc.player.getZ();
+        double dx = targetX - frameX;
+        double dz = targetZ - frameZ;
         if (dx == 0 && dz == 0) return null;
 
         double angle;
