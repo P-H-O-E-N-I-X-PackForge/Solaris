@@ -243,7 +243,8 @@ public class SolarisDisplaySettingsScreen extends Screen {
                 new MinimapSizeSlider(0, 0, colW, 20),
                 tooltip(new MinimapRangeSlider(0, 0, colW, 20),
                         "How many chunks the minimap's backing texture covers — the real zoom-out limit; " +
-                                "Minimap Zoom only crops into whatever this already sampled."),
+                                "Minimap Zoom only crops into whatever this already sampled. " +
+                                "Chunks past your render distance are not loaded, so they only show once explored."),
                 Button.builder(mapShapeLabel(), b -> {
                     SolarisConfig.MAP_SHAPE.set(SolarisConfig.MAP_SHAPE.get().next());
                     SolarisConfig.MAP_SHAPE.save();
@@ -837,7 +838,9 @@ public class SolarisDisplaySettingsScreen extends Screen {
         @Override
         protected void updateMessage() {
             int chunks = 1 + (int) Math.round(value * 23.0);
-            setMessage(Component.literal("Minimap Range: " + chunks + " chunks"));
+            int renderDistance = net.minecraft.client.Minecraft.getInstance().options.getEffectiveRenderDistance();
+            String note = chunks > renderDistance ? " §e(render distance " + renderDistance + ")" : "";
+            setMessage(Component.literal("Minimap Range: " + chunks + " chunks" + note));
         }
 
         @Override
