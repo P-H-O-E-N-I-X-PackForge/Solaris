@@ -57,9 +57,9 @@ public final class ClientPacketHandlers {
     public static void serverCapabilities(int flags, int uploadChunksPerSecond) {
         ServerCapabilities.setFlags(flags, uploadChunksPerSecond);
         PhoenixSolaris.LOGGER.info("[Solaris] Server features: deathMarkers={}, sharedExploration={}, " +
-                "sharedVeins={}, playerPositions={}", ServerCapabilities.serverDeathMarkers(),
+                "sharedVeins={}, playerPositions={}, waypointTeleport={}", ServerCapabilities.serverDeathMarkers(),
                 ServerCapabilities.sharedExploration(), ServerCapabilities.sharedVeins(),
-                ServerCapabilities.playerPositions());
+                ServerCapabilities.playerPositions(), ServerCapabilities.waypointTeleport());
     }
 
     public static void sharedChunks(String dimension, List<SharedChunkBlob> blobs) {

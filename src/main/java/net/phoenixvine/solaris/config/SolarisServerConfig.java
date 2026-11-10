@@ -71,6 +71,15 @@ public final class SolarisServerConfig {
     public static final ModConfigSpec.IntValue GUILD_WAYPOINTS_MAX;
     public static final ModConfigSpec.EnumValue<GuildWaypointEditors> GUILD_WAYPOINT_EDIT_POLICY;
 
+    public static final ModConfigSpec.BooleanValue TELEPORT_ENABLED;
+    public static final ModConfigSpec.BooleanValue TELEPORT_REQUIRE_PERMISSION;
+    public static final ModConfigSpec.IntValue TELEPORT_PERMISSION_LEVEL;
+    public static final ModConfigSpec.BooleanValue TELEPORT_ALLOW_PERSONAL;
+    public static final ModConfigSpec.BooleanValue TELEPORT_ALLOW_CROSS_DIMENSION;
+    public static final ModConfigSpec.IntValue TELEPORT_MAX_DISTANCE;
+    public static final ModConfigSpec.IntValue TELEPORT_COOLDOWN_SECONDS;
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> TELEPORT_BLOCKED_DIMENSIONS;
+
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
 
@@ -228,6 +237,44 @@ public final class SolarisServerConfig {
                         "what the Guilds mod allows through SolarisGuildAPI.setWaypointPermission (nobody if it " +
                         "never registers one). Using the feature also needs the guild_share feature enabled.")
                 .defineEnum("editPolicy", GuildWaypointEditors.ALL_MEMBERS);
+        builder.pop();
+
+        builder.push("waypointTeleport");
+        TELEPORT_ENABLED = builder
+                .comment("Master switch for the Teleport button in the waypoint list. When false nobody can " +
+                        "teleport to waypoints, whatever the other settings say.")
+                .define("enabled", true);
+        TELEPORT_REQUIRE_PERMISSION = builder
+                .comment("true (default) = only players with permissionLevel (or a permission mod hooked into " +
+                        "SolarisTeleportAPI) may teleport. false = every player may, subject to the limits below. " +
+                        "The server checks this on every teleport, so a modified client gains nothing.")
+                .define("requirePermission", true);
+        TELEPORT_PERMISSION_LEVEL = builder
+                .comment("Vanilla permission level needed when requirePermission is true (2 = operators / " +
+                        "command blocks level, 4 = full ops). 0 lets everyone through, same as turning " +
+                        "requirePermission off.")
+                .defineInRange("permissionLevel", 2, 0, 4);
+        TELEPORT_ALLOW_PERSONAL = builder
+                .comment("Allow teleporting to a player's own (client-side) waypoints. The server cannot verify " +
+                        "those: the client sends the coordinates, so anyone who may teleport can go to ANY " +
+                        "coordinates, just like /tp. Fine when permission-gated; if you turn requirePermission " +
+                        "off, consider setting this to false so players can only use server and guild " +
+                        "waypoints, which the server looks up itself.")
+                .define("allowPersonalWaypoints", true);
+        TELEPORT_ALLOW_CROSS_DIMENSION = builder
+                .comment("Allow teleporting to a waypoint that is in a different dimension from the player.")
+                .define("allowCrossDimension", true);
+        TELEPORT_MAX_DISTANCE = builder
+                .comment("Most blocks a same-dimension teleport may cover. 0 = unlimited.")
+                .defineInRange("maxDistanceBlocks", 0, 0, 30000000);
+        TELEPORT_COOLDOWN_SECONDS = builder
+                .comment("Seconds a player must wait between waypoint teleports. Players with permission level 2 " +
+                        "or higher skip the cooldown. 0 = no cooldown.")
+                .defineInRange("cooldownSeconds", 10, 0, 3600);
+        TELEPORT_BLOCKED_DIMENSIONS = builder
+                .comment("Dimension ids where waypoint teleporting is refused, both to and from, e.g. " +
+                        "[\"minecraft:the_end\"].")
+                .defineList("blockedDimensions", List.of(), o -> o instanceof String);
         builder.pop();
 
         SPEC = builder.build();

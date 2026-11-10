@@ -18,6 +18,9 @@ public record S2CServerCapabilitiesPacket(
     public static final int SHARED_EXPLORATION = 2;
     public static final int SHARED_VEINS = 4;
     public static final int PLAYER_POSITIONS = 8;
+    public static final int WAYPOINT_TELEPORT = 16;
+    public static final int WAYPOINT_TELEPORT_PERSONAL = 32;
+    public static final int WAYPOINT_TELEPORT_CROSS_DIMENSION = 64;
 
     public static final CustomPacketPayload.Type<S2CServerCapabilitiesPacket> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(PhoenixSolaris.MOD_ID, "s2c_server_capabilities"));

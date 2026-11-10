@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
@@ -21,6 +22,8 @@ import net.phoenixvine.solaris.network.ClientPacketHandlers;
 import net.phoenixvine.solaris.network.packets.C2SGuildWaypointPacket;
 import net.phoenixvine.solaris.network.packets.C2SRemoveServerWaypointPacket;
 import net.phoenixvine.solaris.network.packets.C2SShareWaypointPacket;
+import net.phoenixvine.solaris.network.packets.C2STeleportToWaypointPacket;
+import net.phoenixvine.solaris.server.ServerCapabilities;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -196,13 +199,25 @@ public class WaypointListScreen extends Screen {
                     .bounds(editX, y, sideW - 20, 18).build());
             y += ROW_H + 8;
 
+            boolean canTeleport = ServerCapabilities.waypointTeleport();
+            int fullW = sideW - 20;
+            int halfW = (fullW - 4) / 2;
             addRenderableWidget(Button.builder(
                     Component.literal(selected.visible ? "Visible: ON" : "Visible: OFF"),
                     b -> {
                         selected.visible = !selected.visible;
                         WaypointManager.save();
                         init();
-                    }).bounds(editX, y, sideW - 20, 18).build());
+                    }).bounds(editX, y, canTeleport ? halfW : fullW, 18).build());
+            if (canTeleport) {
+                String blockedReason = teleportBlockedReason();
+                Button teleportButton = Button.builder(Component.literal("Teleport"), b -> teleportToSelected())
+                        .bounds(editX + halfW + 4, y, halfW, 18).build();
+                teleportButton.active = blockedReason == null;
+                teleportButton.setTooltip(Tooltip.create(Component.literal(
+                        blockedReason == null ? "Teleport to this waypoint" : blockedReason)));
+                addRenderableWidget(teleportButton);
+            }
             y += ROW_H + 8;
 
             boolean tracked = selected.id.equals(trackedId());
@@ -476,6 +491,48 @@ public class WaypointListScreen extends Screen {
     private String truncate(String text, int maxWidth) {
         if (font.width(text) <= maxWidth) return text;
         return font.plainSubstrByWidth(text, maxWidth - font.width("…")) + "…";
+    }
+
+    private C2STeleportToWaypointPacket.Source teleportSource(Waypoint w) {
+        if (w.id != null && w.id.startsWith(ClientPacketHandlers.SERVER_WAYPOINT_PREFIX)) {
+            return C2STeleportToWaypointPacket.Source.SERVER;
+        }
+        if (w.id != null && w.id.startsWith(ClientPacketHandlers.GUILD_WAYPOINT_PREFIX)) {
+            return C2STeleportToWaypointPacket.Source.GUILD;
+        }
+        return C2STeleportToWaypointPacket.Source.PERSONAL;
+    }
+
+    /** Null when the selected waypoint can be teleported to; otherwise a short reason for the tooltip. */
+    private String teleportBlockedReason() {
+        Minecraft mc = Minecraft.getInstance();
+        if (selected == null || mc.player == null || mc.level == null) return "Not available right now.";
+
+        if (teleportSource(selected) == C2STeleportToWaypointPacket.Source.PERSONAL &&
+                !ServerCapabilities.waypointTeleportPersonal()) {
+            return "This server only allows teleporting to server and guild waypoints.";
+        }
+        boolean sameDimension = selected.dimension.equals(mc.level.dimension().location().toString());
+        if (!sameDimension && !ServerCapabilities.waypointTeleportCrossDimension()) {
+            return "This server doesn't allow teleporting between dimensions.";
+        }
+        return null;
+    }
+
+    private void teleportToSelected() {
+        if (selected == null || teleportBlockedReason() != null) return;
+
+        C2STeleportToWaypointPacket.Source source = teleportSource(selected);
+        String key = "";
+        if (source == C2STeleportToWaypointPacket.Source.SERVER) {
+            key = selected.id.substring(ClientPacketHandlers.SERVER_WAYPOINT_PREFIX.length());
+        } else if (source == C2STeleportToWaypointPacket.Source.GUILD) {
+            key = selected.id.substring(ClientPacketHandlers.GUILD_WAYPOINT_PREFIX.length());
+        }
+
+        PacketDistributor.sendToServer(new C2STeleportToWaypointPacket(source, key, selected.name,
+                selected.dimension, selected.x, selected.y, selected.z));
+        Minecraft.getInstance().setScreen(null);
     }
 
     private void shareSelected() {

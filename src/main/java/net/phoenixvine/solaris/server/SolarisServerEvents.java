@@ -13,6 +13,7 @@ import net.phoenixvine.solaris.server.features.ProgressionGates;
 import net.phoenixvine.solaris.server.guild.GuildWaypointService;
 import net.phoenixvine.solaris.server.players.PingService;
 import net.phoenixvine.solaris.server.waypoint.ServerWaypointService;
+import net.phoenixvine.solaris.server.waypoint.WaypointTeleportService;
 
 @EventBusSubscriber()
 public class SolarisServerEvents {
@@ -35,6 +36,7 @@ public class SolarisServerEvents {
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             PingService.forget(player.getUUID());
+            WaypointTeleportService.forget(player.getUUID());
             ClaimSyncService.forget(player.getUUID());
             GuildWaypointService.forget(player.getUUID());
             SharedExplorationService.forget(player.getUUID());

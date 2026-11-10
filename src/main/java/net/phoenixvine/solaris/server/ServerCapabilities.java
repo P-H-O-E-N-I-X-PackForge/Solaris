@@ -31,6 +31,18 @@ public final class ServerCapabilities {
         return (flags & S2CServerCapabilitiesPacket.PLAYER_POSITIONS) != 0;
     }
 
+    public static boolean waypointTeleport() {
+        return (flags & S2CServerCapabilitiesPacket.WAYPOINT_TELEPORT) != 0;
+    }
+
+    public static boolean waypointTeleportPersonal() {
+        return (flags & S2CServerCapabilitiesPacket.WAYPOINT_TELEPORT_PERSONAL) != 0;
+    }
+
+    public static boolean waypointTeleportCrossDimension() {
+        return (flags & S2CServerCapabilitiesPacket.WAYPOINT_TELEPORT_CROSS_DIMENSION) != 0;
+    }
+
     public static int uploadChunksPerSecond() {
         return uploadChunksPerSecond;
     }

@@ -55,6 +55,7 @@ public final class SolarisAPI {
     public static final String FEATURE_RAIL_NETWORK = "rail_network";
     public static final String FEATURE_UNEXPLORED_STYLE = "unexplored_style";
     public static final String FEATURE_ZOOM_LIMITS = "zoom_limits";
+    public static final String FEATURE_WAYPOINT_TELEPORT = "waypoint_teleport";
 
     private static final Map<String, BooleanSupplier> FEATURE_GATES = new ConcurrentHashMap<>();
     private static final Map<ResourceLocation, Integer> DIMENSION_TIERS = new ConcurrentHashMap<>();
@@ -72,7 +73,8 @@ public final class SolarisAPI {
                 FEATURE_SETTINGS_MENU, FEATURE_GOTO_COORDINATE, FEATURE_THEME_SELECT, FEATURE_WIKI,
                 FEATURE_HILLSHADING, FEATURE_VIGNETTE, FEATURE_BLACK_AND_WHITE, FEATURE_CHUNK_GRID,
                 FEATURE_SHOW_MOBS, FEATURE_SHOW_PLAYERS, FEATURE_PINGS, FEATURE_CLAIMS, FEATURE_SHARED_EXPLORATION,
-                FEATURE_SHARED_VEINS, FEATURE_RAIL_NETWORK, FEATURE_UNEXPLORED_STYLE, FEATURE_ZOOM_LIMITS));
+                FEATURE_SHARED_VEINS, FEATURE_RAIL_NETWORK, FEATURE_UNEXPLORED_STYLE, FEATURE_ZOOM_LIMITS,
+                FEATURE_WAYPOINT_TELEPORT));
     }
 
     private static volatile boolean refreshPending = false;

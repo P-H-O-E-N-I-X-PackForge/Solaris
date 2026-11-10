@@ -514,6 +514,7 @@ public class SolarisCommands {
             case "claims" -> SolarisAPI.FEATURE_CLAIMS;
             case "sharedmap" -> SolarisAPI.FEATURE_SHARED_EXPLORATION;
             case "sharedveins" -> SolarisAPI.FEATURE_SHARED_VEINS;
+            case "teleport", "waypointteleport" -> SolarisAPI.FEATURE_WAYPOINT_TELEPORT;
             default -> null;
         };
     }
