@@ -223,7 +223,6 @@ public class ChunkColorEvents {
         }
 
         boolean cachedBefore = ChunkColorCache.contains(key);
-        if (!cachedBefore) SolarisTexture.markChunkDataChanged();
 
         ChunkColorCache.put(key, colorSample.pixels);
         ChunkLightCache.put(key, colorSample.lightEmitting);
@@ -238,7 +237,10 @@ public class ChunkColorEvents {
         boolean changed = PersistentChunkStore.put(key, colorSample.pixels, heightSample.heights,
                 heightSample.water, colorSample.waterTint, colorSample.waterDepth, colorSample.waterOcean,
                 colorSample.foliage) || !cachedBefore;
-        if (changed) MapTileCache.markDirty(key);
+        if (changed) {
+            MapTileCache.markDirty(key);
+            SolarisTexture.markChunkDataChanged(key);
+        }
         return changed;
     }
 }
