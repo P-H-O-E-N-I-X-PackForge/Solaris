@@ -232,7 +232,19 @@ public class SolarisTexture implements AutoCloseable {
     private long seenDirtyGeneration = 0;
     private long lastDirtyRebuildMillis = 0;
 
+    /** Chunks whose data changed since this texture last rebuilt, so a rebuild can redo just those. */
+    private final java.util.Set<ChunkKey> pendingDirty = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private volatile boolean forceFullRebuild = false;
+
+    /** Something changed that is not tied to one chunk: the next dirty rebuild redoes everything. */
     public static void markChunkDataChanged() {
+        for (SolarisTexture texture : ACTIVE) texture.forceFullRebuild = true;
+        dirtyGeneration++;
+    }
+
+    /** One chunk's data changed: the next dirty rebuild redoes only the chunks marked since the last one. */
+    public static void markChunkDataChanged(ChunkKey key) {
+        for (SolarisTexture texture : ACTIVE) texture.pendingDirty.add(key);
         dirtyGeneration++;
     }
 
@@ -241,11 +253,16 @@ public class SolarisTexture implements AutoCloseable {
         if (nowMillis - lastMaybeRebuildCheckMillis < MAYBE_REBUILD_CHECK_INTERVAL_MS) return;
         lastMaybeRebuildCheckMillis = nowMillis;
 
+        boolean dirtyDue = false;
         if (dirtyGeneration != seenDirtyGeneration &&
                 nowMillis - lastDirtyRebuildMillis >= DIRTY_REBUILD_MIN_INTERVAL_MS) {
             seenDirtyGeneration = dirtyGeneration;
             lastDirtyRebuildMillis = nowMillis;
-            lastCenter = null;
+            dirtyDue = true;
+            if (forceFullRebuild) {
+                forceFullRebuild = false;
+                lastCenter = null;
+            }
         }
 
         Minecraft mc = Minecraft.getInstance();
@@ -268,7 +285,7 @@ public class SolarisTexture implements AutoCloseable {
             nightFactorChanged = nightFactorBucket != lastNightFactorBucket;
         }
 
-        if (!centerChanged && !caveStale && !surfacedAgain && !nightFactorChanged) return;
+        if (!centerChanged && !caveStale && !surfacedAgain && !nightFactorChanged && !dirtyDue) return;
 
         if (!PersistentChunkStore.isLoaded(center.dimension().toString())) return;
 
@@ -297,6 +314,11 @@ public class SolarisTexture implements AutoCloseable {
 
         boolean canSkip = previousCenter != null && !underground && !lastUnderground &&
                 previousCenter.dimension().equals(center.dimension());
+
+        // Chunks sampled or refreshed since the last rebuild. With canSkip, only these (and chunks newly in range)
+        // are redone, so a big minimap does not reprocess every chunk each time one more loads.
+        java.util.Set<ChunkKey> dirty = new java.util.HashSet<>(pendingDirty);
+        pendingDirty.removeAll(dirty);
 
         int prevSeamX = this.seamX;
         int prevSeamZ = this.seamZ;
@@ -344,7 +366,8 @@ public class SolarisTexture implements AutoCloseable {
                 int chunkZ = center.z() + dz;
 
                 if (canSkip && Math.abs(chunkX - previousCenter.x()) <= radiusChunks &&
-                        Math.abs(chunkZ - previousCenter.z()) <= radiusChunks) {
+                        Math.abs(chunkZ - previousCenter.z()) <= radiusChunks &&
+                        (dirty.isEmpty() || !dirty.contains(new ChunkKey(center.dimension(), chunkX, chunkZ)))) {
 
                     continue;
                 }
