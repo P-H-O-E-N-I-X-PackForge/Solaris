@@ -60,6 +60,7 @@ import net.phoenixvine.solaris.client.waypoint.WaypointPlacement;
 import net.phoenixvine.solaris.common.SharedExplorationClient;
 import net.phoenixvine.solaris.config.SolarisConfig;
 import net.phoenixvine.solaris.integration.gtceu.GtceuIntegration;
+import net.phoenixvine.solaris.util.SolarisLang;
 import net.phoenixvine.wiki.PhoenixWikiAPI;
 import net.phoenixvine.wiki.client.screen.WikiTheme;
 import net.phoenixvine.wiki.theme.PhoenixTheme;
@@ -414,7 +415,7 @@ public class SolarisMapScreen extends Screen {
                 SolarisAPI.isFeatureEnabled(featureId)) {
             action.run();
         } else {
-            sendMapMessage(Component.literal("This feature isn't available right now."));
+            sendMapMessage(SolarisLang.tr("solaris.solaris_map_screen.this_feature_isn_t_available"));
         }
     }
 
@@ -424,7 +425,7 @@ public class SolarisMapScreen extends Screen {
         if (SolarisAPI.getFeatureState(featureId, mc.level.dimension().location()).atLeast(minimum)) {
             action.run();
         } else {
-            sendMapMessage(Component.literal("This feature isn't available right now."));
+            sendMapMessage(SolarisLang.tr("solaris.solaris_map_screen.this_feature_isn_t_available"));
         }
     }
 
@@ -1523,13 +1524,15 @@ public class SolarisMapScreen extends Screen {
         if (hit != null) {
             if (hit.locked) {
                 if (mc.player != null) {
-                    mc.player.displayClientMessage(Component.literal("That waypoint is locked: " + hit.name), true);
+                    mc.player.displayClientMessage(
+                            SolarisLang.tr("solaris.solaris_map_screen.that_waypoint_is_locked", hit.name), true);
                 }
                 return;
             }
             WaypointManager.remove(hit.id);
             if (mc.player != null) {
-                mc.player.displayClientMessage(Component.literal("Waypoint removed: " + hit.name), true);
+                mc.player.displayClientMessage(SolarisLang.tr("solaris.solaris_map_screen.waypoint_removed", hit.name),
+                        true);
             }
             return;
         }
@@ -1538,7 +1541,8 @@ public class SolarisMapScreen extends Screen {
         if (shapeHit != null) {
             PlanShapeManager.remove(shapeHit.id);
             if (mc.player != null) {
-                mc.player.displayClientMessage(Component.literal("Shape removed: " + shapeHit.name), true);
+                mc.player.displayClientMessage(
+                        SolarisLang.tr("solaris.solaris_map_screen.shape_removed", shapeHit.name), true);
             }
             return;
         }
@@ -1632,13 +1636,15 @@ public class SolarisMapScreen extends Screen {
         if (hit != null) {
             if (hit.locked) {
                 if (mc.player != null) {
-                    mc.player.displayClientMessage(Component.literal("That waypoint is locked: " + hit.name), true);
+                    mc.player.displayClientMessage(
+                            SolarisLang.tr("solaris.solaris_map_screen.that_waypoint_is_locked", hit.name), true);
                 }
                 return;
             }
             WaypointManager.remove(hit.id);
             if (mc.player != null) {
-                mc.player.displayClientMessage(Component.literal("Waypoint removed: " + hit.name), true);
+                mc.player.displayClientMessage(SolarisLang.tr("solaris.solaris_map_screen.waypoint_removed", hit.name),
+                        true);
             }
             return;
         }

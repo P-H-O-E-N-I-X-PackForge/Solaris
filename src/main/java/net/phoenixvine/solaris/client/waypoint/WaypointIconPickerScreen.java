@@ -7,7 +7,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.phoenixvine.solaris.client.SolarisText;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -39,7 +41,7 @@ public class WaypointIconPickerScreen extends Screen {
     private List<FormattedCharSequence> hintLines = List.of();
 
     public WaypointIconPickerScreen(Screen parent, String current, int previewColor, Consumer<String> onPick) {
-        super(Component.literal("Choose Icon"));
+        super(SolarisLang.tr("solaris.waypoint_icon_picker_screen.choose_icon"));
         this.parent = parent;
         this.current = current;
         this.color = previewColor;
@@ -56,9 +58,10 @@ public class WaypointIconPickerScreen extends Screen {
         gridY = Math.max(36, (height - rows * CELL) / 2);
 
         boolean showHint = ids.stream().noneMatch(WaypointIconManager::isCustom);
-        hintLines = showHint ? font.split(Component.literal(
-                "Drop PNGs in config/solaris/waypoint_icons/ for custom icons"),
-                Math.min(HINT_WRAP_W, width - 40)) : List.of();
+        hintLines = showHint ?
+                font.split(SolarisLang.tr("solaris.waypoint_icon_picker_screen.drop_pngs_in_config_solaris"),
+                        Math.min(HINT_WRAP_W, width - 40)) :
+                List.of();
 
         int hintWidth = 0;
         for (FormattedCharSequence line : hintLines) hintWidth = Math.max(hintWidth, font.width(line));
@@ -71,11 +74,11 @@ public class WaypointIconPickerScreen extends Screen {
         int buttonY = Math.min(height - 50, bottomOfContent + 12);
 
         addRenderableWidget(net.minecraft.client.gui.components.Button
-                .builder(Component.literal("Pick Item/Block..."),
+                .builder(SolarisLang.tr("solaris.waypoint_icon_picker_screen.pick_item_block"),
                         b -> Minecraft.getInstance().setScreen(new WaypointItemPickerScreen(parent, current, onPick)))
                 .bounds(width / 2 - 70, buttonY, 140, 18).build());
         addRenderableWidget(net.minecraft.client.gui.components.Button
-                .builder(Component.literal("Close"), b -> onClose())
+                .builder(SolarisLang.tr("solaris.solaris_display_settings_screen.close"), b -> onClose())
                 .bounds(width / 2 - 40, buttonY + 24, 80, 18).build());
     }
 
@@ -86,7 +89,8 @@ public class WaypointIconPickerScreen extends Screen {
         int contentBottom = gridY + rowsHeight() + (hintLines.isEmpty() ? 0 : 4 + hintLines.size() * LINE_H);
         g.fill(panelX - 12, gridY - 24, panelX + panelW + 12, contentBottom + 24, C_PANEL);
         VanillaPanel.draw(g, panelX - 20, gridY - 32, panelW + 40, contentBottom - gridY + 56, C_PANEL);
-        g.drawCenteredString(font, "Choose Icon", width / 2, gridY - 16, C_ACCENT);
+        g.drawCenteredString(font, SolarisText.str("solaris.waypoint_icon_picker_screen.choose_icon"), width / 2,
+                gridY - 16, C_ACCENT);
 
         List<String> ids = WaypointIconManager.allIds();
         for (int i = 0; i < ids.size(); i++) {

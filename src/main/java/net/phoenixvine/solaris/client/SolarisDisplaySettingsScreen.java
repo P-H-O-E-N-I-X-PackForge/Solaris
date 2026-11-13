@@ -16,6 +16,7 @@ import net.phoenixvine.solaris.client.render.ModernPanel;
 import net.phoenixvine.solaris.client.render.SolarisTexture;
 import net.phoenixvine.solaris.config.SolarisConfig;
 import net.phoenixvine.solaris.integration.gtceu.GtceuIntegration;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,7 +68,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
     private Tab activeTab = Tab.DISPLAY;
 
     public SolarisDisplaySettingsScreen(Screen parent) {
-        super(Component.literal("Solaris Settings"));
+        super(SolarisLang.tr("solaris.solaris_display_settings_screen.solaris_settings"));
         this.parent = parent;
     }
 
@@ -157,16 +158,17 @@ public class SolarisDisplaySettingsScreen extends Screen {
         }
 
         int presetHalfW = (boxW - 20 - 6) / 2;
-        addRenderableWidget(Button.builder(Component.literal("Save Preset"),
+        addRenderableWidget(Button.builder(SolarisLang.tr("solaris.solaris_display_settings_screen.save_preset"),
                 b -> Minecraft.getInstance().setScreen(new SolarisPresetSaveScreen(this, () -> {})))
                 .bounds(boxX + 10, absoluteTabBarY + 24, presetHalfW, 18).build());
-        addRenderableWidget(Button.builder(Component.literal("Load Preset"),
+        addRenderableWidget(Button.builder(SolarisLang.tr("solaris.solaris_display_settings_screen.load_preset"),
                 b -> Minecraft.getInstance()
                         .setScreen(new SolarisPresetLoadScreen(this, SolarisTexture::invalidateAll)))
                 .bounds(boxX + 10 + presetHalfW + 6, absoluteTabBarY + 24, presetHalfW, 18).build());
 
-        addRenderableWidget(Button.builder(Component.literal("Close"), b -> onClose())
-                .bounds(boxX + 10, absoluteTabBarY + 48, boxW - 20, 18).build());
+        addRenderableWidget(
+                Button.builder(SolarisLang.tr("solaris.solaris_display_settings_screen.close"), b -> onClose())
+                        .bounds(boxX + 10, absoluteTabBarY + 48, boxW - 20, 18).build());
     }
 
     private void initDisplayTab(int x, int[] cursorY) {
@@ -376,111 +378,133 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
     private Component tooltipLabel() {
         boolean on = SolarisConfig.SHOW_BLOCK_TOOLTIP.get();
-        return Component.literal("Tooltip: " + (on ? "ON" : "OFF"));
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.tooltip",
+                (on ? SolarisLang.tr("solaris.ui.on") : SolarisLang.tr("solaris.ui.off")));
     }
 
     private Component planShapesLabel() {
         boolean on = SolarisConfig.SHOW_PLAN_SHAPES.get();
-        return Component.literal("Plan Shapes: " + (on ? "ON" : "OFF"));
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.plan_shapes",
+                (on ? SolarisLang.tr("solaris.ui.on") : SolarisLang.tr("solaris.ui.off")));
     }
 
     private Component gtVeinsLabel() {
         boolean on = SolarisConfig.SHOW_GT_ORE_VEINS.get();
-        return Component.literal("GT Ore Veins: " + (on ? "ON" : "OFF"));
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.gt_ore_veins",
+                (on ? SolarisLang.tr("solaris.ui.on") : SolarisLang.tr("solaris.ui.off")));
     }
 
     private Component deepOnlyLabel() {
         boolean on = SolarisConfig.WATER_DEEP_ONLY.get();
-        return Component.literal(
-                "Deep Water Only: " + (on ? "ON (below Y" + SolarisConfig.WATER_DEEP_Y_THRESHOLD.get() + ")" : "OFF"));
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.deep_water_only",
+                (on ? SolarisLang.tr("solaris.ui.on_below_y", SolarisConfig.WATER_DEEP_Y_THRESHOLD.get()) :
+                        SolarisLang.tr("solaris.ui.off")));
     }
 
     private Component labelSideLabel() {
-        return Component.literal("Label Position: " + SolarisConfig.LABEL_SIDE.get().label());
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.label_position",
+                SolarisConfig.LABEL_SIDE.get().label());
     }
 
     private Component mapShapeLabel() {
-        return Component.literal("Map Shape: " + SolarisConfig.MAP_SHAPE.get().label());
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.map_shape",
+                SolarisConfig.MAP_SHAPE.get().label());
     }
 
     private Component minimapRotateLabel() {
         boolean on = SolarisConfig.MINIMAP_ROTATE.get();
-        return Component.literal("Minimap Rotate: " + (on ? "ON" : "OFF"));
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.minimap_rotate",
+                (on ? SolarisLang.tr("solaris.ui.on") : SolarisLang.tr("solaris.ui.off")));
     }
 
     private Component minimapBiomeLabel() {
         boolean on = SolarisConfig.MINIMAP_SHOW_BIOME.get();
-        return Component.literal("Minimap Biome: " + (on ? "ON" : "OFF"));
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.minimap_biome",
+                (on ? SolarisLang.tr("solaris.ui.on") : SolarisLang.tr("solaris.ui.off")));
     }
 
     private Component minimapBorderLabel() {
         boolean on = SolarisConfig.MINIMAP_SHOW_BORDER.get();
-        return Component.literal("Minimap Border: " + (on ? "ON" : "OFF"));
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.minimap_border",
+                (on ? SolarisLang.tr("solaris.ui.on") : SolarisLang.tr("solaris.ui.off")));
     }
 
     private Component minimapWaypointsLabel() {
         boolean on = SolarisConfig.MINIMAP_SHOW_WAYPOINTS.get();
-        return Component.literal("Minimap Waypoints: " + (on ? "ON" : "OFF"));
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.minimap_waypoints",
+                (on ? SolarisLang.tr("solaris.ui.on") : SolarisLang.tr("solaris.ui.off")));
     }
 
     private Component minimapWaypointDirectionsLabel() {
         boolean on = SolarisConfig.MINIMAP_SHOW_WAYPOINT_DIRECTIONS.get();
-        return Component.literal("Waypoint Directions: " + (on ? "ON" : "OFF"));
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.waypoint_directions",
+                (on ? SolarisLang.tr("solaris.ui.on") : SolarisLang.tr("solaris.ui.off")));
     }
 
     private Component minimapAutoUndergroundLabel() {
         boolean on = SolarisConfig.MINIMAP_AUTO_UNDERGROUND.get();
-        return Component.literal("Auto Underground: " + (on ? "ON" : "OFF"));
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.auto_underground",
+                (on ? SolarisLang.tr("solaris.ui.on") : SolarisLang.tr("solaris.ui.off")));
     }
 
     private Component minimapTextLabelsLabel() {
         boolean on = SolarisConfig.MINIMAP_SHOW_TEXT_LABELS.get();
-        return Component.literal(on ? "Text Style: Labeled" : "Text Style: Plain");
+        return Component.literal(on ? SolarisText.str("solaris.solaris_display_settings.text_style_labeled") :
+                SolarisText.str("solaris.solaris_display_settings.text_style_plain"));
     }
 
     private Component railNetworkLabel() {
         boolean on = SolarisConfig.SHOW_RAIL_NETWORK.get();
-        return Component.literal("Rail Lines: " + (on ? "ON" : "OFF"));
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.rail_lines",
+                (on ? SolarisLang.tr("solaris.ui.on") : SolarisLang.tr("solaris.ui.off")));
     }
 
     private Component minimapTimeLabel() {
         boolean on = SolarisConfig.MINIMAP_SHOW_TIME.get();
-        return Component.literal("Minimap Time: " + (on ? "ON" : "OFF"));
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.minimap_time",
+                (on ? SolarisLang.tr("solaris.ui.on") : SolarisLang.tr("solaris.ui.off")));
     }
 
     private Component minimapCoordsLabel() {
         boolean on = SolarisConfig.MINIMAP_SHOW_COORDS.get();
-        return Component.literal("Minimap Coords: " + (on ? "ON" : "OFF"));
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.minimap_coords",
+                (on ? SolarisLang.tr("solaris.ui.on") : SolarisLang.tr("solaris.ui.off")));
     }
 
     private Component claimsMapLabel() {
         boolean on = SolarisConfig.SHOW_CLAIMS_MAP.get();
-        return Component.literal("Claims (Map): " + (on ? "ON" : "OFF"));
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.claims_map",
+                (on ? SolarisLang.tr("solaris.ui.on") : SolarisLang.tr("solaris.ui.off")));
     }
 
     private Component claimsMinimapLabel() {
         boolean on = SolarisConfig.SHOW_CLAIMS_MINIMAP.get();
-        return Component.literal("Claims (Minimap): " + (on ? "ON" : "OFF"));
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.claims_minimap",
+                (on ? SolarisLang.tr("solaris.ui.on") : SolarisLang.tr("solaris.ui.off")));
     }
 
     private Component beamsLabel() {
         boolean on = SolarisConfig.WAYPOINT_BEAMS.get();
-        return Component.literal("Waypoint Beams: " + (on ? "ON" : "OFF"));
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.waypoint_beams",
+                (on ? SolarisLang.tr("solaris.ui.on") : SolarisLang.tr("solaris.ui.off")));
     }
 
     private Component compassLabel() {
         boolean on = SolarisConfig.WAYPOINT_COMPASS.get();
-        return Component.literal("Waypoint Compass: " + (on ? "ON" : "OFF"));
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.waypoint_compass",
+                (on ? SolarisLang.tr("solaris.ui.on") : SolarisLang.tr("solaris.ui.off")));
     }
 
     private Component deathMarkersLabel() {
         boolean on = SolarisConfig.DEATH_MARKERS.get();
-        return Component.literal("Death Markers: " + (on ? "ON" : "OFF"));
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.death_markers",
+                (on ? SolarisLang.tr("solaris.ui.on") : SolarisLang.tr("solaris.ui.off")));
     }
 
     private Component structureWaypointsLabel() {
         boolean on = SolarisConfig.AUTO_STRUCTURE_WAYPOINTS.get();
-        return Component.literal("Structure Waypoints: " + (on ? "ON" : "OFF"));
+        return SolarisLang.tr("solaris.solaris_display_settings_screen.structure_waypoints",
+                (on ? SolarisLang.tr("solaris.ui.on") : SolarisLang.tr("solaris.ui.off")));
     }
 
     @Override
@@ -603,7 +627,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
         @Override
         protected void updateMessage() {
-            setMessage(Component.literal("Saturation: " + Math.round(value * 200) + "%"));
+            setMessage(SolarisLang.tr("solaris.solaris_display_settings_screen.saturation", Math.round(value * 200)));
         }
 
         @Override
@@ -624,7 +648,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
         @Override
         protected void updateMessage() {
-            setMessage(Component.literal("Contrast: " + Math.round(value * 300) + "%"));
+            setMessage(SolarisLang.tr("solaris.solaris_display_settings_screen.contrast", Math.round(value * 300)));
         }
 
         @Override
@@ -645,7 +669,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
         @Override
         protected void updateMessage() {
-            setMessage(Component.literal("Brightness: " + Math.round(value * 200) + "%"));
+            setMessage(SolarisLang.tr("solaris.solaris_display_settings_screen.brightness", Math.round(value * 200)));
         }
 
         @Override
@@ -666,7 +690,8 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
         @Override
         protected void updateMessage() {
-            setMessage(Component.literal("Foliage Brightness: " + Math.round(value * 200) + "%"));
+            setMessage(SolarisLang.tr("solaris.solaris_display_settings_screen.foliage_brightness",
+                    Math.round(value * 200)));
         }
 
         @Override
@@ -687,7 +712,8 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
         @Override
         protected void updateMessage() {
-            setMessage(Component.literal("Unexplored Density: " + Math.round((0.25 + value * 3.75) * 100) + "%"));
+            setMessage(SolarisLang.tr("solaris.solaris_display_settings_screen.unexplored_density",
+                    Math.round((0.25 + value * 3.75) * 100)));
         }
 
         @Override
@@ -707,7 +733,8 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
         @Override
         protected void updateMessage() {
-            setMessage(Component.literal("Unexplored Bright: " + Math.round((0.25 + value * 2.25) * 100) + "%"));
+            setMessage(SolarisLang.tr("solaris.solaris_display_settings_screen.unexplored_bright",
+                    Math.round((0.25 + value * 2.25) * 100)));
         }
 
         @Override
@@ -727,7 +754,8 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
         @Override
         protected void updateMessage() {
-            setMessage(Component.literal("Water Opacity: " + Math.round(value * 100) + "%"));
+            setMessage(
+                    SolarisLang.tr("solaris.solaris_display_settings_screen.water_opacity", Math.round(value * 100)));
         }
 
         @Override
@@ -756,7 +784,9 @@ public class SolarisDisplaySettingsScreen extends Screen {
         @Override
         protected void updateMessage() {
             int radius = radius();
-            setMessage(Component.literal("Biome Blending: " + (radius == 0 ? "OFF (sharper)" : radius + " blocks")));
+            setMessage(SolarisLang.tr("solaris.solaris_display_settings_screen.biome_blending",
+                    (radius == 0 ? SolarisLang.tr("solaris.ui.off_sharper") :
+                            SolarisLang.tr("solaris.ui.blocks", radius))));
         }
 
         @Override
@@ -778,7 +808,8 @@ public class SolarisDisplaySettingsScreen extends Screen {
         @Override
         protected void updateMessage() {
             double scale = 0.5 + value * 2.5;
-            setMessage(Component.literal("Waypoint Icon Size: " + Math.round(scale * 100) + "%"));
+            setMessage(SolarisLang.tr("solaris.solaris_display_settings_screen.waypoint_icon_size",
+                    Math.round(scale * 100)));
         }
 
         @Override
@@ -797,7 +828,8 @@ public class SolarisDisplaySettingsScreen extends Screen {
         @Override
         protected void updateMessage() {
             double zoom = 1.0 + value * 7.0;
-            setMessage(Component.literal("Minimap Zoom: " + String.format("%.1f", zoom) + "x"));
+            setMessage(SolarisLang.tr("solaris.solaris_display_settings_screen.minimap_zoom_x",
+                    String.format("%.1f", zoom)));
         }
 
         @Override
@@ -816,7 +848,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
         @Override
         protected void updateMessage() {
             int size = 32 + (int) Math.round(value * 480.0);
-            setMessage(Component.literal("Minimap Size: " + size + "px"));
+            setMessage(SolarisLang.tr("solaris.solaris_display_settings_screen.minimap_size_px", size));
         }
 
         @Override
@@ -836,8 +868,9 @@ public class SolarisDisplaySettingsScreen extends Screen {
         protected void updateMessage() {
             int chunks = 1 + (int) Math.round(value * 23.0);
             int renderDistance = net.minecraft.client.Minecraft.getInstance().options.getEffectiveRenderDistance();
-            String note = chunks > renderDistance ? " §e(render distance " + renderDistance + ")" : "";
-            setMessage(Component.literal("Minimap Range: " + chunks + " chunks" + note));
+            String note = chunks > renderDistance ?
+                    SolarisText.str("solaris.solaris_display_settings.render_distance", renderDistance) : "";
+            setMessage(SolarisLang.tr("solaris.solaris_display_settings_screen.minimap_range_chunks", chunks, note));
         }
 
         @Override
@@ -856,7 +889,7 @@ public class SolarisDisplaySettingsScreen extends Screen {
         @Override
         protected void updateMessage() {
             int count = 1 + (int) Math.round(value * 63.0);
-            setMessage(Component.literal("Minimap Max Waypoints: " + count));
+            setMessage(SolarisLang.tr("solaris.solaris_display_settings_screen.minimap_max_waypoints", count));
         }
 
         @Override
@@ -875,7 +908,8 @@ public class SolarisDisplaySettingsScreen extends Screen {
         @Override
         protected void updateMessage() {
             double zoomMin = 0.05 + value * 0.95;
-            setMessage(Component.literal("Map Zoom Out Limit: " + String.format("%.2f", zoomMin) + "x"));
+            setMessage(SolarisLang.tr("solaris.solaris_display_settings_screen.map_zoom_out_limit_x",
+                    String.format("%.2f", zoomMin)));
         }
 
         @Override
@@ -894,7 +928,8 @@ public class SolarisDisplaySettingsScreen extends Screen {
         @Override
         protected void updateMessage() {
             double zoomMax = 1.0 + value * 47.0;
-            setMessage(Component.literal("Map Zoom In Limit: " + String.format("%.0f", zoomMax) + "x"));
+            setMessage(SolarisLang.tr("solaris.solaris_display_settings_screen.map_zoom_in_limit_x",
+                    String.format("%.0f", zoomMax)));
         }
 
         @Override
@@ -912,7 +947,8 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
         @Override
         protected void updateMessage() {
-            setMessage(Component.literal("Hillshading Strength: " + Math.round(value * 100) + "%"));
+            setMessage(SolarisLang.tr("solaris.solaris_display_settings_screen.hillshading_strength",
+                    Math.round(value * 100)));
         }
 
         @Override
@@ -933,7 +969,8 @@ public class SolarisDisplaySettingsScreen extends Screen {
 
         @Override
         protected void updateMessage() {
-            setMessage(Component.literal("Vignette Strength: " + Math.round(value * 100) + "%"));
+            setMessage(SolarisLang.tr("solaris.solaris_display_settings_screen.vignette_strength",
+                    Math.round(value * 100)));
         }
 
         @Override

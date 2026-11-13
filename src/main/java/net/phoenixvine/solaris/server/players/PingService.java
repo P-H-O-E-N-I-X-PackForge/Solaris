@@ -1,7 +1,6 @@
 package net.phoenixvine.solaris.server.players;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -15,6 +14,7 @@ import net.phoenixvine.solaris.network.S2CPingPacket;
 import net.phoenixvine.solaris.network.SolarisNetwork;
 import net.phoenixvine.solaris.server.SolarisServerAPI;
 import net.phoenixvine.solaris.server.SolarisServerUtil;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,7 +39,7 @@ public final class PingService {
 
         PingAudience audience = SolarisServerConfig.PING_AUDIENCE.get();
         if (audience == PingAudience.OFF) {
-            sender.sendSystemMessage(Component.literal("Pings are disabled on this server.")
+            sender.sendSystemMessage(SolarisLang.tr("solaris.ping_service.pings_are_disabled_on_this")
                     .withStyle(ChatFormatting.YELLOW));
             return;
         }
@@ -61,7 +61,7 @@ public final class PingService {
         } else {
             List<ServerPlayer> mates = GuildsIntegration.getOnlineGuildmates(sender);
             if (mates.isEmpty()) {
-                sender.sendSystemMessage(Component.literal("No online guild-mates to ping.")
+                sender.sendSystemMessage(SolarisLang.tr("solaris.ping_service.no_online_guild_mates_to")
                         .withStyle(ChatFormatting.YELLOW));
                 return;
             }

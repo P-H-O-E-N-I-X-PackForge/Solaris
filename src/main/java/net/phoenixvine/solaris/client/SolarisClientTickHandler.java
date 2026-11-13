@@ -16,6 +16,7 @@ import net.phoenixvine.solaris.client.waypoint.Waypoint;
 import net.phoenixvine.solaris.client.waypoint.WaypointManager;
 import net.phoenixvine.solaris.config.SolarisConfig;
 import net.phoenixvine.solaris.integration.gtceu.GtceuIntegration;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -61,13 +62,15 @@ public class SolarisClientTickHandler {
             if (mc.screen != null) continue;
 
             if (!SolarisAPI.openMap(null)) {
-                mc.player.displayClientMessage(Component.literal("The map isn't available right now."), true);
+                mc.player.displayClientMessage(
+                        SolarisLang.tr("solaris.solaris_client_tick_handler.the_map_isn_t_available"), true);
             }
         }
 
         while (SolarisKeybinds.NEW_WAYPOINT.consumeClick()) {
             if (!WaypointManager.canPlace(mc.level.dimension().location())) {
-                mc.player.displayClientMessage(Component.literal("Waypoints aren't available here."), true);
+                mc.player.displayClientMessage(
+                        SolarisLang.tr("solaris.solaris_client_tick_handler.waypoints_aren_t_available_here"), true);
                 continue;
             }
             if (!WaypointManager.tryBeginPlacement()) continue;
@@ -88,7 +91,9 @@ public class SolarisClientTickHandler {
             SolarisConfig.WAYPOINT_COMPASS.set(on);
             SolarisConfig.WAYPOINT_COMPASS.save();
             mc.player.displayClientMessage(
-                    Component.literal("Waypoint compass: " + (on ? "ON" : "OFF")), true);
+                    SolarisLang.tr("solaris.solaris_client_tick_handler.waypoint_compass",
+                            (on ? SolarisLang.tr("solaris.ui.on") : SolarisLang.tr("solaris.ui.off"))),
+                    true);
         }
 
         while (SolarisKeybinds.TOGGLE_MINIMAP_ROTATE.consumeClick()) {
@@ -96,7 +101,10 @@ public class SolarisClientTickHandler {
             SolarisConfig.MINIMAP_ROTATE.set(on);
             SolarisConfig.MINIMAP_ROTATE.save();
             mc.player.displayClientMessage(
-                    Component.literal("Minimap rotation: " + (on ? "ON (facing up)" : "OFF (north up)")), true);
+                    SolarisLang.tr("solaris.solaris_client_tick_handler.minimap_rotation",
+                            (on ? SolarisLang.tr("solaris.ui.rotation_on") :
+                                    SolarisLang.tr("solaris.ui.rotation_off"))),
+                    true);
         }
 
         while (SolarisKeybinds.CYCLE_MINIMAP_STYLE.consumeClick()) {
@@ -107,7 +115,8 @@ public class SolarisClientTickHandler {
             SolarisConfig.MINIMAP_SIZE.save();
             SolarisConfig.MINIMAP_SHAPE.set(next.shape);
             SolarisConfig.MINIMAP_SHAPE.save();
-            mc.player.displayClientMessage(Component.literal("Minimap style: " + next.label), true);
+            mc.player.displayClientMessage(
+                    SolarisLang.tr("solaris.solaris_client_tick_handler.minimap_style", next.label), true);
         }
     }
 

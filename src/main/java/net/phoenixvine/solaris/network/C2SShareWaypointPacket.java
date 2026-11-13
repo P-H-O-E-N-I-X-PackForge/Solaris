@@ -2,11 +2,11 @@ package net.phoenixvine.solaris.network;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.PacketDistributor;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -58,14 +58,16 @@ public class C2SShareWaypointPacket {
 
             if (!GuildsIntegration.isAvailable()) {
                 sender.sendSystemMessage(
-                        Component.literal("Guilds isn't installed on this server.").withStyle(ChatFormatting.RED));
+                        SolarisLang.tr("solaris.c2_s_share_waypoint_packet.guilds_isn_t_installed_on")
+                                .withStyle(ChatFormatting.RED));
                 return;
             }
 
             List<ServerPlayer> guildmates = GuildsIntegration.getOnlineGuildmates(sender);
             if (guildmates.isEmpty()) {
-                sender.sendSystemMessage(Component.literal("No online guildmates to share with.")
-                        .withStyle(ChatFormatting.YELLOW));
+                sender.sendSystemMessage(
+                        SolarisLang.tr("solaris.c2_s_share_waypoint_packet.no_online_guildmates_to_share")
+                                .withStyle(ChatFormatting.YELLOW));
                 return;
             }
 
@@ -75,8 +77,9 @@ public class C2SShareWaypointPacket {
                 SolarisNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> mate), outgoing);
             }
 
-            sender.sendSystemMessage(Component.literal("Shared waypoint '" + name + "' with " + guildmates.size() +
-                    " guildmate(s).").withStyle(ChatFormatting.GREEN));
+            sender.sendSystemMessage(SolarisLang
+                    .tr("solaris.c2_s_share_waypoint_packet.shared_waypoint_with_guildmate_s", name, guildmates.size())
+                    .withStyle(ChatFormatting.GREEN));
         });
         ctx.get().setPacketHandled(true);
     }

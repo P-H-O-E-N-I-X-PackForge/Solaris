@@ -1,10 +1,10 @@
 package net.phoenixvine.solaris.network;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 import net.phoenixvine.solaris.server.waypoint.ServerWaypointService;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import java.util.function.Supplier;
 
@@ -29,7 +29,9 @@ public class C2SRemoveServerWaypointPacket {
             ServerPlayer sender = ctx.get().getSender();
             if (sender == null || sender.getServer() == null) return;
             if (!sender.hasPermissions(2)) {
-                sender.displayClientMessage(Component.literal("Only operators can delete server waypoints."), true);
+                sender.displayClientMessage(
+                        SolarisLang.tr("solaris.c2_s_remove_server_waypoint_packet.only_operators_can_delete_server"),
+                        true);
                 return;
             }
             ServerWaypointService.remove(sender.getServer(), key);

@@ -12,6 +12,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.client.SettingsImporter;
+import net.phoenixvine.solaris.client.SolarisText;
 import net.phoenixvine.solaris.client.plan.PlanShape;
 import net.phoenixvine.solaris.client.plan.PlanShapeManager;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
@@ -21,6 +22,7 @@ import net.phoenixvine.solaris.network.C2SRemoveServerWaypointPacket;
 import net.phoenixvine.solaris.network.C2SShareWaypointPacket;
 import net.phoenixvine.solaris.network.ClientPacketHandlers;
 import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,7 +70,7 @@ public class WaypointListScreen extends Screen {
     private EditBox shapeHeightBox;
 
     public WaypointListScreen(Screen parent) {
-        super(Component.literal("Waypoints"));
+        super(SolarisLang.tr("solaris.waypoint_list_screen.waypoints"));
         this.parent = parent;
     }
 
@@ -93,57 +95,67 @@ public class WaypointListScreen extends Screen {
         addTabButtons();
         if (shapesTab) {
             initShapesTab(sideW, leftW);
-            addRenderableWidget(Button.builder(Component.literal("Close"), b -> onClose())
-                    .bounds(vw - 66, 6, 56, 18).build());
+            addRenderableWidget(
+                    Button.builder(SolarisLang.tr("solaris.solaris_display_settings_screen.close"), b -> onClose())
+                            .bounds(vw - 66, 6, 56, 18).build());
             return;
         }
 
-        addRenderableWidget(Button.builder(Component.literal("Import WPs"), b -> importWaypoints())
-                .bounds(176, 6, 74, 18).build());
-        addRenderableWidget(Button.builder(Component.literal("Import Settings"), b -> importSettings())
-                .bounds(254, 6, 100, 18).build());
+        addRenderableWidget(
+                Button.builder(SolarisLang.tr("solaris.waypoint_list_screen.import_wps"), b -> importWaypoints())
+                        .bounds(176, 6, 74, 18).build());
+        addRenderableWidget(
+                Button.builder(SolarisLang.tr("solaris.waypoint_list_screen.import_settings"), b -> importSettings())
+                        .bounds(254, 6, 100, 18).build());
 
-        addRenderableWidget(Button.builder(Component.literal("+ Add here"), b -> addHere())
+        addRenderableWidget(Button.builder(SolarisLang.tr("solaris.waypoint_list_screen.add_here"), b -> addHere())
                 .bounds(8, 32, leftW - 90, 18).build());
         addRenderableWidget(Button.builder(
-                Component.literal(sortByDistance ? "Sort: Nearest" : "Sort: Name"),
+                Component.literal(sortByDistance ? SolarisText.str("solaris.waypoint_list.sort_nearest") :
+                        SolarisText.str("solaris.waypoint_list.sort_name")),
                 b -> {
                     sortByDistance = !sortByDistance;
                     init();
                 }).bounds(8 + leftW - 86, 32, 86, 18).build());
 
         String previousSearch = searchBox != null ? searchBox.getValue() : "";
-        searchBox = new EditBox(font, 8, 52, leftW - 8, 16, Component.literal("Search"));
+        searchBox = new EditBox(font, 8, 52, leftW - 8, 16,
+                SolarisLang.tr("solaris.waypoint_item_picker_screen.search"));
         searchBox.setMaxLength(48);
         searchBox.setValue(previousSearch);
-        searchBox.setHint(Component.literal("Search…"));
+        searchBox.setHint(SolarisLang.tr("solaris.waypoint_list_screen.search"));
         addWidget(searchBox);
 
         List<String> categories = WaypointManager.getCategories();
-        addRenderableWidget(Button.builder(Component.literal("Category: " + categoryFilterLabel()), b -> {
-            categoryFilter = nextCategory(categories, categoryFilter);
-            init();
-        }).bounds(8, 72, leftW - 90, 18).build());
+        addRenderableWidget(
+                Button.builder(SolarisLang.tr("solaris.waypoint_list_screen.category_2", categoryFilterLabel()), b -> {
+                    categoryFilter = nextCategory(categories, categoryFilter);
+                    init();
+                }).bounds(8, 72, leftW - 90, 18).build());
 
         if (categoryFilter != null) {
             boolean hidden = WaypointManager.isCategoryHidden(categoryFilter);
-            addRenderableWidget(Button.builder(Component.literal(hidden ? "Hidden" : "Shown"), b -> {
-                WaypointManager.setCategoryHidden(categoryFilter, !hidden);
-                init();
-            }).bounds(8 + leftW - 86, 72, 86, 18).build());
+            addRenderableWidget(
+                    Button.builder(Component.literal(hidden ? SolarisText.str("solaris.waypoint_list.hidden") :
+                            SolarisText.str("solaris.waypoint_list.shown")), b -> {
+                                WaypointManager.setCategoryHidden(categoryFilter, !hidden);
+                                init();
+                            }).bounds(8 + leftW - 86, 72, 86, 18).build());
         }
 
         if (selected != null) {
             int editX = vw - sideW + 10;
             int y = 40;
 
-            nameBox = new EditBox(font, editX, y, sideW - 20, 16, Component.literal("Name"));
+            nameBox = new EditBox(font, editX, y, sideW - 20, 16,
+                    SolarisLang.tr("solaris.solaris_preset_save_screen.name"));
             nameBox.setMaxLength(48);
             nameBox.setValue(selected.name);
             addWidget(nameBox);
             y += ROW_H + 10;
 
-            colorBox = new EditBox(font, editX, y, sideW - 20, 16, Component.literal("Color"));
+            colorBox = new EditBox(font, editX, y, sideW - 20, 16,
+                    SolarisLang.tr("solaris.plan_shape_list_screen.color"));
             colorBox.setMaxLength(8);
             colorBox.setValue(selected.color);
             addWidget(colorBox);
@@ -169,22 +181,24 @@ public class WaypointListScreen extends Screen {
             addWidget(zBox);
             y += ROW_H + 10;
 
-            categoryBox = new EditBox(font, editX, y, sideW - 20, 16, Component.literal("Category"));
+            categoryBox = new EditBox(font, editX, y, sideW - 20, 16,
+                    SolarisLang.tr("solaris.waypoint_list_screen.category"));
             categoryBox.setMaxLength(32);
             categoryBox.setValue(selected.categoryOrEmpty());
-            categoryBox.setHint(Component.literal("Uncategorized"));
+            categoryBox.setHint(SolarisLang.tr("solaris.waypoint_list_screen.uncategorized"));
             addWidget(categoryBox);
             y += ROW_H + 10;
 
-            labelColorBox = new EditBox(font, editX, y, sideW - 20, 16, Component.literal("Label Color"));
+            labelColorBox = new EditBox(font, editX, y, sideW - 20, 16,
+                    SolarisLang.tr("solaris.quick_waypoint_screen.label_color"));
             labelColorBox.setMaxLength(8);
             labelColorBox.setValue(selected.labelColor);
-            labelColorBox.setHint(Component.literal("Same as theme text"));
+            labelColorBox.setHint(SolarisLang.tr("solaris.quick_waypoint_screen.same_as_theme_text"));
             addWidget(labelColorBox);
             y += ROW_H + 14;
 
             addRenderableWidget(Button.builder(
-                    Component.literal("Icon: " + WaypointIconManager.label(selected.icon)),
+                    SolarisLang.tr("solaris.quick_waypoint_screen.icon", WaypointIconManager.label(selected.icon)),
                     b -> Minecraft.getInstance().setScreen(new WaypointIconPickerScreen(this, selected.icon,
                             selected.colorArgb(), id -> {
                                 selected.icon = id;
@@ -194,7 +208,8 @@ public class WaypointListScreen extends Screen {
             y += ROW_H + 8;
 
             addRenderableWidget(Button.builder(
-                    Component.literal(selected.visible ? "Visible: ON" : "Visible: OFF"),
+                    Component.literal(selected.visible ? SolarisText.str("solaris.plan_shape_list.visible_on") :
+                            SolarisText.str("solaris.plan_shape_list.visible_off")),
                     b -> {
                         selected.visible = !selected.visible;
                         WaypointManager.save();
@@ -204,7 +219,8 @@ public class WaypointListScreen extends Screen {
 
             boolean tracked = selected.id.equals(trackedId());
             addRenderableWidget(Button.builder(
-                    Component.literal(tracked ? "Tracked (compass) ✓" : "Track (compass)"),
+                    Component.literal(tracked ? SolarisText.str("solaris.waypoint_list.tracked_compass") :
+                            SolarisText.str("solaris.waypoint_list.track_compass")),
                     b -> {
                         WaypointManager.setTracked(tracked ? null : selected.id);
                         init();
@@ -212,7 +228,8 @@ public class WaypointListScreen extends Screen {
             y += ROW_H + 8;
 
             if (GuildsIntegration.isAvailable()) {
-                addRenderableWidget(Button.builder(Component.literal("Share to Guild"), b -> shareSelected())
+                addRenderableWidget(Button
+                        .builder(SolarisLang.tr("solaris.waypoint_list_screen.share_to_guild"), b -> shareSelected())
                         .bounds(editX, y, sideW - 20, 18).build());
                 y += ROW_H + 8;
 
@@ -220,20 +237,23 @@ public class WaypointListScreen extends Screen {
                         selected.id.startsWith(ClientPacketHandlers.GUILD_WAYPOINT_PREFIX);
                 if (guildEntry) {
                     int half = (sideW - 20 - 4) / 2;
-                    addRenderableWidget(Button.builder(Component.literal("Update Guild"), b -> publishToGuild())
+                    addRenderableWidget(Button
+                            .builder(SolarisLang.tr("solaris.waypoint_list_screen.update_guild"), b -> publishToGuild())
                             .bounds(editX, y, half, 18).build());
-                    addRenderableWidget(Button.builder(Component.literal("Remove"), b -> removeFromGuildList())
+                    addRenderableWidget(Button
+                            .builder(SolarisLang.tr("solaris.waypoint_list_screen.remove"), b -> removeFromGuildList())
                             .bounds(editX + half + 4, y, half, 18).build());
                     y += ROW_H + 8;
                 } else if (!selected.locked) {
-                    addRenderableWidget(Button.builder(Component.literal("Add to Guild List"),
+                    addRenderableWidget(Button.builder(SolarisLang.tr("solaris.waypoint_list_screen.add_to_guild_list"),
                             b -> publishToGuild()).bounds(editX, y, sideW - 20, 18).build());
                     y += ROW_H + 8;
                 }
             }
 
-            addRenderableWidget(Button.builder(Component.literal("Save"), b -> saveSelected())
-                    .bounds(editX, y, sideW - 20, 18).build());
+            addRenderableWidget(
+                    Button.builder(SolarisLang.tr("solaris.solaris_preset_save_screen.save"), b -> saveSelected())
+                            .bounds(editX, y, sideW - 20, 18).build());
             y += ROW_H + 4;
 
             boolean serverEntry = selected.id != null &&
@@ -242,8 +262,9 @@ public class WaypointListScreen extends Screen {
                     minecraft.player.hasPermissions(2);
             boolean deletable = !selected.locked || canDeleteServer;
             Button deleteButton = Button.builder(
-                    Component.literal(canDeleteServer ? "Delete (server)" : selected.locked ? "Delete (locked)" :
-                            "Delete"),
+                    Component.literal(canDeleteServer ? SolarisText.str("solaris.waypoint_list.delete_server") :
+                            selected.locked ? SolarisText.str("solaris.waypoint_list.delete_locked") :
+                                    SolarisText.str("solaris.plan_shape_list_screen.delete")),
                     b -> {
                         if (!deletable) return;
                         if (canDeleteServer) {
@@ -258,8 +279,9 @@ public class WaypointListScreen extends Screen {
             addRenderableWidget(deleteButton);
         }
 
-        addRenderableWidget(Button.builder(Component.literal("Close"), b -> onClose())
-                .bounds(vw - 66, 6, 56, 18).build());
+        addRenderableWidget(
+                Button.builder(SolarisLang.tr("solaris.solaris_display_settings_screen.close"), b -> onClose())
+                        .bounds(vw - 66, 6, 56, 18).build());
     }
 
     private String importStatus = "";
@@ -277,16 +299,18 @@ public class WaypointListScreen extends Screen {
     private void reportImport(String message) {
         importStatus = message;
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player != null) mc.player.displayClientMessage(Component.literal("[Solaris] " + message), false);
+        if (mc.player != null)
+            mc.player.displayClientMessage(SolarisLang.tr("solaris.waypoint_list_screen.solaris", message), false);
     }
 
     private void addTabButtons() {
-        Button waypointsTab = Button.builder(Component.literal("Waypoints"), b -> switchTab(false))
+        Button waypointsTab = Button
+                .builder(SolarisLang.tr("solaris.waypoint_list_screen.waypoints"), b -> switchTab(false))
                 .bounds(8, 6, 80, 18).build();
         waypointsTab.active = shapesTab;
         addRenderableWidget(waypointsTab);
 
-        Button shapes = Button.builder(Component.literal("Shapes"), b -> switchTab(true))
+        Button shapes = Button.builder(SolarisLang.tr("solaris.waypoint_list_screen.shapes"), b -> switchTab(true))
                 .bounds(92, 6, 80, 18).build();
         shapes.active = !shapesTab;
         addRenderableWidget(shapes);
@@ -303,10 +327,11 @@ public class WaypointListScreen extends Screen {
         if (selectedShape != null && !PlanShapeManager.getAll().contains(selectedShape)) selectedShape = null;
 
         String previousSearch = searchBox != null ? searchBox.getValue() : "";
-        searchBox = new EditBox(font, 8, 32, leftW - 8, 16, Component.literal("Search"));
+        searchBox = new EditBox(font, 8, 32, leftW - 8, 16,
+                SolarisLang.tr("solaris.waypoint_item_picker_screen.search"));
         searchBox.setMaxLength(48);
         searchBox.setValue(previousSearch);
-        searchBox.setHint(Component.literal("Search shapes…"));
+        searchBox.setHint(SolarisLang.tr("solaris.waypoint_list_screen.search_shapes"));
         addWidget(searchBox);
 
         if (selectedShape == null) return;
@@ -314,26 +339,29 @@ public class WaypointListScreen extends Screen {
         int editX = vw - sideW + 10;
         int y = 40;
 
-        shapeNameBox = new EditBox(font, editX, y, sideW - 20, 16, Component.literal("Name"));
+        shapeNameBox = new EditBox(font, editX, y, sideW - 20, 16,
+                SolarisLang.tr("solaris.solaris_preset_save_screen.name"));
         shapeNameBox.setMaxLength(48);
         shapeNameBox.setValue(selectedShape.name);
         addWidget(shapeNameBox);
         y += ROW_H + 10;
 
-        shapeColorBox = new EditBox(font, editX, y, sideW - 20, 16, Component.literal("Color"));
+        shapeColorBox = new EditBox(font, editX, y, sideW - 20, 16,
+                SolarisLang.tr("solaris.plan_shape_list_screen.color"));
         shapeColorBox.setMaxLength(8);
         shapeColorBox.setValue(selectedShape.color);
         addWidget(shapeColorBox);
         y += ROW_H + 10;
 
         int halfW = (sideW - 20 - 8) / 2;
-        shapeBaseYBox = new EditBox(font, editX, y, halfW, 16, Component.literal("Base Y"));
+        shapeBaseYBox = new EditBox(font, editX, y, halfW, 16, SolarisLang.tr("solaris.plan_shape_list_screen.base_y"));
         shapeBaseYBox.setMaxLength(6);
         shapeBaseYBox.setFilter(t -> t.isEmpty() || t.equals("-") || t.matches("-?\\d+"));
         shapeBaseYBox.setValue(String.valueOf(selectedShape.baseY));
         addWidget(shapeBaseYBox);
 
-        shapeHeightBox = new EditBox(font, editX + halfW + 8, y, halfW, 16, Component.literal("Height"));
+        shapeHeightBox = new EditBox(font, editX + halfW + 8, y, halfW, 16,
+                SolarisLang.tr("solaris.plan_shape_list_screen.height"));
         shapeHeightBox.setMaxLength(4);
         shapeHeightBox.setFilter(t -> t.isEmpty() || t.matches("\\d+"));
         shapeHeightBox.setValue(String.valueOf(selectedShape.height));
@@ -341,18 +369,21 @@ public class WaypointListScreen extends Screen {
         y += ROW_H + 14;
 
         addRenderableWidget(Button.builder(
-                Component.literal(selectedShape.visible ? "Visible: ON" : "Visible: OFF"), b -> {
+                Component.literal(selectedShape.visible ? SolarisText.str("solaris.plan_shape_list.visible_on") :
+                        SolarisText.str("solaris.plan_shape_list.visible_off")),
+                b -> {
                     selectedShape.visible = !selectedShape.visible;
                     PlanShapeManager.save();
                     init();
                 }).bounds(editX, y, sideW - 20, 18).build());
         y += ROW_H + 8;
 
-        addRenderableWidget(Button.builder(Component.literal("Save"), b -> saveSelectedShape())
-                .bounds(editX, y, sideW - 20, 18).build());
+        addRenderableWidget(
+                Button.builder(SolarisLang.tr("solaris.solaris_preset_save_screen.save"), b -> saveSelectedShape())
+                        .bounds(editX, y, sideW - 20, 18).build());
         y += ROW_H + 4;
 
-        addRenderableWidget(Button.builder(Component.literal("Delete"), b -> {
+        addRenderableWidget(Button.builder(SolarisLang.tr("solaris.plan_shape_list_screen.delete"), b -> {
             PlanShapeManager.remove(selectedShape.id);
             selectedShape = null;
             init();
@@ -379,9 +410,9 @@ public class WaypointListScreen extends Screen {
 
     private static String shapeTypeLabel(PlanShape.Type type) {
         return switch (type) {
-            case RECTANGLE -> "Rect";
-            case CIRCLE -> "Circle";
-            case LINE -> "Line";
+            case RECTANGLE -> SolarisText.str("solaris.plan_shape_list_screen.rect");
+            case CIRCLE -> SolarisText.str("solaris.plan_shape_list_screen.circle");
+            case LINE -> SolarisText.str("solaris.plan_shape_list_screen.line");
         };
     }
 
@@ -427,9 +458,11 @@ public class WaypointListScreen extends Screen {
 
         if (selectedShape != null) {
             int editX = vw - sideW + 10;
-            g.drawString(font, "Name", editX, 30, C_DIM, false);
-            g.drawString(font, "Color (hex)", editX, 30 + ROW_H + 10, C_DIM, false);
-            g.drawString(font, "Base Y / Height", editX, 30 + 2 * (ROW_H + 10), C_DIM, false);
+            g.drawString(font, SolarisText.str("solaris.solaris_preset_save_screen.name"), editX, 30, C_DIM, false);
+            g.drawString(font, SolarisText.str("solaris.plan_shape_list.color_hex"), editX, 30 + ROW_H + 10, C_DIM,
+                    false);
+            g.drawString(font, SolarisText.str("solaris.plan_shape_list.base_y_height"), editX, 30 + 2 * (ROW_H + 10),
+                    C_DIM, false);
             if (shapeNameBox != null) shapeNameBox.render(g, mx, my, pt);
             if (shapeColorBox != null) shapeColorBox.render(g, mx, my, pt);
             if (shapeBaseYBox != null) shapeBaseYBox.render(g, mx, my, pt);
@@ -457,7 +490,8 @@ public class WaypointListScreen extends Screen {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
         if (!WaypointManager.canPlace(mc.level.dimension().location())) {
-            mc.player.displayClientMessage(Component.literal("Waypoints aren't available here."), true);
+            mc.player.displayClientMessage(
+                    SolarisLang.tr("solaris.solaris_client_tick_handler.waypoints_aren_t_available_here"), true);
             return;
         }
         if (!WaypointManager.tryBeginPlacement()) return;
@@ -483,7 +517,8 @@ public class WaypointListScreen extends Screen {
                 SolarisAPI.isFeatureEnabled(SolarisAPI.FEATURE_GUILD_SHARE, mc.level.dimension().location()) :
                 SolarisAPI.isFeatureEnabled(SolarisAPI.FEATURE_GUILD_SHARE);
         if (!allowed) {
-            mc.player.displayClientMessage(Component.literal("Sharing isn't available right now."), true);
+            mc.player.displayClientMessage(SolarisLang.tr("solaris.waypoint_list_screen.sharing_isn_t_available_right"),
+                    true);
             return;
         }
         SolarisNetwork.CHANNEL.sendToServer(new C2SShareWaypointPacket(selected.name, selected.dimension,
@@ -648,11 +683,14 @@ public class WaypointListScreen extends Screen {
 
         if (selected != null) {
             int editX = vw - sideW + 10;
-            g.drawString(font, "Name", editX, 30, C_DIM, false);
-            g.drawString(font, "Color (hex)", editX, 30 + ROW_H + 10, C_DIM, false);
+            g.drawString(font, SolarisText.str("solaris.solaris_preset_save_screen.name"), editX, 30, C_DIM, false);
+            g.drawString(font, SolarisText.str("solaris.plan_shape_list.color_hex"), editX, 30 + ROW_H + 10, C_DIM,
+                    false);
             g.drawString(font, "X / Y / Z", editX, 30 + 2 * (ROW_H + 10), C_DIM, false);
-            g.drawString(font, "Category", editX, 30 + 3 * (ROW_H + 10), C_DIM, false);
-            g.drawString(font, "Label Color (hex)", editX, 30 + 4 * (ROW_H + 10), C_DIM, false);
+            g.drawString(font, SolarisText.str("solaris.waypoint_list_screen.category"), editX, 30 + 3 * (ROW_H + 10),
+                    C_DIM, false);
+            g.drawString(font, SolarisText.str("solaris.quick_waypoint.label_color_hex"), editX, 30 + 4 * (ROW_H + 10),
+                    C_DIM, false);
             if (nameBox != null) nameBox.render(g, mx, my, pt);
             if (colorBox != null) colorBox.render(g, mx, my, pt);
             if (xBox != null) xBox.render(g, mx, my, pt);

@@ -2,6 +2,7 @@ package net.phoenixvine.solaris.client.waypoint;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
+import net.phoenixvine.solaris.client.SolarisText;
 import net.phoenixvine.solaris.client.render.SmoothShapes;
 
 public enum WaypointIcon {
@@ -28,12 +29,12 @@ public enum WaypointIcon {
 
     public String label() {
         return switch (this) {
-            case DOT -> "Dot";
-            case HOME -> "Home";
-            case DANGER -> "Danger";
-            case RESOURCE -> "Resource";
-            case STAR -> "Star";
-            case CIRCLE -> "Circle";
+            case DOT -> SolarisText.str("solaris.waypoint_icon.dot");
+            case HOME -> SolarisText.str("solaris.waypoint_icon.home");
+            case DANGER -> SolarisText.str("solaris.waypoint_icon.danger");
+            case RESOURCE -> SolarisText.str("solaris.waypoint_icon.resource");
+            case STAR -> SolarisText.str("solaris.waypoint_icon.star");
+            case CIRCLE -> SolarisText.str("solaris.plan_shape_list_screen.circle");
         };
     }
 

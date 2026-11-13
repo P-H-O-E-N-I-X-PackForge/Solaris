@@ -5,14 +5,15 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.phoenixvine.solaris.client.SolarisText;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +43,7 @@ public class WaypointItemPickerScreen extends Screen {
     private int gridBottom;
 
     public WaypointItemPickerScreen(Screen parent, String current, Consumer<String> onPick) {
-        super(Component.literal("Choose Item/Block"));
+        super(SolarisLang.tr("solaris.waypoint_item_picker_screen.choose_item_block"));
         this.parent = parent;
         this.current = current;
         this.onPick = onPick;
@@ -69,15 +70,17 @@ public class WaypointItemPickerScreen extends Screen {
         gridBottom = height - 34;
 
         String previousSearch = searchBox != null ? searchBox.getValue() : "";
-        searchBox = new EditBox(font, width / 2 - 100, 22, 200, 16, Component.literal("Search"));
+        searchBox = new EditBox(font, width / 2 - 100, 22, 200, 16,
+                SolarisLang.tr("solaris.waypoint_item_picker_screen.search"));
         searchBox.setMaxLength(48);
         searchBox.setValue(previousSearch);
-        searchBox.setHint(Component.literal("Search items/blocks…"));
+        searchBox.setHint(SolarisLang.tr("solaris.waypoint_item_picker_screen.search_items_blocks"));
         addWidget(searchBox);
         setInitialFocus(searchBox);
 
-        addRenderableWidget(Button.builder(Component.literal("Close"), b -> onClose())
-                .bounds(width / 2 - 40, height - 26, 80, 18).build());
+        addRenderableWidget(
+                Button.builder(SolarisLang.tr("solaris.solaris_display_settings_screen.close"), b -> onClose())
+                        .bounds(width / 2 - 40, height - 26, 80, 18).build());
     }
 
     private List<ItemStack> filtered() {
@@ -95,7 +98,8 @@ public class WaypointItemPickerScreen extends Screen {
         renderBackground(g);
         g.fill(0, 0, width, height, C_PANEL);
         VanillaPanel.draw(g, -8, -8, width + 16, height + 16, C_PANEL);
-        g.drawCenteredString(font, "Choose Item/Block", width / 2, 8, C_ACCENT);
+        g.drawCenteredString(font, SolarisText.str("solaris.waypoint_item_picker_screen.choose_item_block"), width / 2,
+                8, C_ACCENT);
 
         List<ItemStack> items = filtered();
         int cols = COLS;

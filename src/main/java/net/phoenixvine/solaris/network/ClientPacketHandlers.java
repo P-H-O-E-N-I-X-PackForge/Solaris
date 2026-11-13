@@ -1,7 +1,6 @@
 package net.phoenixvine.solaris.network;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -23,6 +22,7 @@ import net.phoenixvine.solaris.common.SharedVeinClient;
 import net.phoenixvine.solaris.common.SharedVeinEntry;
 import net.phoenixvine.solaris.config.SolarisConfig;
 import net.phoenixvine.solaris.server.ServerCapabilities;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -167,7 +167,8 @@ public final class ClientPacketHandlers {
 
         PingTracker.add(sender, new ResourceLocation(dimension), x, y, z, durationTicks * 50L);
         if (!sender.equals(mc.player.getGameProfile().getName())) {
-            mc.player.displayClientMessage(Component.literal(sender + " pinged a location"), true);
+            mc.player.displayClientMessage(SolarisLang.tr("solaris.client_packet_handlers.pinged_a_location", sender),
+                    true);
         }
     }
 }

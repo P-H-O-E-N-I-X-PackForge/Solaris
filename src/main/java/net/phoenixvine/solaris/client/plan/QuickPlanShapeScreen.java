@@ -5,12 +5,13 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.phoenixvine.solaris.client.SolarisMapScreen;
+import net.phoenixvine.solaris.client.SolarisText;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import java.util.List;
 
@@ -42,7 +43,7 @@ public class QuickPlanShapeScreen extends Screen {
 
     public QuickPlanShapeScreen(Screen parent, ResourceLocation dimension, PlanShape.Type type, List<int[]> points,
                                 int radius, int baseY) {
-        super(Component.literal("New " + label(type)));
+        super(SolarisLang.tr("solaris.quick_plan_shape_screen.new", label(type)));
         this.parent = parent;
         this.dimension = dimension;
         this.type = type;
@@ -53,9 +54,9 @@ public class QuickPlanShapeScreen extends Screen {
 
     private static String label(PlanShape.Type type) {
         return switch (type) {
-            case RECTANGLE -> "Rectangle";
-            case CIRCLE -> "Circle";
-            case LINE -> "Line";
+            case RECTANGLE -> SolarisText.str("solaris.quick_plan_shape_screen.rectangle");
+            case CIRCLE -> SolarisText.str("solaris.plan_shape_list_screen.circle");
+            case LINE -> SolarisText.str("solaris.plan_shape_list_screen.line");
         };
     }
 
@@ -77,33 +78,37 @@ public class QuickPlanShapeScreen extends Screen {
         int x = boxX();
         int y = boxY();
 
-        nameBox = new EditBox(font, x + 10, y + 24, BOX_W - 20, 16, Component.literal("Name"));
+        nameBox = new EditBox(font, x + 10, y + 24, BOX_W - 20, 16,
+                SolarisLang.tr("solaris.solaris_preset_save_screen.name"));
         nameBox.setMaxLength(48);
         nameBox.setValue(label(type) + " Plan");
         addWidget(nameBox);
         setInitialFocus(nameBox);
 
-        colorBox = new EditBox(font, x + 10, y + 66, BOX_W - 20, 16, Component.literal("Color"));
+        colorBox = new EditBox(font, x + 10, y + 66, BOX_W - 20, 16,
+                SolarisLang.tr("solaris.plan_shape_list_screen.color"));
         colorBox.setMaxLength(8);
         colorBox.setValue(SWATCHES[0]);
         addWidget(colorBox);
 
         int halfW = (BOX_W - 20 - 8) / 2;
-        baseYBox = new EditBox(font, x + 10, y + 108, halfW, 16, Component.literal("Base Y"));
+        baseYBox = new EditBox(font, x + 10, y + 108, halfW, 16,
+                SolarisLang.tr("solaris.plan_shape_list_screen.base_y"));
         baseYBox.setMaxLength(6);
         baseYBox.setFilter(s -> s.isEmpty() || s.equals("-") || s.matches("-?\\d+"));
         baseYBox.setValue(String.valueOf(initialBaseY));
         addWidget(baseYBox);
 
-        heightBox = new EditBox(font, x + 10 + halfW + 8, y + 108, halfW, 16, Component.literal("Height"));
+        heightBox = new EditBox(font, x + 10 + halfW + 8, y + 108, halfW, 16,
+                SolarisLang.tr("solaris.plan_shape_list_screen.height"));
         heightBox.setMaxLength(4);
         heightBox.setFilter(s -> s.isEmpty() || s.matches("\\d+"));
         heightBox.setValue("4");
         addWidget(heightBox);
 
-        addRenderableWidget(Button.builder(Component.literal("Save"), b -> save())
+        addRenderableWidget(Button.builder(SolarisLang.tr("solaris.solaris_preset_save_screen.save"), b -> save())
                 .bounds(x + 10, y + BOX_H - 22, (BOX_W - 24) / 2, 18).build());
-        addRenderableWidget(Button.builder(Component.literal("Cancel"), b -> onClose())
+        addRenderableWidget(Button.builder(SolarisLang.tr("solaris.quick_goto_screen.cancel"), b -> onClose())
                 .bounds(x + 14 + (BOX_W - 24) / 2, y + BOX_H - 22, (BOX_W - 24) / 2, 18).build());
     }
 
@@ -147,9 +152,9 @@ public class QuickPlanShapeScreen extends Screen {
         VanillaPanel.draw(g, x - 8, y - 8, BOX_W + 16, BOX_H + 16, C_PANEL);
 
         g.drawCenteredString(font, title, x + BOX_W / 2, y + 6, C_ACCENT);
-        g.drawString(font, "Name", x + 10, y + 15, C_DIM, false);
-        g.drawString(font, "Color (hex)", x + 10, y + 57, C_DIM, false);
-        g.drawString(font, "Base Y / Height", x + 10, y + 99, C_DIM, false);
+        g.drawString(font, SolarisText.str("solaris.solaris_preset_save_screen.name"), x + 10, y + 15, C_DIM, false);
+        g.drawString(font, SolarisText.str("solaris.plan_shape_list.color_hex"), x + 10, y + 57, C_DIM, false);
+        g.drawString(font, SolarisText.str("solaris.plan_shape_list.base_y_height"), x + 10, y + 99, C_DIM, false);
 
         List<String> swatches = List.of(SWATCHES);
         int sy = swatchY();

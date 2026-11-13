@@ -9,6 +9,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
 import net.phoenixvine.solaris.config.SolarisPresets;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import java.util.List;
 
@@ -28,7 +29,7 @@ public class SolarisPresetLoadScreen extends Screen {
     private int scrollOffset = 0;
 
     public SolarisPresetLoadScreen(Screen parent, Runnable onLoaded) {
-        super(Component.literal("Load Preset"));
+        super(SolarisLang.tr("solaris.solaris_display_settings_screen.load_preset"));
         this.parent = parent;
         this.onLoaded = onLoaded;
     }
@@ -74,8 +75,9 @@ public class SolarisPresetLoadScreen extends Screen {
             y += ROW_H;
         }
 
-        addRenderableWidget(Button.builder(Component.literal("Close"), b -> onClose())
-                .bounds(x + 10, boxY() + boxH - 22, contentW, 18).build());
+        addRenderableWidget(
+                Button.builder(SolarisLang.tr("solaris.solaris_display_settings_screen.close"), b -> onClose())
+                        .bounds(x + 10, boxY() + boxH - 22, contentW, 18).build());
     }
 
     @Override

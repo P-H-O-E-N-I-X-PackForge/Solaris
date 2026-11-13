@@ -3,13 +3,13 @@ package net.phoenixvine.solaris.network;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 import net.phoenixvine.solaris.client.waypoint.Waypoint;
 import net.phoenixvine.solaris.client.waypoint.WaypointManager;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import java.util.function.Supplier;
 
@@ -76,8 +76,8 @@ public class S2CReceiveWaypointPacket {
         w.locked = pkt.locked;
         WaypointManager.add(w);
 
-        mc.player.sendSystemMessage(Component.literal(
-                "Received waypoint '" + pkt.name + "' from " + pkt.senderName + " Added to your list.")
+        mc.player.sendSystemMessage(SolarisLang
+                .tr("solaris.s2_c_receive_waypoint_packet.received_waypoint_from_added_to", pkt.name, pkt.senderName)
                 .withStyle(ChatFormatting.AQUA));
     }
 }
