@@ -21,6 +21,7 @@ import net.phoenixvine.solaris.server.features.ProgressionGates;
 import net.phoenixvine.solaris.server.guild.GuildWaypointService;
 import net.phoenixvine.solaris.server.waypoint.ServerWaypointData;
 import net.phoenixvine.solaris.server.waypoint.ServerWaypointService;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -275,8 +276,8 @@ public class SolarisCommands {
             source.sendFailure(Component.literal(e.getMessage()));
             return 0;
         }
-        source.sendSuccess(() -> Component.literal("Marker '" + key + "' sent to " +
-                target.getGameProfile().getName() + "."), true);
+        source.sendSuccess(
+                () -> SolarisLang.tr("solaris.command.marker_sent_to", key, target.getGameProfile().getName()), true);
         return 1;
     }
 
@@ -287,15 +288,16 @@ public class SolarisCommands {
             source.sendFailure(Component.literal(e.getMessage()));
             return 0;
         }
-        source.sendSuccess(() -> Component.literal("Marker '" + key + "' removed for " +
-                target.getGameProfile().getName() + "."), true);
+        source.sendSuccess(
+                () -> SolarisLang.tr("solaris.command.marker_removed_for", key, target.getGameProfile().getName()),
+                true);
         return 1;
     }
 
     private static int markerClear(CommandSourceStack source, ServerPlayer target, String prefix) {
         SolarisMarkers.clear(target, prefix);
-        source.sendSuccess(() -> Component.literal("Markers starting with '" + prefix + "' cleared for " +
-                target.getGameProfile().getName() + "."), true);
+        source.sendSuccess(() -> SolarisLang.tr("solaris.command.markers_starting_with_cleared_for", prefix,
+                target.getGameProfile().getName()), true);
         return 1;
     }
 
@@ -308,30 +310,35 @@ public class SolarisCommands {
 
     private static int gateGrant(CommandSourceStack source, ServerPlayer target, String gate) {
         SolarisGatesAPI.grant(target, gate);
-        source.sendSuccess(() -> Component.literal("Granted gate '" + gate + "' to " +
-                target.getGameProfile().getName() + " (and their guild, if any)."), true);
+        source.sendSuccess(() -> SolarisLang.tr("solaris.command.granted_gate_to_and_their", gate,
+                target.getGameProfile().getName()), true);
         return 1;
     }
 
     private static int gateRevoke(CommandSourceStack source, ServerPlayer target, String gate) {
         SolarisGatesAPI.revoke(target, gate);
-        source.sendSuccess(() -> Component.literal("Revoked gate '" + gate + "' from " +
-                target.getGameProfile().getName() + "."), true);
+        source.sendSuccess(
+                () -> SolarisLang.tr("solaris.command.revoked_gate_from", gate, target.getGameProfile().getName()),
+                true);
         return 1;
     }
 
     private static int gateCheck(CommandSourceStack source, ServerPlayer target, String gate) {
         boolean met = SolarisGatesAPI.isUnlocked(target, gate);
-        source.sendSuccess(() -> Component.literal("Gate '" + gate + "' is " + (met ? "met" : "not met") + " for " +
-                target.getGameProfile().getName() + "."), false);
+        source.sendSuccess(
+                () -> SolarisLang.tr("solaris.command.gate_is_for", gate,
+                        (met ? SolarisLang.tr("solaris.command.gate_met") :
+                                SolarisLang.tr("solaris.command.gate_not_met")),
+                        target.getGameProfile().getName()),
+                false);
         return met ? 1 : 0;
     }
 
     private static int gateList(CommandSourceStack source, ServerPlayer target) {
         var gates = ProgressionGates.manualGates(target);
-        source.sendSuccess(() -> Component.literal(gates.isEmpty() ?
-                "No manually granted gates for " + target.getGameProfile().getName() + "." :
-                "Granted gates: " + String.join(", ", gates)), false);
+        source.sendSuccess(() -> gates.isEmpty() ?
+                SolarisLang.tr("solaris.command.no_granted_gates", target.getGameProfile().getName()) :
+                SolarisLang.tr("solaris.command.granted_gates", String.join(", ", gates)), false);
         return gates.size();
     }
 
@@ -351,8 +358,7 @@ public class SolarisCommands {
         ServerPlayer player = source.getPlayerOrException();
         var entries = GuildWaypointService.list(player);
         if (entries.isEmpty()) {
-            source.sendSuccess(() -> Component.literal("Your guild has no shared waypoints (or you're not in a " +
-                    "guild)."), false);
+            source.sendSuccess(() -> SolarisLang.tr("solaris.command.your_guild_has_no_shared"), false);
             return 0;
         }
         for (var e : entries) {
@@ -371,7 +377,7 @@ public class SolarisCommands {
                                          int y, int z, String color, String category) {
         String cleanName = limit(name, 48);
         if (cleanName.isEmpty()) {
-            source.sendFailure(Component.literal("A server waypoint needs a name."));
+            source.sendFailure(SolarisLang.tr("solaris.command.a_server_waypoint_needs_a"));
             return 0;
         }
         String key = ServerWaypointService.slug(cleanName);
@@ -380,8 +386,7 @@ public class SolarisCommands {
         ServerWaypointData.Entry entry = new ServerWaypointData.Entry(key, cleanName, dimension.toString(), x, y, z,
                 hex, "DOT", cat.isEmpty() ? "Server" : cat);
         ServerWaypointService.put(source.getServer(), entry);
-        source.sendSuccess(() -> Component.literal("Server waypoint '" + cleanName + "' saved as '" + key +
-                "' and sent to online players."), true);
+        source.sendSuccess(() -> SolarisLang.tr("solaris.command.server_waypoint_saved_as_and", cleanName, key), true);
         return 1;
     }
 
@@ -395,17 +400,17 @@ public class SolarisCommands {
     private static int serverWaypointRemove(CommandSourceStack source, String name) {
         String key = ServerWaypointService.slug(name);
         if (!ServerWaypointService.remove(source.getServer(), key)) {
-            source.sendFailure(Component.literal("No server waypoint named '" + key + "'."));
+            source.sendFailure(SolarisLang.tr("solaris.command.no_server_waypoint_named", key));
             return 0;
         }
-        source.sendSuccess(() -> Component.literal("Removed server waypoint '" + key + "'."), true);
+        source.sendSuccess(() -> SolarisLang.tr("solaris.command.removed_server_waypoint", key), true);
         return 1;
     }
 
     private static int serverWaypointList(CommandSourceStack source) {
         var entries = ServerWaypointService.all(source.getServer());
         if (entries.isEmpty()) {
-            source.sendSuccess(() -> Component.literal("No server waypoints."), false);
+            source.sendSuccess(() -> SolarisLang.tr("solaris.command.no_server_waypoints"), false);
             return 0;
         }
         for (ServerWaypointData.Entry e : entries) {
@@ -418,17 +423,17 @@ public class SolarisCommands {
     private static int privacySet(CommandSourceStack source, boolean hidden) throws CommandSyntaxException {
         ServerPlayer player = source.getPlayerOrException();
         SolarisServerAPI.setHiddenFromMap(player, hidden);
-        source.sendSuccess(() -> Component.literal(hidden ?
-                "Your position is now hidden from other players' maps." :
-                "Your position can be shown on other players' maps again (if the server allows it)."), false);
+        source.sendSuccess(() -> hidden ? SolarisLang.tr("solaris.command.now_hidden") :
+                SolarisLang.tr("solaris.command.now_shown"), false);
         return 1;
     }
 
     private static int privacyStatus(CommandSourceStack source) throws CommandSyntaxException {
         ServerPlayer player = source.getPlayerOrException();
         boolean hidden = SolarisServerAPI.isHiddenFromMap(player);
-        source.sendSuccess(() -> Component.literal(
-                hidden ? "You are hidden from other players' maps." : "You are not hidden from other players' maps."),
+        source.sendSuccess(
+                () -> hidden ? SolarisLang.tr("solaris.command.is_hidden") :
+                        SolarisLang.tr("solaris.command.is_not_hidden"),
                 false);
         return hidden ? 1 : 0;
     }
@@ -437,23 +442,22 @@ public class SolarisCommands {
                                   String featureName, String stateName) {
         String featureId = featureId(featureName);
         if (featureId == null) {
-            source.sendFailure(Component.literal("Unknown feature '" + featureName + "'."));
+            source.sendFailure(SolarisLang.tr("solaris.command.unknown_feature", featureName));
             return 0;
         }
         SolarisFeatureState state;
         try {
             state = SolarisFeatureState.valueOf(stateName.toUpperCase(java.util.Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            source.sendFailure(Component.literal("Unknown state '" + stateName +
-                    "' Expected disabled, visible, or enabled."));
+            source.sendFailure(SolarisLang.tr("solaris.command.unknown_state_expected_disabled_visible", stateName));
             return 0;
         }
 
         ResourceLocation dimension = dimensionLevel.dimension().location();
         SolarisServerAPI.setFeatureState(target, featureId, dimension, state);
-        source.sendSuccess(() -> Component.literal(
-                featureName + " for " + target.getGameProfile().getName() + " in " + dimension + " set to " +
-                        state.name().toLowerCase(java.util.Locale.ROOT) + "."),
+        source.sendSuccess(
+                () -> SolarisLang.tr("solaris.command.for_in_set_to", featureName, target.getGameProfile().getName(),
+                        dimension, state.name().toLowerCase(java.util.Locale.ROOT)),
                 true);
         return 1;
     }
@@ -462,15 +466,15 @@ public class SolarisCommands {
                                   String featureName) {
         String featureId = featureId(featureName);
         if (featureId == null) {
-            source.sendFailure(Component.literal("Unknown feature '" + featureName + "'."));
+            source.sendFailure(SolarisLang.tr("solaris.command.unknown_feature", featureName));
             return 0;
         }
 
         ResourceLocation dimension = dimensionLevel.dimension().location();
         SolarisFeatureState state = SolarisServerAPI.getFeatureState(target, featureId, dimension);
-        source.sendSuccess(() -> Component.literal(
-                featureName + " for " + target.getGameProfile().getName() + " in " + dimension + " is " +
-                        state.name().toLowerCase(java.util.Locale.ROOT) + "."),
+        source.sendSuccess(
+                () -> SolarisLang.tr("solaris.command.for_in_is", featureName, target.getGameProfile().getName(),
+                        dimension, state.name().toLowerCase(java.util.Locale.ROOT)),
                 false);
         return 1;
     }
@@ -480,15 +484,17 @@ public class SolarisCommands {
                                      boolean locked) {
         ResourceLocation dimension = dimensionLevel.dimension().location();
         SolarisServerAPI.placeWaypoint(target, name, dimension, x, y, z, color, locked);
-        source.sendSuccess(() -> Component.literal(
-                "Placed waypoint '" + name + "' for " + target.getGameProfile().getName() + "."), true);
+        source.sendSuccess(
+                () -> SolarisLang.tr("solaris.command.placed_waypoint_for", name, target.getGameProfile().getName()),
+                true);
         return 1;
     }
 
     private static int waypointRemove(CommandSourceStack source, ServerPlayer target, String name) {
         SolarisServerAPI.removeWaypoint(target, name);
-        source.sendSuccess(() -> Component.literal(
-                "Removed waypoint '" + name + "' from " + target.getGameProfile().getName() + "."), true);
+        source.sendSuccess(
+                () -> SolarisLang.tr("solaris.command.removed_waypoint_from", name, target.getGameProfile().getName()),
+                true);
         return 1;
     }
 
@@ -496,9 +502,9 @@ public class SolarisCommands {
                                         int chunkX, int chunkZ) {
         ResourceLocation dimension = dimensionLevel.dimension().location();
         SolarisServerAPI.forceUpdateChunk(target, dimension, chunkX, chunkZ);
-        source.sendSuccess(() -> Component.literal(
-                "Requested force-update of chunk (" + chunkX + ", " + chunkZ + ") for " +
-                        target.getGameProfile().getName() + "."),
+        source.sendSuccess(
+                () -> SolarisLang.tr("solaris.command.requested_force_update_of_chunk", chunkX, chunkZ,
+                        target.getGameProfile().getName()),
                 true);
         return 1;
     }

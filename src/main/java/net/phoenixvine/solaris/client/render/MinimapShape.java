@@ -1,5 +1,7 @@
 package net.phoenixvine.solaris.client.render;
 
+import net.phoenixvine.solaris.client.SolarisText;
+
 public enum MinimapShape {
 
     SQUARE(null),
@@ -30,10 +32,10 @@ public enum MinimapShape {
 
     public String label() {
         return switch (this) {
-            case SQUARE -> "Square";
-            case CIRCLE -> "Circle";
-            case DIAMOND -> "Diamond";
-            case HEXAGON -> "Hexagon";
+            case SQUARE -> SolarisText.str("solaris.minimap_shape.square");
+            case CIRCLE -> SolarisText.str("solaris.plan_shape_list_screen.circle");
+            case DIAMOND -> SolarisText.str("solaris.minimap_shape.diamond");
+            case HEXAGON -> SolarisText.str("solaris.minimap_shape.hexagon");
         };
     }
 

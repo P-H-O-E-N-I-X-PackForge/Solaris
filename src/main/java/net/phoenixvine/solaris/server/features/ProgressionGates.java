@@ -2,7 +2,6 @@ package net.phoenixvine.solaris.server.features;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.AdvancementHolder;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -19,6 +18,7 @@ import net.phoenixvine.solaris.api.gates.GateCondition;
 import net.phoenixvine.solaris.config.SolarisServerConfig;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
 import net.phoenixvine.solaris.server.SolarisServerAPI;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -225,7 +225,9 @@ public final class ProgressionGates {
         }
         for (String feature : result.newlyUnlocked) {
             player.displayClientMessage(
-                    Component.literal("Map feature unlocked: " + feature).withStyle(ChatFormatting.GREEN), true);
+                    SolarisLang.tr("solaris.progression_gates.map_feature_unlocked", feature)
+                            .withStyle(ChatFormatting.GREEN),
+                    true);
         }
     }
 

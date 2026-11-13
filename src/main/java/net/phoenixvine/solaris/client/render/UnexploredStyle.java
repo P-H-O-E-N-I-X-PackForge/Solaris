@@ -1,5 +1,7 @@
 package net.phoenixvine.solaris.client.render;
 
+import net.phoenixvine.solaris.client.SolarisText;
+
 public enum UnexploredStyle {
 
     FOG,
@@ -24,12 +26,12 @@ public enum UnexploredStyle {
 
     public String label() {
         return switch (this) {
-            case FOG -> "Fog";
-            case STARFIELD -> "Starfield";
-            case PHOENIX -> "Phoenix";
-            case CLOUD -> "Cloud";
-            case IMAGE -> "Image";
-            case BACKDROP -> "Dimension Backdrop";
+            case FOG -> SolarisText.str("solaris.unexplored_style.fog");
+            case STARFIELD -> SolarisText.str("solaris.unexplored_style.starfield");
+            case PHOENIX -> SolarisText.str("solaris.unexplored_style.phoenix");
+            case CLOUD -> SolarisText.str("solaris.unexplored_style.cloud");
+            case IMAGE -> SolarisText.str("solaris.unexplored_style.image");
+            case BACKDROP -> SolarisText.str("solaris.unexplored_style.dimension_backdrop");
         };
     }
 }

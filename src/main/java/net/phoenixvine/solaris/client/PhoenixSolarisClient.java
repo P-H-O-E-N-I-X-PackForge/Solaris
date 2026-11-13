@@ -2,7 +2,6 @@ package net.phoenixvine.solaris.client;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.config.ModConfigEvent;
@@ -14,6 +13,7 @@ import net.phoenixvine.solaris.client.render.MapTileCache;
 import net.phoenixvine.solaris.client.render.MobIconOverrides;
 import net.phoenixvine.solaris.client.render.SolarisTexture;
 import net.phoenixvine.solaris.config.SolarisConfig;
+import net.phoenixvine.solaris.util.SolarisLang;
 import net.phoenixvine.wiki.client.suite.SuiteHudBar;
 import net.phoenixvine.wiki.theme.PhoenixTheme;
 
@@ -35,7 +35,7 @@ public class PhoenixSolarisClient {
     private static void clientSetup(final FMLClientSetupEvent event) {
         SuiteHudBar.register(PhoenixSolaris.MOD_ID, SuiteHudBar.PRIORITY_SOLARIS,
                 ResourceLocation.fromNamespaceAndPath(PhoenixSolaris.MOD_ID, "textures/gui/suite_bar_icon.png"),
-                Component.literal("§fOpen Map"),
+                SolarisLang.tr("solaris.phoenix_solaris_client.open_map"),
                 () -> {
                     Minecraft mc = Minecraft.getInstance();
                     Screen current = mc.screen;

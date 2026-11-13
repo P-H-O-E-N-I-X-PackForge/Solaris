@@ -425,7 +425,8 @@ public class MinimapHudOverlay {
         int cx = x + screenSize / 2;
         if (showTime) {
             String time = formatTime(mc.level.getDayTime());
-            g.drawCenteredString(mc.font, withLabels ? "Time: " + time : time, cx, textY, C_ACCENT);
+            g.drawCenteredString(mc.font, withLabels ? SolarisText.str("solaris.minimap_hud_overlay.time", time) : time,
+                    cx, textY, C_ACCENT);
             textY += mc.font.lineHeight + 1;
         }
         if (showCoords) {

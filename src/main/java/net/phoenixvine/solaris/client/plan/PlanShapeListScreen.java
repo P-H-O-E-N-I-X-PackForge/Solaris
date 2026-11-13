@@ -10,7 +10,9 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import net.phoenixvine.solaris.client.SolarisText;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import java.util.List;
 
@@ -42,7 +44,7 @@ public class PlanShapeListScreen extends Screen {
     private int listBottom;
 
     public PlanShapeListScreen(Screen parent) {
-        super(Component.literal("Plan Shapes"));
+        super(SolarisLang.tr("solaris.plan_shape_list_screen.plan_shapes"));
         this.parent = parent;
     }
 
@@ -66,33 +68,38 @@ public class PlanShapeListScreen extends Screen {
             int editX = vw - sideW + 10;
             int y = 40;
 
-            nameBox = new EditBox(font, editX, y, sideW - 20, 16, Component.literal("Name"));
+            nameBox = new EditBox(font, editX, y, sideW - 20, 16,
+                    SolarisLang.tr("solaris.solaris_preset_save_screen.name"));
             nameBox.setMaxLength(48);
             nameBox.setValue(selected.name);
             addWidget(nameBox);
             y += ROW_H + 10;
 
-            colorBox = new EditBox(font, editX, y, sideW - 20, 16, Component.literal("Color"));
+            colorBox = new EditBox(font, editX, y, sideW - 20, 16,
+                    SolarisLang.tr("solaris.plan_shape_list_screen.color"));
             colorBox.setMaxLength(8);
             colorBox.setValue(selected.color);
             addWidget(colorBox);
             y += ROW_H + 10;
 
             int coordW = (sideW - 20 - 8) / 2;
-            baseYBox = new EditBox(font, editX, y, coordW, 16, Component.literal("Base Y"));
+            baseYBox = new EditBox(font, editX, y, coordW, 16, SolarisLang.tr("solaris.plan_shape_list_screen.base_y"));
             baseYBox.setMaxLength(6);
             baseYBox.setFilter(s -> s.isEmpty() || s.equals("-") || s.matches("-?\\d+"));
             baseYBox.setValue(String.valueOf(selected.baseY));
             addWidget(baseYBox);
 
-            heightBox = new EditBox(font, editX + coordW + 8, y, coordW, 16, Component.literal("Height"));
+            heightBox = new EditBox(font, editX + coordW + 8, y, coordW, 16,
+                    SolarisLang.tr("solaris.plan_shape_list_screen.height"));
             heightBox.setMaxLength(4);
             heightBox.setFilter(s -> s.isEmpty() || s.matches("\\d+"));
             heightBox.setValue(String.valueOf(selected.height));
             addWidget(heightBox);
             y += ROW_H + 14;
 
-            addRenderableWidget(Button.builder(Component.literal(selected.visible ? "Visible: ON" : "Visible: OFF"),
+            addRenderableWidget(Button.builder(
+                    Component.literal(selected.visible ? SolarisText.str("solaris.plan_shape_list.visible_on") :
+                            SolarisText.str("solaris.plan_shape_list.visible_off")),
                     b -> {
                         selected.visible = !selected.visible;
                         PlanShapeManager.save();
@@ -100,19 +107,21 @@ public class PlanShapeListScreen extends Screen {
                     }).bounds(editX, y, sideW - 20, 18).build());
             y += ROW_H + 8;
 
-            addRenderableWidget(Button.builder(Component.literal("Save"), b -> saveSelected())
-                    .bounds(editX, y, sideW - 20, 18).build());
+            addRenderableWidget(
+                    Button.builder(SolarisLang.tr("solaris.solaris_preset_save_screen.save"), b -> saveSelected())
+                            .bounds(editX, y, sideW - 20, 18).build());
             y += ROW_H + 4;
 
-            addRenderableWidget(Button.builder(Component.literal("Delete"), b -> {
+            addRenderableWidget(Button.builder(SolarisLang.tr("solaris.plan_shape_list_screen.delete"), b -> {
                 PlanShapeManager.remove(selected.id);
                 selected = null;
                 init();
             }).bounds(editX, y, sideW - 20, 18).build());
         }
 
-        addRenderableWidget(Button.builder(Component.literal("Close"), b -> onClose())
-                .bounds(vw - 66, 6, 56, 18).build());
+        addRenderableWidget(
+                Button.builder(SolarisLang.tr("solaris.solaris_display_settings_screen.close"), b -> onClose())
+                        .bounds(vw - 66, 6, 56, 18).build());
     }
 
     private void saveSelected() {
@@ -135,9 +144,9 @@ public class PlanShapeListScreen extends Screen {
 
     private static String typeLabel(PlanShape.Type type) {
         return switch (type) {
-            case RECTANGLE -> "Rect";
-            case CIRCLE -> "Circle";
-            case LINE -> "Line";
+            case RECTANGLE -> SolarisText.str("solaris.plan_shape_list_screen.rect");
+            case CIRCLE -> SolarisText.str("solaris.plan_shape_list_screen.circle");
+            case LINE -> SolarisText.str("solaris.plan_shape_list_screen.line");
         };
     }
 
@@ -162,7 +171,7 @@ public class PlanShapeListScreen extends Screen {
         g.fill(0, 0, vw, vh, C_PANEL);
         VanillaPanel.draw(g, -8, -8, vw + 16, vh + 16, C_PANEL);
         g.fill(0, 0, vw, 28, C_HEADER);
-        g.drawCenteredString(font, "Plan Shapes", vw / 2, 10, C_ACCENT);
+        g.drawCenteredString(font, SolarisText.str("solaris.plan_shape_list_screen.plan_shapes"), vw / 2, 10, C_ACCENT);
 
         List<PlanShape> shapes = PlanShapeManager.getAll();
         int rowY = listTop;
@@ -193,9 +202,11 @@ public class PlanShapeListScreen extends Screen {
 
         if (selected != null) {
             int editX = vw - sideW + 10;
-            g.drawString(font, "Name", editX, 30, C_DIM, false);
-            g.drawString(font, "Color (hex)", editX, 30 + ROW_H + 10, C_DIM, false);
-            g.drawString(font, "Base Y / Height", editX, 30 + 2 * (ROW_H + 10), C_DIM, false);
+            g.drawString(font, SolarisText.str("solaris.solaris_preset_save_screen.name"), editX, 30, C_DIM, false);
+            g.drawString(font, SolarisText.str("solaris.plan_shape_list.color_hex"), editX, 30 + ROW_H + 10, C_DIM,
+                    false);
+            g.drawString(font, SolarisText.str("solaris.plan_shape_list.base_y_height"), editX, 30 + 2 * (ROW_H + 10),
+                    C_DIM, false);
             if (nameBox != null) nameBox.render(g, mx, my, pt);
             if (colorBox != null) colorBox.render(g, mx, my, pt);
             if (baseYBox != null) baseYBox.render(g, mx, my, pt);

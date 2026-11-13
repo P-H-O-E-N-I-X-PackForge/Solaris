@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_ACCENT;
 import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_DIM;
@@ -26,7 +27,7 @@ public class QuickGotoScreen extends Screen {
     private EditBox zBox;
 
     public QuickGotoScreen(SolarisMapScreen parent) {
-        super(Component.literal("Go to Coordinate"));
+        super(SolarisLang.tr("solaris.quick_goto_screen.go_to_coordinate"));
         this.parent = parent;
     }
 
@@ -58,9 +59,9 @@ public class QuickGotoScreen extends Screen {
         zBox.setFilter(s -> s.isEmpty() || s.equals("-") || s.matches("-?\\d+"));
         addWidget(zBox);
 
-        addRenderableWidget(Button.builder(Component.literal("Go"), b -> go())
+        addRenderableWidget(Button.builder(SolarisLang.tr("solaris.quick_goto_screen.go"), b -> go())
                 .bounds(x + 10, y + BOX_H - 22, (BOX_W - 24) / 2, 18).build());
-        addRenderableWidget(Button.builder(Component.literal("Cancel"), b -> onClose())
+        addRenderableWidget(Button.builder(SolarisLang.tr("solaris.quick_goto_screen.cancel"), b -> onClose())
                 .bounds(x + 14 + (BOX_W - 24) / 2, y + BOX_H - 22, (BOX_W - 24) / 2, 18).build());
     }
 

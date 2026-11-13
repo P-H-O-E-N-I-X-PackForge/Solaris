@@ -3,7 +3,6 @@ package net.phoenixvine.solaris.network.packets;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -13,6 +12,7 @@ import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.client.waypoint.Waypoint;
 import net.phoenixvine.solaris.client.waypoint.WaypointManager;
 import net.phoenixvine.solaris.config.SolarisConfig;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 public record S2CStructureDiscoveredPacket(
                                            String structureName,
@@ -60,7 +60,8 @@ public record S2CStructureDiscoveredPacket(
             WaypointManager.add(w);
 
             mc.player.sendSystemMessage(
-                    Component.literal("Discovered: " + packet.structureName()).withStyle(ChatFormatting.GOLD));
+                    SolarisLang.tr("solaris.s2_c_structure_discovered_packet.discovered", packet.structureName())
+                            .withStyle(ChatFormatting.GOLD));
         });
     }
 }

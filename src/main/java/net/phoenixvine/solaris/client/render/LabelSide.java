@@ -1,5 +1,7 @@
 package net.phoenixvine.solaris.client.render;
 
+import net.phoenixvine.solaris.client.SolarisText;
+
 public enum LabelSide {
 
     RIGHT,
@@ -14,10 +16,10 @@ public enum LabelSide {
 
     public String label() {
         return switch (this) {
-            case RIGHT -> "Right";
-            case LEFT -> "Left";
-            case TOP -> "Top";
-            case BOTTOM -> "Bottom";
+            case RIGHT -> SolarisText.str("solaris.label_side.right");
+            case LEFT -> SolarisText.str("solaris.label_side.left");
+            case TOP -> SolarisText.str("solaris.label_side.top");
+            case BOTTOM -> SolarisText.str("solaris.label_side.bottom");
         };
     }
 

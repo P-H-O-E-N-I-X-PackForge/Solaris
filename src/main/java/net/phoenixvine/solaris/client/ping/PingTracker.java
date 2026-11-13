@@ -2,7 +2,6 @@ package net.phoenixvine.solaris.client.ping;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -15,6 +14,7 @@ import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 import net.phoenixvine.solaris.network.packets.C2SPingPacket;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,12 +62,12 @@ public final class PingTracker {
 
         ResourceLocation dimension = mc.level.dimension().location();
         if (!SolarisAPI.getFeatureState(SolarisAPI.FEATURE_PINGS, dimension).atLeast(SolarisFeatureState.ENABLED)) {
-            mc.player.displayClientMessage(Component.literal("Pings aren't available here."), true);
+            mc.player.displayClientMessage(SolarisLang.tr("solaris.ping_tracker.pings_aren_t_available_here"), true);
             return;
         }
 
         if (!mc.getConnection().hasChannel(C2SPingPacket.TYPE)) {
-            mc.player.displayClientMessage(Component.literal("Pings need Solaris on the server."), true);
+            mc.player.displayClientMessage(SolarisLang.tr("solaris.ping_tracker.pings_need_solaris_on_the"), true);
             return;
         }
 

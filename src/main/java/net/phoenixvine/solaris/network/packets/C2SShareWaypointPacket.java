@@ -2,7 +2,6 @@ package net.phoenixvine.solaris.network.packets;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
@@ -11,6 +10,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import java.util.List;
 
@@ -63,14 +63,16 @@ public record C2SShareWaypointPacket(
 
             if (!GuildsIntegration.isAvailable()) {
                 sender.sendSystemMessage(
-                        Component.literal("Guilds isn't installed on this server.").withStyle(ChatFormatting.RED));
+                        SolarisLang.tr("solaris.c2_s_share_waypoint_packet.guilds_isn_t_installed_on")
+                                .withStyle(ChatFormatting.RED));
                 return;
             }
 
             List<ServerPlayer> guildmates = GuildsIntegration.getOnlineGuildmates(sender);
             if (guildmates.isEmpty()) {
-                sender.sendSystemMessage(Component.literal("No online guildmates to share with.")
-                        .withStyle(ChatFormatting.YELLOW));
+                sender.sendSystemMessage(
+                        SolarisLang.tr("solaris.c2_s_share_waypoint_packet.no_online_guildmates_to_share")
+                                .withStyle(ChatFormatting.YELLOW));
                 return;
             }
 
@@ -83,8 +85,8 @@ public record C2SShareWaypointPacket(
             }
 
             sender.sendSystemMessage(
-                    Component.literal("Shared waypoint '" + packet.name + "' with " + guildmates.size() +
-                            " guildmate(s).").withStyle(ChatFormatting.GREEN));
+                    SolarisLang.tr("solaris.c2_s_share_waypoint_packet.shared_waypoint_with_guildmate_s", packet.name,
+                            guildmates.size()).withStyle(ChatFormatting.GREEN));
         });
     }
 }

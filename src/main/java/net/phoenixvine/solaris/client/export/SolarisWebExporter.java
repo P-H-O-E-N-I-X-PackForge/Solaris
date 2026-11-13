@@ -10,6 +10,7 @@ import net.phoenixvine.solaris.client.color.ChunkColorSampler;
 import net.phoenixvine.solaris.client.color.ChunkKey;
 import net.phoenixvine.solaris.client.color.PersistentChunkStore;
 import net.phoenixvine.solaris.client.waypoint.WaypointManager;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
@@ -39,13 +40,13 @@ public final class SolarisWebExporter {
         String dimension = mc.level.dimension().location().toString();
         if (!PersistentChunkStore.isLoaded(dimension)) {
             messageConsumer.accept(
-                    Component.literal("§eMap data is still loading. Wait a moment and try again."));
+                    SolarisLang.tr("solaris.solaris_web_exporter.map_data_is_still_loading"));
             return;
         }
 
         Map<ChunkKey, PersistentChunkStore.Entry> chunks = PersistentChunkStore.snapshot(dimension);
         if (chunks.isEmpty()) {
-            messageConsumer.accept(Component.literal("§eNothing explored yet in this dimension to export."));
+            messageConsumer.accept(SolarisLang.tr("solaris.solaris_web_exporter.nothing_explored_yet_in_this"));
             return;
         }
 
@@ -73,12 +74,13 @@ public final class SolarisWebExporter {
 
                 Component mapLink = fileLink(mapFile);
                 Component message = copiedWaypoints ?
-                        Component.literal("§aExported ").append(mapLink)
+                        SolarisLang.tr("solaris.solaris_web_exporter.exported").append(mapLink)
                                 .append(Component.literal(" + ")).append(fileLink(waypointsFile)) :
-                        Component.literal("§aExported ").append(mapLink);
+                        SolarisLang.tr("solaris.solaris_web_exporter.exported").append(mapLink);
                 messageConsumer.accept(message);
             } catch (IOException e) {
-                messageConsumer.accept(Component.literal("§cCouldn't export web map: " + e.getMessage()));
+                messageConsumer
+                        .accept(SolarisLang.tr("solaris.solaris_web_exporter.couldn_t_export_web_map", e.getMessage()));
             }
         });
     }

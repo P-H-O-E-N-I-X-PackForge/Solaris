@@ -10,7 +10,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.phoenixvine.solaris.client.SolarisMapScreen;
+import net.phoenixvine.solaris.client.SolarisText;
 import net.phoenixvine.solaris.client.render.VanillaPanel;
+import net.phoenixvine.solaris.util.SolarisLang;
 
 import java.util.List;
 
@@ -50,7 +52,7 @@ public class QuickWaypointScreen extends Screen {
     private boolean visible = true;
 
     public QuickWaypointScreen(Screen parent, ResourceLocation dimension, int wx, int wy, int wz) {
-        super(Component.literal("New Waypoint"));
+        super(SolarisLang.tr("solaris.quick_waypoint_screen.new_waypoint"));
         this.parent = parent;
         this.dimension = dimension;
         this.initialX = wx;
@@ -86,7 +88,8 @@ public class QuickWaypointScreen extends Screen {
         int x = boxX();
         int y = boxY();
 
-        nameBox = new EditBox(font, x + 10, y + 32, BOX_W - 20, 16, Component.literal("Name"));
+        nameBox = new EditBox(font, x + 10, y + 32, BOX_W - 20, 16,
+                SolarisLang.tr("solaris.solaris_preset_save_screen.name"));
         nameBox.setMaxLength(48);
         nameBox.setValue("Waypoint " + (WaypointManager.getAll().size() + 1));
         addWidget(nameBox);
@@ -111,29 +114,36 @@ public class QuickWaypointScreen extends Screen {
         zBox.setValue(String.valueOf(initialZ));
         addWidget(zBox);
 
-        colorBox = new EditBox(font, x + 10, y + 96, BOX_W - 20, 16, Component.literal("Color"));
+        colorBox = new EditBox(font, x + 10, y + 96, BOX_W - 20, 16,
+                SolarisLang.tr("solaris.plan_shape_list_screen.color"));
         colorBox.setMaxLength(8);
         colorBox.setValue(SWATCHES[0]);
         addWidget(colorBox);
 
-        labelColorBox = new EditBox(font, x + 10, y + 148, BOX_W - 20, 16, Component.literal("Label Color"));
+        labelColorBox = new EditBox(font, x + 10, y + 148, BOX_W - 20, 16,
+                SolarisLang.tr("solaris.quick_waypoint_screen.label_color"));
         labelColorBox.setMaxLength(8);
-        labelColorBox.setHint(Component.literal("Same as theme text"));
+        labelColorBox.setHint(SolarisLang.tr("solaris.quick_waypoint_screen.same_as_theme_text"));
         addWidget(labelColorBox);
 
-        addRenderableWidget(Button.builder(Component.literal("Icon: " + WaypointIconManager.label(icon)),
+        addRenderableWidget(Button.builder(
+                SolarisLang.tr("solaris.quick_waypoint_screen.icon", WaypointIconManager.label(icon)),
                 b -> Minecraft.getInstance().setScreen(new WaypointIconPickerScreen(this, icon, colorArgb(), id -> {
                     icon = id;
                 }))).bounds(x + 10, y + 172, BOX_W - 20, 18).build());
 
-        addRenderableWidget(Button.builder(Component.literal(visible ? "Visible: ON" : "Visible: OFF"), b -> {
-            visible = !visible;
-            b.setMessage(Component.literal(visible ? "Visible: ON" : "Visible: OFF"));
-        }).bounds(x + 10, y + 194, BOX_W - 20, 18).build());
+        addRenderableWidget(
+                Button.builder(Component.literal(visible ? SolarisText.str("solaris.plan_shape_list.visible_on") :
+                        SolarisText.str("solaris.plan_shape_list.visible_off")), b -> {
+                            visible = !visible;
+                            b.setMessage(
+                                    Component.literal(visible ? SolarisText.str("solaris.plan_shape_list.visible_on") :
+                                            SolarisText.str("solaris.plan_shape_list.visible_off")));
+                        }).bounds(x + 10, y + 194, BOX_W - 20, 18).build());
 
-        addRenderableWidget(Button.builder(Component.literal("Save"), b -> save())
+        addRenderableWidget(Button.builder(SolarisLang.tr("solaris.solaris_preset_save_screen.save"), b -> save())
                 .bounds(x + 10, y + BOX_H - 22, (BOX_W - 24) / 2, 18).build());
-        addRenderableWidget(Button.builder(Component.literal("Cancel"), b -> onClose())
+        addRenderableWidget(Button.builder(SolarisLang.tr("solaris.quick_goto_screen.cancel"), b -> onClose())
                 .bounds(x + 14 + (BOX_W - 24) / 2, y + BOX_H - 22, (BOX_W - 24) / 2, 18).build());
     }
 
@@ -162,7 +172,7 @@ public class QuickWaypointScreen extends Screen {
     private void save() {
         if (!WaypointManager.canPlace(dimension)) {
             Minecraft.getInstance().player.displayClientMessage(
-                    Component.literal("Waypoints aren't available here."), true);
+                    SolarisLang.tr("solaris.solaris_client_tick_handler.waypoints_aren_t_available_here"), true);
             onClose();
             return;
         }
@@ -200,11 +210,12 @@ public class QuickWaypointScreen extends Screen {
         g.fill(x, y, x + BOX_W, y + BOX_H, C_PANEL);
         VanillaPanel.draw(g, x - 8, y - 8, BOX_W + 16, BOX_H + 16, C_PANEL);
 
-        g.drawCenteredString(font, "New Waypoint", x + BOX_W / 2, y + 6, C_ACCENT);
-        g.drawString(font, "Name", x + 10, y + 22, C_DIM, false);
+        g.drawCenteredString(font, SolarisText.str("solaris.quick_waypoint_screen.new_waypoint"), x + BOX_W / 2, y + 6,
+                C_ACCENT);
+        g.drawString(font, SolarisText.str("solaris.solaris_preset_save_screen.name"), x + 10, y + 22, C_DIM, false);
         g.drawString(font, "X / Y / Z  (" + dimension.getPath() + ")", x + 10, y + 54, C_DIM, false);
-        g.drawString(font, "Color (hex)", x + 10, y + 86, C_DIM, false);
-        g.drawString(font, "Label Color (hex)", x + 10, y + 138, C_DIM, false);
+        g.drawString(font, SolarisText.str("solaris.plan_shape_list.color_hex"), x + 10, y + 86, C_DIM, false);
+        g.drawString(font, SolarisText.str("solaris.quick_waypoint.label_color_hex"), x + 10, y + 138, C_DIM, false);
 
         List<String> swatches = List.of(SWATCHES);
         int sy = swatchY();
