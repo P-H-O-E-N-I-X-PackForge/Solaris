@@ -9,11 +9,6 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.server.waypoint.WaypointTeleportService;
 
-/**
- * Asks the server to teleport the sender to a waypoint. For SERVER and GUILD waypoints the server looks the
- * waypoint up by key and ignores the coordinates; for PERSONAL waypoints (which only exist on the client) the
- * coordinates are used as sent, so the server treats them as untrusted and applies its own rules.
- */
 public record C2STeleportToWaypointPacket(
                                           Source source,
                                           String key,

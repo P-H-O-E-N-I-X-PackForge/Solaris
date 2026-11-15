@@ -31,7 +31,6 @@ public final class LiveChunkRefresh {
 
     private static final int MAX_FALLBACK_RETRIES = 10;
 
-    /** Each retry is a full chunk sample, so only a few are done per pass; the rest wait for the next one. */
     private static final int TAINTED_RETRIES_PER_PASS = 4;
     private static int taintedRetryCursor = 0;
     private static int taintedPass = 0;
@@ -173,8 +172,6 @@ public final class LiveChunkRefresh {
             if (!key.dimension().equals(level.dimension().location())) continue;
             if (!level.hasChunk(key.x(), key.z())) continue;
 
-            // A chunk that keeps coming back tainted usually has air columns for good (sky islands, void),
-            // so the more it has failed the less often it is worth another full sample.
             int attempts = ChunkColorEvents.FALLBACK_RETRY_COUNT.getOrDefault(key, 0);
             int interval = attempts < 3 ? 1 : attempts < 6 ? 4 : 16;
             if (taintedPass % interval != 0) continue;

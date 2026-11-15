@@ -82,22 +82,11 @@ public class ChunkColorEvents {
     private static final long LATE_RESAMPLE_DELAY_MS = 1500L;
     private static final Map<ChunkKey, Long> LATE_RESAMPLES = new java.util.LinkedHashMap<>();
 
-    /**
-     * Dimensions that finish their chunks after sending them (biomes, terrain touch-ups) can still be changing
-     * a few seconds in, so each chunk gets one more sample then. Chunks on the outer edge of the loaded circle
-     * are the ones this matters for: they are the first to be left behind, so whatever they were last sampled
-     * as is what the map keeps.
-     */
     private static final long SETTLE_RESAMPLE_DELAY_MS = 6000L;
     private static final Map<ChunkKey, Long> SETTLE_RESAMPLES = new java.util.LinkedHashMap<>();
 
     private static final Map<ChunkKey, Long> LOADED_AT = new ConcurrentHashMap<>();
 
-    /**
-     * A chunk that is left behind soon after it loads never gets its late or settle sample, so whatever it
-     * looked like at load (placeholder biome, unfinished terrain) is what the map keeps. One last sample as it
-     * unloads, while its data is still there, records the settled version instead.
-     */
     @SubscribeEvent
     public static void onChunkUnload(ChunkEvent.Unload event) {
         if (!(event.getLevel() instanceof Level level) || !level.isClientSide()) return;
@@ -120,11 +109,6 @@ public class ChunkColorEvents {
         SolarisProfiler.time("chunkSample", () -> resample(level, key, pos));
     }
 
-    /**
-     * Also what refreshes a loaded chunk's neighbours, whose edges and blended colours depend on it. One
-     * pending entry per chunk is enough: it runs after everything that queued it, so a chunk surrounded by
-     * loading neighbours is sampled once more rather than once per neighbour.
-     */
     private static void queueLateResample(ChunkKey key) {
         LATE_RESAMPLES.putIfAbsent(key, System.currentTimeMillis() + LATE_RESAMPLE_DELAY_MS);
     }

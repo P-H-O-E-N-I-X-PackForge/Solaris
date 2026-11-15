@@ -539,7 +539,6 @@ public class WaypointListScreen extends Screen {
         return C2STeleportToWaypointPacket.Source.PERSONAL;
     }
 
-    /** Null when the selected waypoint can be teleported to; otherwise a short reason for the tooltip. */
     private String teleportBlockedReason() {
         Minecraft mc = Minecraft.getInstance();
         if (selected == null || mc.player == null || mc.level == null) return "Not available right now.";

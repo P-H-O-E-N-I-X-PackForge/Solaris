@@ -37,11 +37,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Server side of "teleport to waypoint". Every request is re-validated here (enabled, permission, feature state,
- * source rules, dimension rules, distance, cooldown, safe landing); the client's capability flags only decide
- * whether the button is shown.
- */
 @EventBusSubscriber()
 public final class WaypointTeleportService {
 
@@ -59,8 +54,6 @@ public final class WaypointTeleportService {
         LAST_FLAGS.remove(player);
     }
 
-    /* ---------------------------------------------------------------- permission */
-
     private static boolean hasPermission(ServerPlayer player) {
         if (player.hasPermissions(SolarisServerConfig.TELEPORT_PERMISSION_LEVEL.get())) return true;
         WaypointTeleportPermission hook = SolarisTeleportAPI.permission();
@@ -73,7 +66,6 @@ public final class WaypointTeleportService {
         }
     }
 
-    /** Whether this player may use waypoint teleporting right now (before looking at a specific waypoint). */
     public static boolean canUse(ServerPlayer player) {
         if (!SolarisServerConfig.SPEC.isLoaded() || !SolarisServerConfig.TELEPORT_ENABLED.get()) return false;
         if (SolarisServerConfig.TELEPORT_REQUIRE_PERMISSION.get() && !hasPermission(player)) return false;
@@ -84,7 +76,6 @@ public final class WaypointTeleportService {
                 .atLeast(SolarisFeatureState.ENABLED);
     }
 
-    /** The teleport bits of the capability flags sent to this player's client. */
     public static int capabilityFlags(ServerPlayer player) {
         if (!canUse(player)) return 0;
         int flags = S2CServerCapabilitiesPacket.WAYPOINT_TELEPORT;
@@ -101,7 +92,6 @@ public final class WaypointTeleportService {
         LAST_FLAGS.put(player.getUUID(), teleportFlags);
     }
 
-    /** Keeps the button honest when someone is op'd/de-op'd, a gate opens, or they change dimension. */
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         if (++counter < RECHECK_TICKS) return;
@@ -114,8 +104,6 @@ public final class WaypointTeleportService {
             if (last != null && last != now) CapabilityService.send(player);
         }
     }
-
-    /* ---------------------------------------------------------------- handling */
 
     private record Target(String name, ServerLevel level, int x, int y, int z) {}
 
@@ -273,9 +261,6 @@ public final class WaypointTeleportService {
         return new Target(name, level, x, y, z);
     }
 
-    /* ---------------------------------------------------------------- landing */
-
-    /** Nearest standable spot in the waypoint's column, searching up and down from the saved Y. */
     private static BlockPos findSafe(ServerLevel level, int x, int y, int z) {
         level.getChunk(x >> 4, z >> 4);
 

@@ -53,7 +53,6 @@ public class MinimapHudOverlay {
 
     private static final int MARGIN = 6;
 
-    /** The player's position and facing for this frame, interpolated between ticks so the map moves smoothly. */
     private static double frameX;
     private static double frameZ;
     private static float frameYaw;
@@ -133,8 +132,6 @@ public class MinimapHudOverlay {
         ChunkKey center = ChunkKey.of(mc.level, new ChunkPos(blockPos.getX() >> 4, blockPos.getZ() >> 4));
         tex.maybeRebuild(center);
 
-        // Addressed from the interpolated position; the texture is a ring buffer keyed by absolute chunk, so this
-        // does not need to match the chunk the texture was last built around.
         int chunkX = Mth.floor(frameX) >> 4;
         int chunkZ = Mth.floor(frameZ) >> 4;
         double fracX = frameX - (chunkX << 4);
@@ -243,7 +240,6 @@ public class MinimapHudOverlay {
                 if (hdx * hdx + hdy * hdy <= HOVER_RADIUS_SQ) hoveredWaypoint = w;
             }
 
-            // Every dot is the same render type, so they go out as one draw instead of one per fill.
             if (!dots.isEmpty()) {
                 g.drawManaged(() -> {
                     for (int[] dot : dots) {

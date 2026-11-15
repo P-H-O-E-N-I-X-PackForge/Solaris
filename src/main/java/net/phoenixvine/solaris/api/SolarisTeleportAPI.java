@@ -8,7 +8,6 @@ public final class SolarisTeleportAPI {
 
     private SolarisTeleportAPI() {}
 
-    /** Register (or pass null to clear) a permission check for waypoint teleporting. Call on the server. */
     public static void setPermission(WaypointTeleportPermission hook) {
         permission = hook;
     }
