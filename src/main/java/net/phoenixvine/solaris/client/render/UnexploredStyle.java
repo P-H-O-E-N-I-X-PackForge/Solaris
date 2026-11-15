@@ -19,7 +19,6 @@ public enum UnexploredStyle {
         return next == BACKDROP ? values[(next.ordinal() + 1) % values.length] : next;
     }
 
-    /** The next style in the cycle, including BACKDROP: for dimensions that have a backdrop to switch back to. */
     public UnexploredStyle nextWithBackdrop() {
         UnexploredStyle[] values = values();
         return values[(ordinal() + 1) % values.length];

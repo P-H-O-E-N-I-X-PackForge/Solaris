@@ -11,7 +11,6 @@ public final class MapLayers {
 
     private MapLayers() {}
 
-    /** A layer drawn on the minimap, over the terrain; the projection says where the world is and what is visible. */
     public static void registerMinimap(MapLayer layer) {
         MINIMAP_LAYERS.remove(layer);
         MINIMAP_LAYERS.add(layer);

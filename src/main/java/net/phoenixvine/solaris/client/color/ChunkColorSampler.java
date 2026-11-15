@@ -190,9 +190,7 @@ public final class ChunkColorSampler {
                 if (state.isAir()) {
 
                     finalPixel = 0;
-                    // A column with no ground at all (a chasm, a void gap) is a real answer, not missing data; only
-                    // an air block where something should be marks the chunk as not ready, or the whole chunk would
-                    // be dropped from the map for having one open column in it.
+
                     if (surfaceY >= minY) hadFallback = true;
                     pixels[lz * 16 + lx] = finalPixel;
                     lightEmitting[lz * 16 + lx] = false;
@@ -252,9 +250,6 @@ public final class ChunkColorSampler {
             }
         }
 
-        // Some open columns are fine, but a chunk with no ground in any column is far more likely one that
-        // hasn't received its terrain yet than a chunk that is all void. Storing it would paint over real map
-        // data with blank pixels, so it counts as not ready.
         if (groundColumns == 0) hadFallback = true;
 
         return new ColorSample(pixels, lightEmitting, waterTint, waterDepth, waterOcean, hadFallback, foliage);
@@ -355,8 +350,6 @@ public final class ChunkColorSampler {
     }
 
     private static Biome biomeOr(Level level, BlockPos.MutableBlockPos pos, Biome fallback) {
-        // Blending asks for the same few quarts over and over (every pixel looks a few blocks each way),
-        // and the biome lookup behind it is the most expensive part of sampling a chunk.
         long key = BlockPos.asLong(pos.getX() >> 2, pos.getY() >> 2, pos.getZ() >> 2);
         Map<Long, Biome> cache = BIOME_CACHE.get();
         if (cache.containsKey(key)) {

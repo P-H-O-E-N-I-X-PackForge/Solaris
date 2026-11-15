@@ -105,7 +105,6 @@ public final class ProgressionGates {
             }
         }
 
-        // a gate any Phoenix mod registered with the shared gate API (SuiteGates) is a Solaris gate too
         if (net.phoenixvine.wiki.api.gate.SuiteGates.isKnown(gateId)) {
             return net.phoenixvine.wiki.api.gate.SuiteGates.isOpenGate(player, gateId);
         }

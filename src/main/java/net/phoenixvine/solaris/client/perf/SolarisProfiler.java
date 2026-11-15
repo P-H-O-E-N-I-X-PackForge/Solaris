@@ -55,10 +55,6 @@ public final class SolarisProfiler {
         }
     }
 
-    /**
-     * Whether perf logging is on. A client tick can come before the client config has loaded (while the game is still
-     * loading), and reading a config value then throws, so until it is loaded this is off.
-     */
     private static boolean perfOn() {
         return SolarisConfig.SPEC.isLoaded() && SolarisConfig.PERF_LOGGING.get();
     }

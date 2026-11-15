@@ -80,20 +80,9 @@ public class ChunkColorEvents {
     private static final long LATE_RESAMPLE_DELAY_MS = 1500L;
     private static final Map<ChunkKey, Long> LATE_RESAMPLES = new java.util.LinkedHashMap<>();
 
-    /**
-     * Dimensions that finish their chunks after sending them (biomes, terrain touch-ups) can still be changing
-     * a few seconds in, so each chunk gets one more sample then. Chunks on the outer edge of the loaded circle
-     * are the ones this matters for: they are the first to be left behind, so whatever they were last sampled
-     * as is what the map keeps.
-     */
     private static final long SETTLE_RESAMPLE_DELAY_MS = 6000L;
     private static final Map<ChunkKey, Long> SETTLE_RESAMPLES = new java.util.LinkedHashMap<>();
 
-    /**
-     * Also what refreshes a loaded chunk's neighbours, whose edges and blended colours depend on it. One
-     * pending entry per chunk is enough: it runs after everything that queued it, so a chunk surrounded by
-     * loading neighbours is sampled once more rather than once per neighbour.
-     */
     private static void queueLateResample(ChunkKey key) {
         LATE_RESAMPLES.putIfAbsent(key, System.currentTimeMillis() + LATE_RESAMPLE_DELAY_MS);
     }

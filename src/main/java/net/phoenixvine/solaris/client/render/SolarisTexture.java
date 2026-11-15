@@ -232,17 +232,14 @@ public class SolarisTexture implements AutoCloseable {
     private long seenDirtyGeneration = 0;
     private long lastDirtyRebuildMillis = 0;
 
-    /** Chunks whose data changed since this texture last rebuilt, so a rebuild can redo just those. */
     private final java.util.Set<ChunkKey> pendingDirty = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private volatile boolean forceFullRebuild = false;
 
-    /** Something changed that is not tied to one chunk: the next dirty rebuild redoes everything. */
     public static void markChunkDataChanged() {
         for (SolarisTexture texture : ACTIVE) texture.forceFullRebuild = true;
         dirtyGeneration++;
     }
 
-    /** One chunk's data changed: the next dirty rebuild redoes only the chunks marked since the last one. */
     public static void markChunkDataChanged(ChunkKey key) {
         for (SolarisTexture texture : ACTIVE) texture.pendingDirty.add(key);
         dirtyGeneration++;
@@ -315,8 +312,6 @@ public class SolarisTexture implements AutoCloseable {
         boolean canSkip = previousCenter != null && !underground && !lastUnderground &&
                 previousCenter.dimension().equals(center.dimension());
 
-        // Chunks sampled or refreshed since the last rebuild. With canSkip, only these (and chunks newly in range)
-        // are redone, so a big minimap does not reprocess every chunk each time one more loads.
         java.util.Set<ChunkKey> dirty = new java.util.HashSet<>(pendingDirty);
         pendingDirty.removeAll(dirty);
 
