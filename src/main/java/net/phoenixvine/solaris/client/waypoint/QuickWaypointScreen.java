@@ -51,6 +51,24 @@ public class QuickWaypointScreen extends Screen {
     private String icon = WaypointIcon.DOT.name();
     private boolean visible = true;
 
+    // Typed-in values survive init(), which re-runs when the icon picker hands control back or the window resizes.
+    private String draftName;
+    private String draftX;
+    private String draftY;
+    private String draftZ;
+    private String draftColor;
+    private String draftLabelColor;
+
+    private void captureDraft() {
+        if (nameBox == null) return;
+        draftName = nameBox.getValue();
+        draftX = xBox.getValue();
+        draftY = yBox.getValue();
+        draftZ = zBox.getValue();
+        draftColor = colorBox.getValue();
+        draftLabelColor = labelColorBox.getValue();
+    }
+
     public QuickWaypointScreen(Screen parent, ResourceLocation dimension, int wx, int wy, int wz) {
         super(SolarisLang.tr("solaris.quick_waypoint_screen.new_waypoint"));
         this.parent = parent;
@@ -73,6 +91,7 @@ public class QuickWaypointScreen extends Screen {
 
     @Override
     protected void init() {
+        captureDraft();
         if (parent != null) {
             Minecraft mc = Minecraft.getInstance();
             parent.resize(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
@@ -91,7 +110,7 @@ public class QuickWaypointScreen extends Screen {
         nameBox = new EditBox(font, x + 10, y + 32, BOX_W - 20, 16,
                 SolarisLang.tr("solaris.solaris_preset_save_screen.name"));
         nameBox.setMaxLength(48);
-        nameBox.setValue("Waypoint " + (WaypointManager.getAll().size() + 1));
+        nameBox.setValue(draftName != null ? draftName : "Waypoint " + (WaypointManager.getAll().size() + 1));
         addWidget(nameBox);
         setInitialFocus(nameBox);
 
@@ -99,30 +118,31 @@ public class QuickWaypointScreen extends Screen {
         xBox = new EditBox(font, x + 10, y + 64, coordW, 16, Component.literal("X"));
         xBox.setMaxLength(8);
         xBox.setFilter(s -> s.isEmpty() || s.equals("-") || s.matches("-?\\d+"));
-        xBox.setValue(String.valueOf(initialX));
+        xBox.setValue(draftX != null ? draftX : String.valueOf(initialX));
         addWidget(xBox);
 
         yBox = new EditBox(font, x + 10 + coordW + 4, y + 64, coordW, 16, Component.literal("Y"));
         yBox.setMaxLength(8);
         yBox.setFilter(s -> s.isEmpty() || s.equals("-") || s.matches("-?\\d+"));
-        yBox.setValue(String.valueOf(initialY));
+        yBox.setValue(draftY != null ? draftY : String.valueOf(initialY));
         addWidget(yBox);
 
         zBox = new EditBox(font, x + 10 + 2 * (coordW + 4), y + 64, coordW, 16, Component.literal("Z"));
         zBox.setMaxLength(8);
         zBox.setFilter(s -> s.isEmpty() || s.equals("-") || s.matches("-?\\d+"));
-        zBox.setValue(String.valueOf(initialZ));
+        zBox.setValue(draftZ != null ? draftZ : String.valueOf(initialZ));
         addWidget(zBox);
 
         colorBox = new EditBox(font, x + 10, y + 96, BOX_W - 20, 16,
                 SolarisLang.tr("solaris.plan_shape_list_screen.color"));
         colorBox.setMaxLength(8);
-        colorBox.setValue(SWATCHES[0]);
+        colorBox.setValue(draftColor != null ? draftColor : SWATCHES[0]);
         addWidget(colorBox);
 
         labelColorBox = new EditBox(font, x + 10, y + 148, BOX_W - 20, 16,
                 SolarisLang.tr("solaris.quick_waypoint_screen.label_color"));
         labelColorBox.setMaxLength(8);
+        if (draftLabelColor != null) labelColorBox.setValue(draftLabelColor);
         labelColorBox.setHint(SolarisLang.tr("solaris.quick_waypoint_screen.same_as_theme_text"));
         addWidget(labelColorBox);
 

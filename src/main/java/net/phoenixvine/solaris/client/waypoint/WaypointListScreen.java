@@ -205,11 +205,14 @@ public class WaypointListScreen extends Screen {
 
             addRenderableWidget(Button.builder(
                     SolarisLang.tr("solaris.quick_waypoint_screen.icon", WaypointIconManager.label(selected.icon)),
-                    b -> Minecraft.getInstance().setScreen(new WaypointIconPickerScreen(this, selected.icon,
-                            selected.colorArgb(), id -> {
-                                selected.icon = id;
-                                WaypointManager.save();
-                            })))
+                    b -> {
+                        commitEdits();
+                        Minecraft.getInstance().setScreen(new WaypointIconPickerScreen(this, selected.icon,
+                                selected.colorArgb(), id -> {
+                                    selected.icon = id;
+                                    WaypointManager.save();
+                                }));
+                    })
                     .bounds(editX, y, sideW - 20, 18).build());
             y += ROW_H + 8;
 
@@ -220,6 +223,7 @@ public class WaypointListScreen extends Screen {
                     Component.literal(selected.visible ? SolarisText.str("solaris.plan_shape_list.visible_on") :
                             SolarisText.str("solaris.plan_shape_list.visible_off")),
                     b -> {
+                        commitEdits();
                         selected.visible = !selected.visible;
                         WaypointManager.save();
                         init();
@@ -620,6 +624,13 @@ public class WaypointListScreen extends Screen {
 
     private void saveSelected() {
         if (selected == null) return;
+        commitEdits();
+        init();
+    }
+
+    /** Writes whatever is typed in the edit boxes onto the selected waypoint, without rebuilding the screen. */
+    private void commitEdits() {
+        if (selected == null || nameBox == null) return;
         selected.name = nameBox.getValue().isBlank() ? selected.name : nameBox.getValue();
         selected.color = colorBox.getValue();
         selected.category = categoryBox != null ? categoryBox.getValue().trim() : selected.category;
@@ -628,7 +639,6 @@ public class WaypointListScreen extends Screen {
         selected.y = parseCoord(yBox, selected.y);
         selected.z = parseCoord(zBox, selected.z);
         WaypointManager.save();
-        init();
     }
 
     private int parseCoord(EditBox box, int fallback) {
