@@ -10,6 +10,7 @@ import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 import net.phoenixvine.solaris.client.DimensionModes;
+import net.phoenixvine.solaris.client.perf.FullMapLog;
 import net.phoenixvine.solaris.client.perf.SolarisProfiler;
 import net.phoenixvine.solaris.client.render.MapTileCache;
 import net.phoenixvine.solaris.client.render.SolarisTexture;
@@ -35,6 +36,8 @@ public class ChunkColorEvents {
     @SubscribeEvent
     public static void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
         PhoenixSolaris.LOGGER.info("[Solaris] onLoggingIn fired. Clearing in-memory chunk caches");
+        FullMapLog.log("events", "LoggingIn: clearing all chunk caches + tile cache (colorCache={} before)",
+                ChunkColorCache.size());
 
         ChunkColorCache.clear();
         ChunkHeightCache.clear();
@@ -68,6 +71,12 @@ public class ChunkColorEvents {
         var pos = event.getChunk().getPos();
 
         ChunkKey key = ChunkKey.of(level, pos);
+        if (FullMapLog.on()) {
+            FullMapLog.count("chunk.load");
+            FullMapLog.log("events", "ChunkLoad ({},{}) dim={} neighbours={} cachedAlready={} persisted={}", key.x(),
+                    key.z(), key.dimension(), neighbourMask(level, key), ChunkColorCache.contains(key),
+                    PersistentChunkStore.get(key) != null);
+        }
         SolarisProfiler.time("chunkSample", () -> resample(level, key, pos));
         queueLateResample(key);
 
@@ -82,6 +91,14 @@ public class ChunkColorEvents {
 
     private static final long SETTLE_RESAMPLE_DELAY_MS = 6000L;
     private static final Map<ChunkKey, Long> SETTLE_RESAMPLES = new java.util.LinkedHashMap<>();
+
+    /** 8-char string W,E,N,S,NW,NE,SW,SE of loaded (L) / missing (.) neighbouring chunks. */
+    static String neighbourMask(Level level, ChunkKey key) {
+        int[][] d = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 }, { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } };
+        StringBuilder sb = new StringBuilder("W,E,N,S,NW,NE,SW,SE=");
+        for (int[] o : d) sb.append(level.hasChunk(key.x() + o[0], key.z() + o[1]) ? 'L' : '.');
+        return sb.toString();
+    }
 
     private static void queueLateResample(ChunkKey key) {
         LATE_RESAMPLES.putIfAbsent(key, System.currentTimeMillis() + LATE_RESAMPLE_DELAY_MS);
@@ -164,12 +181,22 @@ public class ChunkColorEvents {
     public static boolean resample(Level level, ChunkKey key, net.minecraft.world.level.ChunkPos pos) {
         ChunkColorSampler.ColorSample colorSample = ChunkColorSampler.sample(level, pos);
         ChunkColorSampler.HeightSample heightSample = ChunkColorSampler.sampleHeights(level, pos);
+        String trimInfo = FullMapLog.on() ? neighbourMask(level, key) : null;
         trimUnloadedEdges(level, key, colorSample, heightSample);
 
         if (colorSample.hadFallback) {
             FALLBACK_TAINTED.add(key);
 
-            if (ChunkColorCache.contains(key) || PersistentChunkStore.get(key) != null) return false;
+            if (ChunkColorCache.contains(key) || PersistentChunkStore.get(key) != null) {
+                if (FullMapLog.on()) {
+                    FullMapLog.count("resample.rejectedTainted");
+                    FullMapLog.log("resample",
+                            "({},{}) REJECTED: sample tainted (fallback/air/unresolved texture) and existing data kept. {}",
+                            key.x(), key.z(), trimInfo);
+                }
+                return false;
+            }
+            FullMapLog.count("resample.taintedAcceptedFirstTime");
         } else {
             FALLBACK_TAINTED.remove(key);
         }
@@ -189,6 +216,13 @@ public class ChunkColorEvents {
         boolean changed = PersistentChunkStore.put(key, colorSample.pixels, heightSample.heights,
                 heightSample.water, colorSample.waterTint, colorSample.waterDepth, colorSample.waterOcean,
                 colorSample.foliage) || !cachedBefore;
+        if (FullMapLog.on()) {
+            int water = 0;
+            for (int v : colorSample.waterTint) if (v != 0) water++;
+            FullMapLog.count(changed ? "resample.changed" : "resample.unchanged");
+            FullMapLog.log("resample", "({},{}) tainted={} cachedBefore={} changed={} waterCols={}/256 {}", key.x(),
+                    key.z(), colorSample.hadFallback, cachedBefore, changed, water, trimInfo);
+        }
         if (changed) {
             MapTileCache.markDirty(key);
             SolarisTexture.markChunkDataChanged(key);

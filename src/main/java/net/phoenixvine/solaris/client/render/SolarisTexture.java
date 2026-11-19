@@ -31,6 +31,7 @@ import net.phoenixvine.solaris.client.color.PersistentCaveStore;
 import net.phoenixvine.solaris.client.color.PersistentChunkStore;
 import net.phoenixvine.solaris.client.overlay.SolarisOverlay;
 import net.phoenixvine.solaris.client.overlay.SolarisOverlayRegistry;
+import net.phoenixvine.solaris.client.perf.FullMapLog;
 import net.phoenixvine.solaris.client.perf.SolarisProfiler;
 import net.phoenixvine.solaris.config.SolarisConfig;
 
@@ -236,11 +237,16 @@ public class SolarisTexture implements AutoCloseable {
     private volatile boolean forceFullRebuild = false;
 
     public static void markChunkDataChanged() {
+        FullMapLog.log("minimap", "markChunkDataChanged(ALL): forcing full rebuild on {} textures", ACTIVE.size());
         for (SolarisTexture texture : ACTIVE) texture.forceFullRebuild = true;
         dirtyGeneration++;
     }
 
     public static void markChunkDataChanged(ChunkKey key) {
+        if (FullMapLog.on()) {
+            FullMapLog.count("minimap.markDirty");
+            FullMapLog.log("minimap", "markChunkDataChanged({},{}) -> {} textures", key.x(), key.z(), ACTIVE.size());
+        }
         for (SolarisTexture texture : ACTIVE) texture.pendingDirty.add(key);
         dirtyGeneration++;
     }
@@ -284,7 +290,15 @@ public class SolarisTexture implements AutoCloseable {
 
         if (!centerChanged && !caveStale && !surfacedAgain && !nightFactorChanged && !dirtyDue) return;
 
-        if (!PersistentChunkStore.isLoaded(center.dimension().toString())) return;
+        if (!PersistentChunkStore.isLoaded(center.dimension().toString())) {
+            FullMapLog.log("minimap", "{}: rebuild wanted but persistent store not loaded yet", name);
+            return;
+        }
+        FullMapLog.log("minimap",
+                "{}: rebuild trigger centerChanged={} caveStale={} surfacedAgain={} nightFactorChanged={} dirtyDue={} " +
+                        "pendingDirty={} center=({},{})",
+                name, centerChanged, caveStale, surfacedAgain, nightFactorChanged, dirtyDue, pendingDirty.size(),
+                center.x(), center.z());
 
         rebuild(center);
 
@@ -323,6 +337,8 @@ public class SolarisTexture implements AutoCloseable {
         this.seamX = seamX;
         this.seamZ = seamZ;
 
+        int missingChunkCount = 0;
+        int dirtyChunkHits = 0;
         int dirtyMinX = Integer.MAX_VALUE;
         int dirtyMaxX = -1;
         int dirtyMinZ = Integer.MAX_VALUE;
@@ -369,6 +385,7 @@ public class SolarisTexture implements AutoCloseable {
                 processedChunkCount++;
 
                 ChunkKey key = new ChunkKey(center.dimension(), chunkX, chunkZ);
+                if (!dirty.isEmpty() && dirty.contains(key)) dirtyChunkHits++;
                 int baseX = TextureAddressing.properMod(chunkX, spanChunks) * 16;
                 int baseZ = TextureAddressing.properMod(chunkZ, spanChunks) * 16;
                 dirtyMinX = Math.min(dirtyMinX, baseX);
@@ -447,6 +464,7 @@ public class SolarisTexture implements AutoCloseable {
                     unknownColor = fogColor;
                 }
                 if (profiling) cacheLookupNanos += System.nanoTime() - cacheStart;
+                if (pixels == null) missingChunkCount++;
 
                 long overlayStart = profiling ? System.nanoTime() : 0;
                 int tint = 0;
@@ -518,6 +536,15 @@ public class SolarisTexture implements AutoCloseable {
             }
         }
 
+        if (FullMapLog.on()) {
+            FullMapLog.log("minimap",
+                    "{}: base image filled underground={} canSkip={} processed={} (dirtyChunksRedone={} of {} queued) " +
+                            "chunksWithNoData={} seam=({},{}) prevSeam=({},{}) dirtyBox x[{},{}] z[{},{}]",
+                    name, underground, canSkip, processedChunkCount, dirtyChunkHits, dirty.size(), missingChunkCount,
+                    seamX, seamZ, prevSeamX, prevSeamZ, dirtyMinX, dirtyMaxX, dirtyMinZ, dirtyMaxZ);
+            FullMapLog.count(canSkip ? "minimap.rebuildIncremental" : "minimap.rebuildFull");
+        }
+
         SolarisProfiler.time("copyBaseImage:" + name, () -> image.copyFrom(baseImage));
 
         SolarisProfiler.time("waterBlur:" + name, this::blurWater);
@@ -558,6 +585,12 @@ public class SolarisTexture implements AutoCloseable {
             int rowMax = Math.min(sizePixels - 1, Math.max(seamZ, prevSeamZ) + seamBand);
             image.upload(0, 0, rowMin, 0, rowMin, sizePixels, rowMax - rowMin + 1, false, false, false, false);
 
+            if (FullMapLog.on()) {
+                FullMapLog.log("minimap",
+                        "{}: PARTIAL upload pad=[{},{}]x[{},{}] seamCols=[{},{}] seamRows=[{},{}] (anything outside " +
+                                "these rectangles keeps the previous GPU pixels)",
+                        name, padMinX, padMaxX, padMinZ, padMaxZ, colMin, colMax, rowMin, rowMax);
+            }
             if (SolarisConfig.PERF_LOGGING.get()) {
                 PhoenixSolaris.LOGGER.info(
                         "[Solaris upload] {}: partial upload, processed={}, dirtyX=[{},{}] dirtyZ=[{},{}] " +
@@ -569,6 +602,8 @@ public class SolarisTexture implements AutoCloseable {
             SolarisProfiler.end("upload:partial:" + name, uploadStart);
         } else {
             texture.upload();
+            FullMapLog.log("minimap", "{}: FULL upload canSkip={} nightFactorChanged={} dirtyMaxX={}", name, canSkip,
+                    nightFactorChanged, dirtyMaxX);
             if (SolarisConfig.PERF_LOGGING.get()) {
                 PhoenixSolaris.LOGGER.info(
                         "[Solaris upload] {}: full upload, canSkip={}, nightFactorChanged={}, dirtyMaxX={}, " +
@@ -962,6 +997,7 @@ public class SolarisTexture implements AutoCloseable {
     }
 
     public static void invalidateAll() {
+        FullMapLog.log("minimap", "invalidateAll: {} textures will rebuild from scratch next tick", ACTIVE.size());
         for (SolarisTexture texture : ACTIVE) texture.invalidate();
     }
 

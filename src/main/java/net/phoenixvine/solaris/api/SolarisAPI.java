@@ -55,6 +55,7 @@ public final class SolarisAPI {
     public static final String FEATURE_RAIL_NETWORK = "rail_network";
     public static final String FEATURE_UNEXPLORED_STYLE = "unexplored_style";
     public static final String FEATURE_ZOOM_LIMITS = "zoom_limits";
+    public static final String FEATURE_WAYPOINT_TELEPORT = "waypoint_teleport";
 
     private static final Map<String, BooleanSupplier> FEATURE_GATES = new ConcurrentHashMap<>();
     private static final Map<ResourceLocation, Integer> DIMENSION_TIERS = new ConcurrentHashMap<>();

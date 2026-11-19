@@ -22,6 +22,7 @@ import net.phoenixvine.solaris.client.color.ChunkWaterTintCache;
 import net.phoenixvine.solaris.client.color.PersistentChunkStore;
 import net.phoenixvine.solaris.client.overlay.SolarisOverlay;
 import net.phoenixvine.solaris.client.overlay.SolarisOverlayRegistry;
+import net.phoenixvine.solaris.client.perf.FullMapLog;
 import net.phoenixvine.solaris.client.perf.SolarisProfiler;
 import net.phoenixvine.solaris.config.SolarisConfig;
 
@@ -54,8 +55,22 @@ public final class MapTileCache {
         public static void markChunkDirty(Set<TileKey> dirty, ResourceLocation dimension, int chunkX, int chunkZ) {
             for (int lod = 0; lod <= MAX_LOD; lod++) {
                 int chunksPerTile = TILE_CHUNKS << lod;
-                dirty.add(new TileKey(dimension, Math.floorDiv(chunkX, chunksPerTile),
-                        Math.floorDiv(chunkZ, chunksPerTile), lod));
+                int tx = Math.floorDiv(chunkX, chunksPerTile);
+                int tz = Math.floorDiv(chunkZ, chunksPerTile);
+                dirty.add(new TileKey(dimension, tx, tz, lod));
+
+                // A tile reads a 1px halo (heights/water for hillshading + water relief) from the chunks just
+                // across its border, so a chunk on a tile edge also invalidates the adjacent tile(s).
+                int lx = Math.floorMod(chunkX, chunksPerTile);
+                int lz = Math.floorMod(chunkZ, chunksPerTile);
+                for (int dz = -1; dz <= 1; dz++) {
+                    for (int dx = -1; dx <= 1; dx++) {
+                        if (dx == 0 && dz == 0) continue;
+                        boolean touchesX = dx == 0 || (dx < 0 && lx == 0) || (dx > 0 && lx == chunksPerTile - 1);
+                        boolean touchesZ = dz == 0 || (dz < 0 && lz == 0) || (dz > 0 && lz == chunksPerTile - 1);
+                        if (touchesX && touchesZ) dirty.add(new TileKey(dimension, tx + dx, tz + dz, lod));
+                    }
+                }
             }
         }
     }
@@ -117,6 +132,10 @@ public final class MapTileCache {
                 @Override
                 protected boolean removeEldestEntry(Map.Entry<TileKey, MapTile> eldest) {
                     if (size() <= capacity) return false;
+                    if (FullMapLog.on()) {
+                        FullMapLog.count("tile.evict");
+                        FullMapLog.log("tile", "EVICT {} (size={} capacity={})", eldest.getKey(), size(), capacity);
+                    }
                     eldest.getValue().close();
                     return true;
                 }
@@ -131,6 +150,8 @@ public final class MapTileCache {
 
     public static void ensureCapacity(int neededTiles) {
         if (neededTiles > capacity) {
+            FullMapLog.log("tile", "capacity {} -> {} (needed {})", capacity, Math.min(HARD_CEILING, neededTiles),
+                    neededTiles);
             capacity = Math.min(HARD_CEILING, neededTiles);
         }
     }
@@ -140,6 +161,8 @@ public final class MapTileCache {
         double bucket = Math.round(ChunkColorSampler.nightFactor(level.getDayTime()) / NIGHT_FACTOR_BUCKET) *
                 NIGHT_FACTOR_BUCKET;
         if (bucket == lastNightFactorBucket) return;
+        FullMapLog.log("tile", "night factor bucket {} -> {}: marking ALL {} tiles dirty", lastNightFactorBucket,
+                bucket, TILES.size());
         lastNightFactorBucket = bucket;
         synchronized (TILES) {
             DIRTY.addAll(TILES.keySet());
@@ -157,14 +180,22 @@ public final class MapTileCache {
 
         if (!PersistentChunkStore.isLoaded(key.dimension().toString())) {
             if (dirty) DIRTY.add(key);
+            if (FullMapLog.on()) {
+                FullMapLog.count("tile.deferNoStore");
+                FullMapLog.log("tile", "defer {} : persistent store for {} not loaded yet (tile exists={})", key,
+                        key.dimension(), tile != null);
+            }
             return tile;
         }
 
         if (buildBudget[0] <= 0) {
             DIRTY.add(key);
+            if (FullMapLog.on()) FullMapLog.count("tile.deferBudget");
             return tile;
         }
         buildBudget[0]--;
+        long buildStartNanos = System.nanoTime();
+        boolean wasNew = tile == null;
 
         if (tile == null) {
             ResourceLocation id = new ResourceLocation(PhoenixSolaris.MOD_ID,
@@ -180,19 +211,123 @@ public final class MapTileCache {
                 SolarisProfiler.time("mapTile:build:lodN", () -> buildTileLod(key, builtTile));
             }
         } catch (Exception e) {
-
+            FullMapLog.count("tile.buildFailed");
+            FullMapLog.log("tile", "BUILD FAILED {} : {}", key, e.toString());
             DIRTY.add(key);
             PhoenixSolaris.LOGGER.error("[Solaris] Failed to build map tile {}. " +
                     "Will retry next frame", key, e);
+        }
+        if (FullMapLog.on()) {
+            FullMapLog.count(wasNew ? "tile.buildNew" : "tile.rebuild");
+            FullMapLog.log("tile", "built {} ({}) in {}us", key, wasNew ? "new" : "rebuild after dirty",
+                    (System.nanoTime() - buildStartNanos) / 1000L);
+            if (key.lod() == 0) checkSeams(key, builtTile);
         }
         return tile;
     }
 
     public static void markDirty(ChunkKey key) {
         TileKey.markChunkDirty(DIRTY, key.dimension(), key.x(), key.z());
+        if (FullMapLog.on()) logEdgeDirty(key);
+    }
+
+    /**
+     * A chunk on the edge of a tile feeds the 1px halo (heights/water for hillshading + water relief) of the
+     * adjacent tile, but {@link #markDirty} only dirties the tile that contains the chunk. Log when that leaves
+     * an already-built neighbouring tile with stale edge data.
+     */
+    private static void logEdgeDirty(ChunkKey key) {
+        int tx = Math.floorDiv(key.x(), TILE_CHUNKS);
+        int tz = Math.floorDiv(key.z(), TILE_CHUNKS);
+        int lx = Math.floorMod(key.x(), TILE_CHUNKS);
+        int lz = Math.floorMod(key.z(), TILE_CHUNKS);
+        StringBuilder stale = new StringBuilder();
+        for (int dz = -1; dz <= 1; dz++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                if (dx == 0 && dz == 0) continue;
+                boolean touchesX = dx == 0 || (dx < 0 && lx == 0) || (dx > 0 && lx == TILE_CHUNKS - 1);
+                boolean touchesZ = dz == 0 || (dz < 0 && lz == 0) || (dz > 0 && lz == TILE_CHUNKS - 1);
+                if (!touchesX || !touchesZ) continue;
+                TileKey neighbour = new TileKey(key.dimension(), tx + dx, tz + dz, 0);
+                if (TILES.containsKey(neighbour)) {
+                    stale.append(" (").append(neighbour.tileX()).append(',').append(neighbour.tileZ()).append(')');
+                }
+            }
+        }
+        FullMapLog.count("tile.markDirty");
+        if (stale.length() > 0) {
+            FullMapLog.count("tile.edgeNeighbourStale");
+            FullMapLog.log("tile", "markDirty chunk ({},{}) in tile ({},{}) is on a tile edge; neighbour tiles also " +
+                    "dirtied for halo:{}", key.x(), key.z(), tx, tz, stale);
+        } else {
+            FullMapLog.log("tile", "markDirty chunk ({},{}) -> tile ({},{}) all LODs", key.x(), key.z(), tx, tz);
+        }
+    }
+
+    private static int luma(int abgr) {
+        return (299 * FastColor.ABGR32.red(abgr) + 587 * FastColor.ABGR32.green(abgr) +
+                114 * FastColor.ABGR32.blue(abgr)) / 1000;
+    }
+
+    /**
+     * Compares the outermost pixel row/column of a freshly built lod0 tile against the adjacent row/column of
+     * each already-built neighbour tile. A "suspicious" pixel is one with a hard step across the tile border
+     * (>=20 luma) where the pixel is smooth against its own interior neighbour (<=6 luma): exactly what a
+     * seam line looks like.
+     */
+    private static void checkSeams(TileKey key, MapTile tile) {
+        int[][] dirs = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } };
+        String[] names = { "W", "E", "N", "S" };
+        for (int d = 0; d < dirs.length; d++) {
+            TileKey nKey = new TileKey(key.dimension(), key.tileX() + dirs[d][0], key.tileZ() + dirs[d][1], 0);
+            MapTile neighbour;
+            synchronized (TILES) {
+                neighbour = TILES.get(nKey);
+            }
+            if (neighbour == null) continue;
+            int suspicious = 0;
+            long seamSum = 0;
+            for (int i = 0; i < TILE_PIXELS; i++) {
+                int ax;
+                int az;
+                int bx;
+                int bz;
+                int cx;
+                int cz;
+                if (dirs[d][0] != 0) {
+                    ax = dirs[d][0] < 0 ? 0 : TILE_PIXELS - 1;
+                    bx = dirs[d][0] < 0 ? TILE_PIXELS - 1 : 0;
+                    cx = dirs[d][0] < 0 ? 1 : TILE_PIXELS - 2;
+                    az = i;
+                    bz = i;
+                    cz = i;
+                } else {
+                    az = dirs[d][1] < 0 ? 0 : TILE_PIXELS - 1;
+                    bz = dirs[d][1] < 0 ? TILE_PIXELS - 1 : 0;
+                    cz = dirs[d][1] < 0 ? 1 : TILE_PIXELS - 2;
+                    ax = i;
+                    bx = i;
+                    cx = i;
+                }
+                int a = luma(tile.image.getPixelRGBA(ax, az));
+                int b = luma(neighbour.image.getPixelRGBA(bx, bz));
+                int c = luma(tile.image.getPixelRGBA(cx, cz));
+                int seam = Math.abs(a - b);
+                seamSum += seam;
+                if (seam >= 20 && Math.abs(a - c) <= 6) suspicious++;
+            }
+            FullMapLog.count("seam.checked");
+            if (suspicious > 0) {
+                FullMapLog.count("seam.suspicious");
+                FullMapLog.log("seam", "SEAM {} {} edge vs neighbour ({},{}): suspiciousPx={}/{} meanStep={} " +
+                        "neighbourDirty={} selfDirty={}", key, names[d], nKey.tileX(), nKey.tileZ(), suspicious,
+                        TILE_PIXELS, seamSum / TILE_PIXELS, DIRTY.contains(nKey), DIRTY.contains(key));
+            }
+        }
     }
 
     public static void clearAll() {
+        FullMapLog.log("tile", "clearAll: dropping {} tiles, {} pending dirty", TILES.size(), DIRTY.size());
         synchronized (TILES) {
             for (MapTile tile : TILES.values()) tile.close();
             TILES.clear();
@@ -310,7 +445,7 @@ public final class MapTileCache {
         };
     }
 
-    private static void finishTile(MapTile tile, NativeImage image, int[] heights, boolean[] water,
+    private static void finishTile(TileKey key, MapTile tile, NativeImage image, int[] heights, boolean[] water,
                                    int[] waterDepth, boolean[] lightEmitting, boolean[] haloHasData) {
         boolean anyWater = false;
         for (boolean w : water) {
@@ -320,7 +455,7 @@ public final class MapTileCache {
             }
         }
         if (anyWater) {
-            blurWater(image, water);
+            blurWater(key, image, water);
             applyWaterRelief(image, water, waterDepth);
         }
         if (SolarisConfig.HILLSHADING.get()) {
@@ -371,6 +506,7 @@ public final class MapTileCache {
         ConcurrentHashMap<ChunkKey, PersistentChunkStore.Entry> persistedChunks = PersistentChunkStore
                 .chunksFor(key.dimension().toString());
 
+        int lodMissingPx = 0;
         for (int pz = -1; pz <= TILE_PIXELS; pz++) {
             int worldZ = worldOriginZ + pz * blocksPerPixel;
             int chunkZ = Math.floorDiv(worldZ, 16);
@@ -407,6 +543,7 @@ public final class MapTileCache {
                 int height = chunkHeights != null ? chunkHeights[local] : SolarisTexture.DEFAULT_HEIGHT;
                 int color = pixels != null ? pixels[local] : 0;
                 if (color == 0) {
+                    if (px >= 0 && px < TILE_PIXELS && pz >= 0 && pz < TILE_PIXELS) lodMissingPx++;
                     color = unexploredColor(unexplored, worldX, worldZ);
                 } else {
                     if (chunkWaterTint != null && chunkWaterTint[local] != 0) {
@@ -458,7 +595,15 @@ public final class MapTileCache {
             }
         }
 
-        finishTile(tile, image, heights, water, waterDepth, lightEmitting, haloHasData);
+        if (FullMapLog.on()) {
+            int waterPx = 0;
+            for (int pz = 0; pz < TILE_PIXELS; pz++) {
+                for (int px = 0; px < TILE_PIXELS; px++) if (water[haloIdx(px, pz)]) waterPx++;
+            }
+            FullMapLog.log("tile", "lod{} {} unexploredPx={}/{} waterPx={}", key.lod(), key, lodMissingPx,
+                    TILE_PIXELS * TILE_PIXELS, waterPx);
+        }
+        finishTile(key, tile, image, heights, water, waterDepth, lightEmitting, haloHasData);
     }
 
     private static void buildTile(TileKey key, MapTile tile) {
@@ -605,6 +750,27 @@ public final class MapTileCache {
 
         fillHalo(key, heights, water, waterDepth, persistedChunks, haloHasData);
 
+        if (FullMapLog.on()) {
+            int waterPx = 0;
+            for (int pz = 0; pz < TILE_PIXELS; pz++) {
+                for (int px = 0; px < TILE_PIXELS; px++) if (water[haloIdx(px, pz)]) waterPx++;
+            }
+            int ringMissing = 0;
+            int ringTotal = 0;
+            for (int i = 0; i < TILE_PIXELS; i++) {
+                ringTotal += 4;
+                if (!haloHasData[haloIdx(-1, i)]) ringMissing++;
+                if (!haloHasData[haloIdx(TILE_PIXELS, i)]) ringMissing++;
+                if (!haloHasData[haloIdx(i, -1)]) ringMissing++;
+                if (!haloHasData[haloIdx(i, TILE_PIXELS)]) ringMissing++;
+            }
+            FullMapLog.log("tile",
+                    "lod0 {} chunks: cacheHits={} persistedHits={} blank={} waterPx={} haloEdgeMissing={}/{}", key,
+                    cacheHits, persistedHits, blankChunks, waterPx, ringMissing, ringTotal);
+            if (blankChunks > 0) FullMapLog.count("tile.builtWithBlankChunks");
+            if (ringMissing > 0 && ringMissing < ringTotal) FullMapLog.count("tile.builtPartialHalo");
+        }
+
         if (SolarisConfig.PERF_LOGGING.get() && blankChunks > 0) {
             PhoenixSolaris.LOGGER.info(
                     "[Solaris tile] {} chunkHits={} persistedHits={} blank={} (blank means neither cache " +
@@ -620,7 +786,7 @@ public final class MapTileCache {
             }
         }
         if (anyWater) {
-            blurWater(image, water);
+            blurWater(key, image, water);
             applyWaterRelief(image, water, waterDepth);
         }
         if (SolarisConfig.HILLSHADING.get()) {
@@ -703,101 +869,150 @@ public final class MapTileCache {
         }
     }
 
-    private static void blurWater(NativeImage image, boolean[] water) {
-        int radius = SolarisTexture.WATER_BLUR_RADIUS;
-
-        int[] hSumR = new int[TILE_PIXELS * TILE_PIXELS];
-        int[] hSumG = new int[TILE_PIXELS * TILE_PIXELS];
-        int[] hSumB = new int[TILE_PIXELS * TILE_PIXELS];
-        int[] hCount = new int[TILE_PIXELS * TILE_PIXELS];
+    /**
+     * Box-blurs the water pixels of a tile. The blur window is {@link SolarisTexture#WATER_BLUR_RADIUS} wide but
+     * the tile only owns its own pixels, so near a tile border the window used to be one-sided and the border
+     * showed up as a hard shade line. The window now reads the real (pre-blur) colours of the water just across the
+     * border from neighbouring chunk data, so both tiles blur the same pixels identically.
+     */
+    private static void blurWater(TileKey key, NativeImage image, boolean[] water) {
+        final int radius = SolarisTexture.WATER_BLUR_RADIUS;
+        final int pad = TILE_PIXELS + 2 * radius;
+        int[] colorPad = new int[pad * pad];
+        boolean[] waterPad = new boolean[pad * pad];
 
         for (int z = 0; z < TILE_PIXELS; z++) {
-            int sumR = 0;
-            int sumG = 0;
-            int sumB = 0;
-            int count = 0;
-            for (int x = 0; x <= Math.min(radius, TILE_PIXELS - 1); x++) {
+            for (int x = 0; x < TILE_PIXELS; x++) {
                 if (!water[haloIdx(x, z)]) continue;
-                int abgr = image.getPixelRGBA(x, z);
-                sumR += FastColor.ABGR32.red(abgr);
-                sumG += FastColor.ABGR32.green(abgr);
-                sumB += FastColor.ABGR32.blue(abgr);
-                count++;
+                int i = (z + radius) * pad + (x + radius);
+                colorPad[i] = image.getPixelRGBA(x, z);
+                waterPad[i] = true;
             }
-            int rowBase = z * TILE_PIXELS;
-            hSumR[rowBase] = sumR;
-            hSumG[rowBase] = sumG;
-            hSumB[rowBase] = sumB;
-            hCount[rowBase] = count;
+        }
+        collectWaterRing(key, radius, pad, colorPad, waterPad);
 
-            for (int x = 1; x < TILE_PIXELS; x++) {
-                int addX = x + radius;
-                int removeX = x - radius - 1;
-                if (addX < TILE_PIXELS && water[haloIdx(addX, z)]) {
-                    int abgr = image.getPixelRGBA(addX, z);
-                    sumR += FastColor.ABGR32.red(abgr);
-                    sumG += FastColor.ABGR32.green(abgr);
-                    sumB += FastColor.ABGR32.blue(abgr);
-                    count++;
+        int stride = pad + 1;
+        long[] sumR = new long[stride * stride];
+        long[] sumG = new long[stride * stride];
+        long[] sumB = new long[stride * stride];
+        int[] cnt = new int[stride * stride];
+        for (int z = 0; z < pad; z++) {
+            long rowR = 0;
+            long rowG = 0;
+            long rowB = 0;
+            int rowN = 0;
+            for (int x = 0; x < pad; x++) {
+                int i = z * pad + x;
+                if (waterPad[i]) {
+                    int abgr = colorPad[i];
+                    rowR += FastColor.ABGR32.red(abgr);
+                    rowG += FastColor.ABGR32.green(abgr);
+                    rowB += FastColor.ABGR32.blue(abgr);
+                    rowN++;
                 }
-                if (removeX >= 0 && water[haloIdx(removeX, z)]) {
-                    int abgr = image.getPixelRGBA(removeX, z);
-                    sumR -= FastColor.ABGR32.red(abgr);
-                    sumG -= FastColor.ABGR32.green(abgr);
-                    sumB -= FastColor.ABGR32.blue(abgr);
-                    count--;
-                }
-                hSumR[rowBase + x] = sumR;
-                hSumG[rowBase + x] = sumG;
-                hSumB[rowBase + x] = sumB;
-                hCount[rowBase + x] = count;
+                int o = (z + 1) * stride + (x + 1);
+                int up = z * stride + (x + 1);
+                sumR[o] = sumR[up] + rowR;
+                sumG[o] = sumG[up] + rowG;
+                sumB[o] = sumB[up] + rowB;
+                cnt[o] = cnt[up] + rowN;
             }
         }
 
         int[] blurred = new int[TILE_PIXELS * TILE_PIXELS];
-        for (int x = 0; x < TILE_PIXELS; x++) {
-            int sumR = 0;
-            int sumG = 0;
-            int sumB = 0;
-            int count = 0;
-            for (int z = 0; z <= Math.min(radius, TILE_PIXELS - 1); z++) {
-                int idx = z * TILE_PIXELS + x;
-                sumR += hSumR[idx];
-                sumG += hSumG[idx];
-                sumB += hSumB[idx];
-                count += hCount[idx];
-            }
-            if (water[haloIdx(x, 0)] && count > 0) {
-                blurred[x] = FastColor.ABGR32.color(255, sumB / count, sumG / count, sumR / count);
-            }
-
-            for (int z = 1; z < TILE_PIXELS; z++) {
-                int addZ = z + radius;
-                int removeZ = z - radius - 1;
-                if (addZ < TILE_PIXELS) {
-                    int idx = addZ * TILE_PIXELS + x;
-                    sumR += hSumR[idx];
-                    sumG += hSumG[idx];
-                    sumB += hSumB[idx];
-                    count += hCount[idx];
-                }
-                if (removeZ >= 0) {
-                    int idx = removeZ * TILE_PIXELS + x;
-                    sumR -= hSumR[idx];
-                    sumG -= hSumG[idx];
-                    sumB -= hSumB[idx];
-                    count -= hCount[idx];
-                }
-                if (water[haloIdx(x, z)] && count > 0) {
-                    blurred[z * TILE_PIXELS + x] = FastColor.ABGR32.color(255, sumB / count, sumG / count,
-                            sumR / count);
-                }
+        for (int z = 0; z < TILE_PIXELS; z++) {
+            for (int x = 0; x < TILE_PIXELS; x++) {
+                if (!water[haloIdx(x, z)]) continue;
+                int x0 = x;
+                int z0 = z;
+                int x1 = x + 2 * radius + 1;
+                int z1 = z + 2 * radius + 1;
+                int n = cnt[z1 * stride + x1] - cnt[z0 * stride + x1] - cnt[z1 * stride + x0] +
+                        cnt[z0 * stride + x0];
+                if (n <= 0) continue;
+                long r = sumR[z1 * stride + x1] - sumR[z0 * stride + x1] - sumR[z1 * stride + x0] +
+                        sumR[z0 * stride + x0];
+                long g = sumG[z1 * stride + x1] - sumG[z0 * stride + x1] - sumG[z1 * stride + x0] +
+                        sumG[z0 * stride + x0];
+                long b = sumB[z1 * stride + x1] - sumB[z0 * stride + x1] - sumB[z1 * stride + x0] +
+                        sumB[z0 * stride + x0];
+                blurred[z * TILE_PIXELS + x] = FastColor.ABGR32.color(255, (int) (b / n), (int) (g / n),
+                        (int) (r / n));
             }
         }
 
         for (int z = 0; z < TILE_PIXELS; z++) {
             for (int x = 0; x < TILE_PIXELS; x++) {
-                if (water[haloIdx(x, z)]) image.setPixelRGBA(x, z, blurred[z * TILE_PIXELS + x]);
+                if (water[haloIdx(x, z)] && blurred[z * TILE_PIXELS + x] != 0) {
+                    image.setPixelRGBA(x, z, blurred[z * TILE_PIXELS + x]);
+                }
+            }
+        }
+    }
+
+    /**
+     * Fills the ring of {@code radius} pixels around the tile (inside a padded {@code pad x pad} buffer) with the
+     * final pre-blur colour of every water pixel that belongs to a neighbouring tile, using the same colour steps
+     * the tile builders apply to their own pixels.
+     */
+    private static void collectWaterRing(TileKey key, int radius, int pad, int[] colorPad, boolean[] waterPad) {
+        int blocksPerPixel = blocksPerPixel(key.lod());
+        int worldOriginX = key.tileX() * tileWorldSize(key.lod());
+        int worldOriginZ = key.tileZ() * tileWorldSize(key.lod());
+        ConcurrentHashMap<ChunkKey, PersistentChunkStore.Entry> persistedChunks = PersistentChunkStore
+                .chunksFor(key.dimension().toString());
+
+        double saturation = SolarisConfig.SATURATION.get();
+        double contrast = SolarisConfig.CONTRAST.get();
+        double brightness = SolarisConfig.BRIGHTNESS.get();
+        double tintRed = SolarisConfig.TINT_RED.get();
+        double tintGreen = SolarisConfig.TINT_GREEN.get();
+        double tintBlue = SolarisConfig.TINT_BLUE.get();
+        boolean hasColorTint = tintRed != 1.0 || tintGreen != 1.0 || tintBlue != 1.0;
+
+        for (int pz = -radius; pz < TILE_PIXELS + radius; pz++) {
+            boolean zInside = pz >= 0 && pz < TILE_PIXELS;
+            for (int px = -radius; px < TILE_PIXELS + radius; px++) {
+                if (zInside && px >= 0 && px < TILE_PIXELS) continue;
+                int worldX = worldOriginX + px * blocksPerPixel;
+                int worldZ = worldOriginZ + pz * blocksPerPixel;
+                ChunkKey ckey = new ChunkKey(key.dimension(), Math.floorDiv(worldX, 16), Math.floorDiv(worldZ, 16));
+                int local = Math.floorMod(worldZ, 16) * 16 + Math.floorMod(worldX, 16);
+
+                int[] pixels = ChunkColorCache.get(ckey);
+                boolean[] chunkWater = ChunkWaterCache.get(ckey);
+                int[] chunkHeights = ChunkHeightCache.get(ckey);
+                int[] chunkWaterTint = ChunkWaterTintCache.get(ckey);
+                int[] chunkWaterDepth = ChunkWaterDepthCache.get(ckey);
+                boolean[] chunkWaterOcean = ChunkWaterOceanCache.get(ckey);
+                if (pixels == null) {
+                    PersistentChunkStore.Entry persisted = persistedChunks != null ? persistedChunks.get(ckey) : null;
+                    if (persisted == null) continue;
+                    pixels = persisted.pixels();
+                    chunkWater = persisted.water();
+                    chunkHeights = persisted.heights();
+                    chunkWaterTint = persisted.waterTint();
+                    chunkWaterDepth = persisted.waterDepth();
+                    chunkWaterOcean = persisted.waterOcean();
+                }
+                if (chunkWater == null || !chunkWater[local]) continue;
+                int color = pixels[local];
+                if (color == 0) continue;
+
+                int height = chunkHeights != null ? chunkHeights[local] : SolarisTexture.DEFAULT_HEIGHT;
+                if (chunkWaterTint != null && chunkWaterTint[local] != 0 && chunkWaterDepth != null &&
+                        chunkWaterOcean != null) {
+                    color = ChunkColorSampler.compositeWaterTint(chunkWaterTint[local], chunkWaterDepth[local],
+                            chunkWaterOcean[local], height);
+                }
+                if (saturation != 1.0) color = SolarisTexture.applySaturation(color, saturation);
+                if (contrast != 1.0) color = SolarisTexture.applyContrast(color, contrast);
+                if (brightness != 1.0) color = SolarisTexture.scaleBrightness(color, brightness);
+                if (hasColorTint) color = SolarisTexture.scaleChannels(color, tintRed, tintGreen, tintBlue);
+
+                int i = (pz + radius) * pad + (px + radius);
+                colorPad[i] = color;
+                waterPad[i] = true;
             }
         }
     }

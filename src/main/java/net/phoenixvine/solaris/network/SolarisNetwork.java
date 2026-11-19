@@ -185,5 +185,12 @@ public final class SolarisNetwork {
                 C2SRemoveServerWaypointPacket::new,
                 C2SRemoveServerWaypointPacket::handle,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER));
+
+        CHANNEL.registerMessage(id++,
+                C2STeleportToWaypointPacket.class,
+                C2STeleportToWaypointPacket::encode,
+                C2STeleportToWaypointPacket::new,
+                C2STeleportToWaypointPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 }

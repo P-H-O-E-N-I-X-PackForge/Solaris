@@ -17,6 +17,10 @@ public class S2CServerCapabilitiesPacket {
 
     public static final int PLAYER_POSITIONS = 8;
 
+    public static final int WAYPOINT_TELEPORT = 16;
+    public static final int WAYPOINT_TELEPORT_PERSONAL = 32;
+    public static final int WAYPOINT_TELEPORT_CROSS_DIMENSION = 64;
+
     private final int flags;
     private final int uploadChunksPerSecond;
 

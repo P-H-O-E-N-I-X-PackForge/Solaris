@@ -36,7 +36,7 @@ public final class MobIconOverrides {
 
     private static final Map<EntityType<?>, IconSource> OVERRIDES = new ConcurrentHashMap<>();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final Path CONFIG_FILE = Paths.get("config", "solaris_mob_icons.json");
+    private static final Path CONFIG_FILE = Paths.get("config", "solaris", "solaris_mob_icons.json");
 
     private MobIconOverrides() {}
 

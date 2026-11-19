@@ -7,6 +7,7 @@ import net.phoenixvine.solaris.network.S2CServerCapabilitiesPacket;
 import net.phoenixvine.solaris.network.SolarisNetwork;
 import net.phoenixvine.solaris.server.guild.GuildWaypointService;
 import net.phoenixvine.solaris.server.waypoint.DeathMarkerService;
+import net.phoenixvine.solaris.server.waypoint.WaypointTeleportService;
 
 public final class CapabilityService {
 
@@ -29,6 +30,10 @@ public final class CapabilityService {
             }
             if (SolarisServerConfig.SHARED_VEINS_ENABLED.get()) flags |= S2CServerCapabilitiesPacket.SHARED_VEINS;
         }
+
+        int teleportFlags = WaypointTeleportService.capabilityFlags(player);
+        WaypointTeleportService.remember(player, teleportFlags);
+        flags |= teleportFlags;
 
         final int sent = flags;
         final int uploadRate = SolarisServerConfig.SPEC.isLoaded() ?

@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
@@ -20,8 +21,10 @@ import net.phoenixvine.solaris.integration.guilds.GuildsIntegration;
 import net.phoenixvine.solaris.network.C2SGuildWaypointPacket;
 import net.phoenixvine.solaris.network.C2SRemoveServerWaypointPacket;
 import net.phoenixvine.solaris.network.C2SShareWaypointPacket;
+import net.phoenixvine.solaris.network.C2STeleportToWaypointPacket;
 import net.phoenixvine.solaris.network.ClientPacketHandlers;
 import net.phoenixvine.solaris.network.SolarisNetwork;
+import net.phoenixvine.solaris.server.ServerCapabilities;
 import net.phoenixvine.solaris.util.SolarisLang;
 
 import java.util.ArrayList;
@@ -207,6 +210,9 @@ public class WaypointListScreen extends Screen {
                     .bounds(editX, y, sideW - 20, 18).build());
             y += ROW_H + 8;
 
+            boolean canTeleport = ServerCapabilities.waypointTeleport();
+            int fullW = sideW - 20;
+            int halfW = (fullW - 4) / 2;
             addRenderableWidget(Button.builder(
                     Component.literal(selected.visible ? SolarisText.str("solaris.plan_shape_list.visible_on") :
                             SolarisText.str("solaris.plan_shape_list.visible_off")),
@@ -214,12 +220,23 @@ public class WaypointListScreen extends Screen {
                         selected.visible = !selected.visible;
                         WaypointManager.save();
                         init();
-                    }).bounds(editX, y, sideW - 20, 18).build());
+                    }).bounds(editX, y, canTeleport ? halfW : fullW, 18).build());
+            if (canTeleport) {
+                String blockedReason = teleportBlockedReason();
+                Button teleportButton = Button
+                        .builder(SolarisLang.tr("solaris.waypoint_list_screen.teleport"), b -> teleportToSelected())
+                        .bounds(editX + halfW + 4, y, halfW, 18).build();
+                teleportButton.active = blockedReason == null;
+                teleportButton.setTooltip(Tooltip.create(Component.literal(
+                        blockedReason == null ? SolarisText.str("solaris.waypoint_list.teleport_to_this_waypoint") :
+                                blockedReason)));
+                addRenderableWidget(teleportButton);
+            }
             y += ROW_H + 8;
 
             boolean tracked = selected.id.equals(trackedId());
             addRenderableWidget(Button.builder(
-                    Component.literal(tracked ? SolarisText.str("solaris.waypoint_list.tracked_compass") :
+                    Component.literal(tracked ? SolarisText.str("solaris.waypoint_list.tracking_compass_on") :
                             SolarisText.str("solaris.waypoint_list.track_compass")),
                     b -> {
                         WaypointManager.setTracked(tracked ? null : selected.id);
@@ -507,6 +524,48 @@ public class WaypointListScreen extends Screen {
     private String truncate(String text, int maxWidth) {
         if (font.width(text) <= maxWidth) return text;
         return font.plainSubstrByWidth(text, maxWidth - font.width("…")) + "…";
+    }
+
+    private C2STeleportToWaypointPacket.Source teleportSource(Waypoint w) {
+        if (w.id != null && w.id.startsWith(ClientPacketHandlers.SERVER_WAYPOINT_PREFIX)) {
+            return C2STeleportToWaypointPacket.Source.SERVER;
+        }
+        if (w.id != null && w.id.startsWith(ClientPacketHandlers.GUILD_WAYPOINT_PREFIX)) {
+            return C2STeleportToWaypointPacket.Source.GUILD;
+        }
+        return C2STeleportToWaypointPacket.Source.PERSONAL;
+    }
+
+    /** Null when the selected waypoint can be teleported to; otherwise a short reason for the tooltip. */
+    private String teleportBlockedReason() {
+        Minecraft mc = Minecraft.getInstance();
+        if (selected == null || mc.player == null || mc.level == null) return "Not available right now.";
+
+        if (teleportSource(selected) == C2STeleportToWaypointPacket.Source.PERSONAL &&
+                !ServerCapabilities.waypointTeleportPersonal()) {
+            return "This server only allows teleporting to server and guild waypoints.";
+        }
+        boolean sameDimension = selected.dimension.equals(mc.level.dimension().location().toString());
+        if (!sameDimension && !ServerCapabilities.waypointTeleportCrossDimension()) {
+            return "This server doesn't allow teleporting between dimensions.";
+        }
+        return null;
+    }
+
+    private void teleportToSelected() {
+        if (selected == null || teleportBlockedReason() != null) return;
+
+        C2STeleportToWaypointPacket.Source source = teleportSource(selected);
+        String key = "";
+        if (source == C2STeleportToWaypointPacket.Source.SERVER) {
+            key = selected.id.substring(ClientPacketHandlers.SERVER_WAYPOINT_PREFIX.length());
+        } else if (source == C2STeleportToWaypointPacket.Source.GUILD) {
+            key = selected.id.substring(ClientPacketHandlers.GUILD_WAYPOINT_PREFIX.length());
+        }
+
+        SolarisNetwork.CHANNEL.sendToServer(new C2STeleportToWaypointPacket(source, key, selected.name,
+                selected.dimension, selected.x, selected.y, selected.z));
+        Minecraft.getInstance().setScreen(null);
     }
 
     private void shareSelected() {

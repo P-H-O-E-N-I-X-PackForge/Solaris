@@ -56,6 +56,7 @@ public final class SolarisConfig {
     public static final ForgeConfigSpec.IntValue LIVE_REFRESH_INTERVAL_SECONDS;
     public static final ForgeConfigSpec.IntValue LIVE_REFRESH_RADIUS_CHUNKS;
     public static final ForgeConfigSpec.BooleanValue PERF_LOGGING;
+    public static final ForgeConfigSpec.BooleanValue MAP_DEBUG_LOGGING;
     public static final ForgeConfigSpec.IntValue PERF_LOG_THRESHOLD_MS;
     public static final ForgeConfigSpec.IntValue PERF_SUMMARY_INTERVAL_SECONDS;
     public static final ForgeConfigSpec.IntValue MAX_PERSISTED_CHUNKS_PER_DIMENSION;
@@ -458,6 +459,13 @@ public final class SolarisConfig {
                         "mod's cost is easy to miss otherwise, since a single slow rebuild just looks like a " +
                         "generic frame hitch with nothing pointing back at what caused it.")
                 .define("perfLogging", false);
+        MAP_DEBUG_LOGGING = builder
+                .comment("Very verbose diagnostics for the world map / minimap pipeline: chunk loads and " +
+                        "resamples, tainted-chunk retries, cache and disk hits, tile dirtying and rebuilds, " +
+                        "tile-seam checks and minimap texture uploads. Written to the game log and to " +
+                        "logs/solaris-map-debug.log. Meant for chasing chunk-border / water-line bugs; leave " +
+                        "off for normal play.")
+                .define("mapDebugLogging", false);
         PERF_LOG_THRESHOLD_MS = builder
                 .comment("An individual operation slower than this (in milliseconds) gets logged immediately.")
                 .defineInRange("perfLogThresholdMs", 50, 1, 5000);
@@ -501,6 +509,16 @@ public final class SolarisConfig {
     }
 
     private static void migrateLegacyConfigFile() {
+        java.nio.file.Path legacyIcons = java.nio.file.Paths.get("config", "solaris_mob_icons.json");
+        java.nio.file.Path newIcons = java.nio.file.Paths.get("config", "solaris", "solaris_mob_icons.json");
+        if (java.nio.file.Files.exists(legacyIcons) && !java.nio.file.Files.exists(newIcons)) {
+            try {
+                java.nio.file.Files.createDirectories(newIcons.getParent());
+                java.nio.file.Files.move(legacyIcons, newIcons);
+            } catch (java.io.IOException ignored) {
+
+            }
+        }
         java.nio.file.Path legacy = java.nio.file.Paths.get("config", "solaris-client.toml");
         java.nio.file.Path target = java.nio.file.Paths.get("config", CONFIG_FILE_NAME);
         if (java.nio.file.Files.exists(target) || !java.nio.file.Files.exists(legacy)) return;
