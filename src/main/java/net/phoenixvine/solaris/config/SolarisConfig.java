@@ -54,6 +54,7 @@ public final class SolarisConfig {
     public static final ModConfigSpec.IntValue LIVE_REFRESH_INTERVAL_SECONDS;
     public static final ModConfigSpec.IntValue LIVE_REFRESH_RADIUS_CHUNKS;
     public static final ModConfigSpec.BooleanValue PERF_LOGGING;
+    public static final ModConfigSpec.BooleanValue MAP_DEBUG_LOGGING;
     public static final ModConfigSpec.IntValue PERF_LOG_THRESHOLD_MS;
     public static final ModConfigSpec.IntValue PERF_SUMMARY_INTERVAL_SECONDS;
     public static final ModConfigSpec.IntValue MAX_PERSISTED_CHUNKS_PER_DIMENSION;
@@ -456,6 +457,13 @@ public final class SolarisConfig {
                         "mod's cost is easy to miss otherwise, since a single slow rebuild just looks like a " +
                         "generic frame hitch with nothing pointing back at what caused it.")
                 .define("perfLogging", false);
+        MAP_DEBUG_LOGGING = builder
+                .comment("Very verbose diagnostics for the world map / minimap pipeline: chunk loads and " +
+                        "resamples, tainted-chunk retries, cache and disk hits, tile dirtying and rebuilds, " +
+                        "tile-seam checks and minimap texture uploads. Written to the game log and to " +
+                        "logs/solaris-map-debug.log. Meant for chasing chunk-border / water-line bugs; leave " +
+                        "off for normal play.")
+                .define("mapDebugLogging", false);
         PERF_LOG_THRESHOLD_MS = builder
                 .comment("An individual operation slower than this (in milliseconds) gets logged immediately.")
                 .defineInRange("perfLogThresholdMs", 50, 1, 5000);

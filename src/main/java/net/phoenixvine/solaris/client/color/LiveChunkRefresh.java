@@ -12,6 +12,7 @@ import net.phoenixvine.solaris.PhoenixSolaris;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 import net.phoenixvine.solaris.client.DimensionModes;
+import net.phoenixvine.solaris.client.perf.FullMapLog;
 import net.phoenixvine.solaris.client.perf.SolarisProfiler;
 import net.phoenixvine.solaris.client.render.MapTileCache;
 import net.phoenixvine.solaris.client.render.SolarisTexture;
@@ -53,6 +54,7 @@ public final class LiveChunkRefresh {
     public static void onClientTick(ClientTickEvent.Post event) {
         if (refreshPending) {
             refreshPending = false;
+            FullMapLog.log("refresh", "refreshPending -> invalidateAll textures + clearAll map tiles");
             SolarisTexture.invalidateAll();
             MapTileCache.clearAll();
         }
@@ -64,6 +66,8 @@ public final class LiveChunkRefresh {
 
         net.minecraft.resources.ResourceLocation currentDimension = level.dimension().location();
         if (!currentDimension.equals(lastDimension)) {
+            FullMapLog.log("refresh", "dimension changed {} -> {}; clearing sweep/retry state", lastDimension,
+                    currentDimension);
             lastDimension = currentDimension;
             PENDING_SWEEP.clear();
             sweepRefreshedAny = false;
@@ -133,6 +137,11 @@ public final class LiveChunkRefresh {
         }
 
         sweepRefreshedAny = false;
+        if (FullMapLog.on()) {
+            FullMapLog.count("sweep.enqueued", PENDING_SWEEP.size());
+            FullMapLog.log("refresh", "sweep enqueued {} chunks around ({},{}) radius={} writeRange={}",
+                    PENDING_SWEEP.size(), centerX, centerZ, radius, writeRange);
+        }
     }
 
     private static void drainSweepBudget(Level level) {
@@ -143,6 +152,11 @@ public final class LiveChunkRefresh {
 
             if (!ChunkColorEvents.neighborsLoaded(level, key) &&
                     (ChunkColorCache.contains(key) || PersistentChunkStore.get(key) != null)) {
+                if (FullMapLog.on()) {
+                    FullMapLog.count("sweep.skippedNeighboursMissing");
+                    FullMapLog.log("refresh", "sweep skip ({},{}): neighbours not all loaded, keeping old data. {}",
+                            key.x(), key.z(), ChunkColorEvents.neighbourMask(level, key));
+                }
                 continue;
             }
             Boolean changed = SolarisProfiler.time("chunkSample",
@@ -152,6 +166,7 @@ public final class LiveChunkRefresh {
         SolarisProfiler.end("liveRefreshSweep:batch", sweepStart);
 
         if (PENDING_SWEEP.isEmpty() && sweepRefreshedAny) {
+            FullMapLog.log("refresh", "sweep finished with changes -> invalidateAll minimap textures");
             SolarisTexture.invalidateAll();
             sweepRefreshedAny = false;
         }
@@ -181,6 +196,12 @@ public final class LiveChunkRefresh {
             ChunkColorEvents.trimUnloadedEdges(level, key, colorSample, heightSample);
             if (colorSample.hadFallback) {
                 int failures = ChunkColorEvents.FALLBACK_RETRY_COUNT.merge(key, 1, Integer::sum);
+                if (FullMapLog.on()) {
+                    FullMapLog.count("tainted.retryStillTainted");
+                    FullMapLog.log("tainted", "({},{}) retry #{} still tainted{} {}", key.x(), key.z(), failures,
+                            failures >= MAX_FALLBACK_RETRIES ? " -> GIVING UP (stays with old/blank data)" : "",
+                            ChunkColorEvents.neighbourMask(level, key));
+                }
                 if (failures >= MAX_FALLBACK_RETRIES) {
                     ChunkColorEvents.FALLBACK_TAINTED.remove(key);
                     ChunkColorEvents.FALLBACK_RETRY_COUNT.remove(key);
@@ -201,9 +222,17 @@ public final class LiveChunkRefresh {
             PersistentChunkStore.put(key, colorSample.pixels, heightSample.heights, heightSample.water,
                     colorSample.waterTint, colorSample.waterDepth, colorSample.waterOcean, colorSample.foliage);
             ChunkColorEvents.FALLBACK_TAINTED.remove(key);
+            if (FullMapLog.on()) {
+                FullMapLog.count("tainted.retryRecovered");
+                FullMapLog.log("tainted", "({},{}) retry recovered after {} attempts, data replaced", key.x(), key.z(),
+                        attempts + 1);
+            }
             MapTileCache.markDirty(key);
             refreshedAny = true;
         }
-        if (refreshedAny) SolarisTexture.invalidateAll();
+        if (refreshedAny) {
+            FullMapLog.log("tainted", "retry pass recovered chunks -> invalidateAll minimap textures");
+            SolarisTexture.invalidateAll();
+        }
     }
 }

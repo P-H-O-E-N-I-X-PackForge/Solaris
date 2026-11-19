@@ -1,5 +1,6 @@
 package net.phoenixvine.solaris.client.color;
 
+import net.phoenixvine.solaris.client.perf.FullMapLog;
 import net.phoenixvine.solaris.config.SolarisConfig;
 
 import java.util.Collections;
@@ -15,7 +16,14 @@ public final class ChunkColorCache {
 
                 @Override
                 protected boolean removeEldestEntry(Map.Entry<ChunkKey, int[]> eldest) {
-                    return size() > SolarisConfig.MAX_CACHED_CHUNKS.get();
+                    boolean evict = size() > SolarisConfig.MAX_CACHED_CHUNKS.get();
+                    if (evict && FullMapLog.on()) {
+                        FullMapLog.count("colorCache.evict");
+                        FullMapLog.log("cache",
+                                "ChunkColorCache evicting ({},{}) size={} (will fall back to disk store)",
+                                eldest.getKey().x(), eldest.getKey().z(), size());
+                    }
+                    return evict;
                 }
             });
 
