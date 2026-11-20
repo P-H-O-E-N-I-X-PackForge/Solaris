@@ -40,7 +40,7 @@ public class PhoenixSolarisClient {
                     Minecraft mc = Minecraft.getInstance();
                     Screen current = mc.screen;
                     mc.setScreen(null);
-                    SolarisAPI.openMap(current);
+                    net.phoenixvine.solaris.client.SolarisMapOpener.openMap(current);
                 });
     }
 

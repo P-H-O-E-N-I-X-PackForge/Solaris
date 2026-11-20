@@ -66,7 +66,7 @@ public final class PageTabs {
             if (mx < chip.x() || mx >= chip.x() + chip.w()) continue;
             if (chip.page() == active) return true;
             if (chip.page() == null) {
-                if (!SolarisAPI.openMap(parent)) Minecraft.getInstance().setScreen(parent);
+                if (!net.phoenixvine.solaris.client.SolarisMapOpener.openMap(parent)) Minecraft.getInstance().setScreen(parent);
             } else {
                 Minecraft.getInstance().setScreen(new SolarisPageScreen(chip.page(), parent));
             }

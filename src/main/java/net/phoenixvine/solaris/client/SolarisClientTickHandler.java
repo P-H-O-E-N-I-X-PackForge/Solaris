@@ -61,7 +61,7 @@ public class SolarisClientTickHandler {
         while (SolarisKeybinds.OPEN_MAP.consumeClick()) {
             if (mc.screen != null) continue;
 
-            if (!SolarisAPI.openMap(null)) {
+            if (!net.phoenixvine.solaris.client.SolarisMapOpener.openMap(null)) {
                 mc.player.displayClientMessage(
                         SolarisLang.tr("solaris.solaris_client_tick_handler.the_map_isn_t_available"), true);
             }
