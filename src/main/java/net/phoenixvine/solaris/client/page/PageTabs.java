@@ -4,7 +4,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.client.render.MapPage;
 import net.phoenixvine.solaris.client.render.MapPages;
 
@@ -66,7 +65,8 @@ public final class PageTabs {
             if (mx < chip.x() || mx >= chip.x() + chip.w()) continue;
             if (chip.page() == active) return true;
             if (chip.page() == null) {
-                if (!SolarisAPI.openMap(parent)) Minecraft.getInstance().setScreen(parent);
+                if (!net.phoenixvine.solaris.client.SolarisMapOpener.openMap(parent))
+                    Minecraft.getInstance().setScreen(parent);
             } else {
                 Minecraft.getInstance().setScreen(new SolarisPageScreen(chip.page(), parent));
             }

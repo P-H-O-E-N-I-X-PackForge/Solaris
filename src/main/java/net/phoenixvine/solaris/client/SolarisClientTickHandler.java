@@ -8,7 +8,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.phoenixvine.solaris.PhoenixSolaris;
-import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.event.WaypointEvent;
 import net.phoenixvine.solaris.client.ping.PingTracker;
 import net.phoenixvine.solaris.client.render.MinimapStyle;
@@ -58,7 +57,7 @@ public class SolarisClientTickHandler {
         while (SolarisKeybinds.OPEN_MAP.consumeClick()) {
             if (mc.screen != null) continue;
 
-            if (!SolarisAPI.openMap(null)) {
+            if (!net.phoenixvine.solaris.client.SolarisMapOpener.openMap(null)) {
                 mc.player.displayClientMessage(
                         SolarisLang.tr("solaris.solaris_client_tick_handler.the_map_isn_t_available"), true);
             }

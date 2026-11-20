@@ -7,7 +7,6 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.phoenixvine.solaris.PhoenixSolaris;
-import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.client.render.CaveTileCache;
 import net.phoenixvine.solaris.client.render.MapTileCache;
 import net.phoenixvine.solaris.client.render.MobIconOverrides;
@@ -40,7 +39,7 @@ public class PhoenixSolarisClient {
                     Minecraft mc = Minecraft.getInstance();
                     Screen current = mc.screen;
                     mc.setScreen(null);
-                    SolarisAPI.openMap(current);
+                    net.phoenixvine.solaris.client.SolarisMapOpener.openMap(current);
                 });
     }
 

@@ -23,6 +23,7 @@ import net.phoenixvine.solaris.client.color.ChunkKey;
 import net.phoenixvine.solaris.client.color.ChunkRailCache;
 import net.phoenixvine.solaris.client.color.PersistentCaveStore;
 import net.phoenixvine.solaris.client.export.SolarisWebExporter;
+import net.phoenixvine.solaris.client.perf.FullMapLog;
 import net.phoenixvine.solaris.client.perf.SolarisProfiler;
 import net.phoenixvine.solaris.client.ping.PingMarker;
 import net.phoenixvine.solaris.client.ping.PingTracker;
@@ -1149,6 +1150,9 @@ public class SolarisMapScreen extends Screen {
         MapTileCache.ensureCapacity((tileMaxX - tileMinX + 1) * (tileMaxZ - tileMinZ + 1));
 
         int[] buildBudget = { MAX_TILE_BUILDS_PER_FRAME };
+        int dbgVisible = 0;
+        int dbgMissing = 0;
+        int dbgDirty = 0;
         for (int tz = tileMinZ; tz <= tileMaxZ; tz++) {
             for (int tx = tileMinX; tx <= tileMaxX; tx++) {
                 int tileWorldX = tx * tileWorldSize;
@@ -1167,12 +1171,35 @@ public class SolarisMapScreen extends Screen {
                 MapTileCache.TileKey key = new MapTileCache.TileKey(dimension, tx, tz, lod);
                 MapTileCache.MapTile tile = MapTileCache.getOrBuildTile(key, buildBudget);
 
+                if (FullMapLog.on()) {
+                    dbgVisible++;
+                    if (tile == null) dbgMissing++;
+                    if (MapTileCache.isDirty(key)) dbgDirty++;
+                }
                 if (tile == null) continue;
 
                 g.blit(tile.textureId(), destX, destY, destSizeX, destSizeZ, 0, 0, MapTileCache.TILE_PIXELS,
                         MapTileCache.TILE_PIXELS, MapTileCache.TILE_PIXELS, MapTileCache.TILE_PIXELS);
             }
         }
+        if (FullMapLog.on()) {
+            dbgLogFrame(zoom, lod, tileMaxX - tileMinX + 1, tileMaxZ - tileMinZ + 1, dbgVisible, dbgMissing,
+                    dbgDirty, MAX_TILE_BUILDS_PER_FRAME - buildBudget[0]);
+        }
+    }
+
+    private long dbgLastFrameLogMillis = 0;
+
+    private void dbgLogFrame(float zoom, int lod, int tilesX, int tilesZ, int visible, int missing, int dirty,
+                             int buildsThisFrame) {
+        long now = System.currentTimeMillis();
+        if (now - dbgLastFrameLogMillis < 1000L) return;
+        dbgLastFrameLogMillis = now;
+        FullMapLog.log("screen",
+                "full map frame: zoom={} lod={} tileGrid={}x{} visible={} neverBuilt={} stillDirty={} " +
+                        "builtThisFrame={}/{} {}",
+                zoom, lod, tilesX, tilesZ, visible, missing, dirty, buildsThisFrame, MAX_TILE_BUILDS_PER_FRAME,
+                MapTileCache.debugState());
     }
 
     private static final int RAIL_LINE_COLOR = 0xFFB6B6B6;

@@ -221,7 +221,7 @@ public final class MapTileCache {
             FullMapLog.count(wasNew ? "tile.buildNew" : "tile.rebuild");
             FullMapLog.log("tile", "built {} ({}) in {}us", key, wasNew ? "new" : "rebuild after dirty",
                     (System.nanoTime() - buildStartNanos) / 1000L);
-            if (key.lod() == 0) checkSeams(key, builtTile);
+            checkSeams(key, builtTile);
         }
         return tile;
     }
@@ -279,7 +279,8 @@ public final class MapTileCache {
         int[][] dirs = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } };
         String[] names = { "W", "E", "N", "S" };
         for (int d = 0; d < dirs.length; d++) {
-            TileKey nKey = new TileKey(key.dimension(), key.tileX() + dirs[d][0], key.tileZ() + dirs[d][1], 0);
+            TileKey nKey = new TileKey(key.dimension(), key.tileX() + dirs[d][0], key.tileZ() + dirs[d][1],
+                    key.lod());
             MapTile neighbour;
             synchronized (TILES) {
                 neighbour = TILES.get(nKey);
@@ -324,6 +325,19 @@ public final class MapTileCache {
                         TILE_PIXELS, seamSum / TILE_PIXELS, DIRTY.contains(nKey), DIRTY.contains(key));
             }
         }
+    }
+
+    /** One-line snapshot of the tile cache for the per-second map screen log. */
+    public static String debugState() {
+        return "tiles=" + TILES.size() + "/" + capacity + " dirtyPending=" + DIRTY.size();
+    }
+
+    public static boolean isDirty(TileKey key) {
+        return DIRTY.contains(key);
+    }
+
+    public static boolean isBuilt(TileKey key) {
+        return TILES.containsKey(key);
     }
 
     public static void clearAll() {

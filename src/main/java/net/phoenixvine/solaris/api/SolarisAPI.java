@@ -1,14 +1,11 @@
 package net.phoenixvine.solaris.api;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.phoenixvine.solaris.PhoenixSolaris;
-import net.phoenixvine.solaris.client.SolarisMapScreen;
 import net.phoenixvine.solaris.client.overlay.SolarisOverlay;
 import net.phoenixvine.solaris.client.overlay.SolarisOverlayRegistry;
 import net.phoenixvine.solaris.client.render.MapTileCache;
@@ -250,27 +247,6 @@ public final class SolarisAPI {
 
     public static List<Waypoint> getWaypoints() {
         return WaypointManager.getAll();
-    }
-
-    public static boolean openMap(Screen previousScreen) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null) return false;
-
-        ResourceLocation dimension = mc.level.dimension().location();
-        boolean gatesOpen = isFeatureEnabled(FEATURE_FULLSCREEN_MAP, dimension) &&
-                getFeatureState(FEATURE_WORLD_MAP, dimension).atLeast(SolarisFeatureState.VISIBLE);
-        if (!gatesOpen) return false;
-
-        mc.setScreen(new SolarisMapScreen(previousScreen));
-        return true;
-    }
-
-    public static boolean closeMap() {
-        Minecraft mc = Minecraft.getInstance();
-        if (!(mc.screen instanceof SolarisMapScreen)) return false;
-
-        mc.setScreen(null);
-        return true;
     }
 
     public static String getTheme() {
