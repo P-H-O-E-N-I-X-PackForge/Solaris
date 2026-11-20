@@ -17,7 +17,8 @@ public final class SolarisMapOpener {
 
         ResourceLocation dimension = mc.level.dimension().location();
         boolean gatesOpen = SolarisAPI.isFeatureEnabled(SolarisAPI.FEATURE_FULLSCREEN_MAP, dimension) &&
-                SolarisAPI.getFeatureState(SolarisAPI.FEATURE_WORLD_MAP, dimension).atLeast(SolarisFeatureState.VISIBLE);
+                SolarisAPI.getFeatureState(SolarisAPI.FEATURE_WORLD_MAP, dimension)
+                        .atLeast(SolarisFeatureState.VISIBLE);
         if (!gatesOpen) return false;
 
         mc.setScreen(new SolarisMapScreen(previousScreen));

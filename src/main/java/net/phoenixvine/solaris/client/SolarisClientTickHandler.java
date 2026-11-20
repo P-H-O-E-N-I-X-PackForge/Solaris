@@ -8,7 +8,6 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.phoenixvine.solaris.PhoenixSolaris;
-import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.event.WaypointEvent;
 import net.phoenixvine.solaris.client.ping.PingTracker;
 import net.phoenixvine.solaris.client.render.MinimapStyle;
