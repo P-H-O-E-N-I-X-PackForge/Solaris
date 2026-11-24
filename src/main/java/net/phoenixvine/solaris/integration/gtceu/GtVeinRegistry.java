@@ -192,8 +192,7 @@ public final class GtVeinRegistry {
     }
 
     private static Path fileFor(String worldKey) {
-        String safe = worldKey.replaceAll("[^a-zA-Z0-9._-]", "_");
-        return Paths.get("config", "solaris", "gt_veins", safe + ".json");
+        return net.phoenixvine.solaris.client.SolarisStorage.gtVeinsFile(worldKey);
     }
 
     private static String idFromItem(ItemStack stack) {

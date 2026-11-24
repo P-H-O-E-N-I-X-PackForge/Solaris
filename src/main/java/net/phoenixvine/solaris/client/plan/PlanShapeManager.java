@@ -80,7 +80,6 @@ public final class PlanShapeManager {
     }
 
     private static Path fileFor(String worldKey) {
-        String safe = worldKey.replaceAll("[^a-zA-Z0-9._-]", "_");
-        return Paths.get("config", "solaris", "shapes", safe + ".json");
+        return net.phoenixvine.solaris.client.SolarisStorage.shapesFile(worldKey);
     }
 }
