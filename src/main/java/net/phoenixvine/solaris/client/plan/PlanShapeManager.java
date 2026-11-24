@@ -10,7 +10,6 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -80,7 +79,6 @@ public final class PlanShapeManager {
     }
 
     private static Path fileFor(String worldKey) {
-        String safe = worldKey.replaceAll("[^a-zA-Z0-9._-]", "_");
-        return Paths.get("config", "solaris", "shapes", safe + ".json");
+        return net.phoenixvine.solaris.client.SolarisStorage.shapesFile(worldKey);
     }
 }

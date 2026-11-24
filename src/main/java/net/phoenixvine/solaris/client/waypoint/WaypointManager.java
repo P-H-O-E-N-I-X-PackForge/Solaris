@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -202,8 +201,7 @@ public final class WaypointManager {
     }
 
     private static Path fileFor(String worldKey) {
-        String safe = worldKey.replaceAll("[^a-zA-Z0-9._-]", "_");
-        return Paths.get("config", "solaris", "waypoints", safe + ".json");
+        return net.phoenixvine.solaris.client.SolarisStorage.waypointsFile(worldKey);
     }
 
     public static Path currentWaypointsFile() {
@@ -227,16 +225,19 @@ public final class WaypointManager {
 
         ServerData server = mc.getCurrentServer();
         String key;
+        Path storageFolder = null;
         if (server != null) {
             key = "mp-" + server.ip;
         } else if (mc.hasSingleplayerServer() && mc.getSingleplayerServer() != null) {
             Path root = mc.getSingleplayerServer().getWorldPath(LevelResource.ROOT);
+            storageFolder = root;
             long seed = mc.getSingleplayerServer().overworld().getSeed();
             key = "sp-" + singleplayerWorldId(root, seed);
         } else {
             key = "unknown";
         }
 
+        net.phoenixvine.solaris.client.SolarisStorage.register(key, storageFolder);
         cachedWorldKey = key;
         cachedWorldKeyOwner = owner;
         cachedWorldKeyValid = true;

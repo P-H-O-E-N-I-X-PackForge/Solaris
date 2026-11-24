@@ -12,7 +12,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -348,11 +347,11 @@ public final class PersistentCaveStore {
     }
 
     private static Path legacyFileFor(String worldKey, String dimension) {
-        return Paths.get("config", "solaris", "mapdata", safe(worldKey), safe(dimension) + "_caves.dat");
+        return net.phoenixvine.solaris.client.SolarisStorage.mapdata(worldKey).resolve(safe(dimension) + "_caves.dat");
     }
 
     private static Path regionDirFor(String worldKey, String dimension) {
-        return Paths.get("config", "solaris", "mapdata", safe(worldKey), safe(dimension) + "_caves");
+        return net.phoenixvine.solaris.client.SolarisStorage.mapdata(worldKey).resolve(safe(dimension) + "_caves");
     }
 
     private static Path regionFile(String worldKey, String dimension, int rx, int rz) {

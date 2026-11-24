@@ -25,7 +25,6 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -192,8 +191,7 @@ public final class GtVeinRegistry {
     }
 
     private static Path fileFor(String worldKey) {
-        String safe = worldKey.replaceAll("[^a-zA-Z0-9._-]", "_");
-        return Paths.get("config", "solaris", "gt_veins", safe + ".json");
+        return net.phoenixvine.solaris.client.SolarisStorage.gtVeinsFile(worldKey);
     }
 
     private static String idFromItem(ItemStack stack) {

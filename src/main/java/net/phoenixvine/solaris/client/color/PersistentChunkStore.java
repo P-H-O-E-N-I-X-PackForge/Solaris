@@ -15,7 +15,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -469,11 +468,11 @@ public final class PersistentChunkStore {
     }
 
     private static Path legacyFileFor(String worldKey, String dimension) {
-        return Paths.get("config", "solaris", "mapdata", safe(worldKey), safe(dimension) + ".dat");
+        return net.phoenixvine.solaris.client.SolarisStorage.mapdata(worldKey).resolve(safe(dimension) + ".dat");
     }
 
     private static Path regionDirFor(String worldKey, String dimension) {
-        return Paths.get("config", "solaris", "mapdata", safe(worldKey), safe(dimension));
+        return net.phoenixvine.solaris.client.SolarisStorage.mapdata(worldKey).resolve(safe(dimension));
     }
 
     private static Path regionFile(String worldKey, String dimension, int rx, int rz) {
