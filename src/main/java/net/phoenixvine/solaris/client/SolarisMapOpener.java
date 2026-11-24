@@ -6,7 +6,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.phoenixvine.solaris.api.SolarisAPI;
 import net.phoenixvine.solaris.api.SolarisFeatureState;
 
-/** Client-only map opening, kept out of SolarisAPI so scripting on a dedicated server never loads client classes. */
 public final class SolarisMapOpener {
 
     private SolarisMapOpener() {}

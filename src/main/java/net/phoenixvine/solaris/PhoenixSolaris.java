@@ -39,7 +39,6 @@ public class PhoenixSolaris {
         return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
     }
 
-    /** Moves config files that used to sit loose in config/ into config/solaris/ (one-time, never overwrites). */
     private static void migrateLegacyConfigFiles() {
         try {
             java.nio.file.Path configDir = net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get();

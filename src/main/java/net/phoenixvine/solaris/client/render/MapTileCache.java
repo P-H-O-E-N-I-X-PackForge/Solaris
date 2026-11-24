@@ -59,8 +59,6 @@ public final class MapTileCache {
                 int tz = Math.floorDiv(chunkZ, chunksPerTile);
                 dirty.add(new TileKey(dimension, tx, tz, lod));
 
-                // A tile reads a 1px halo (heights/water for hillshading + water relief) from the chunks just
-                // across its border, so a chunk on a tile edge also invalidates the adjacent tile(s).
                 int lx = Math.floorMod(chunkX, chunksPerTile);
                 int lz = Math.floorMod(chunkZ, chunksPerTile);
                 for (int dz = -1; dz <= 1; dz++) {
@@ -231,11 +229,6 @@ public final class MapTileCache {
         if (FullMapLog.on()) logEdgeDirty(key);
     }
 
-    /**
-     * A chunk on the edge of a tile feeds the 1px halo (heights/water for hillshading + water relief) of the
-     * adjacent tile, but {@link #markDirty} only dirties the tile that contains the chunk. Log when that leaves
-     * an already-built neighbouring tile with stale edge data.
-     */
     private static void logEdgeDirty(ChunkKey key) {
         int tx = Math.floorDiv(key.x(), TILE_CHUNKS);
         int tz = Math.floorDiv(key.z(), TILE_CHUNKS);
@@ -269,12 +262,6 @@ public final class MapTileCache {
                 114 * FastColor.ABGR32.blue(abgr)) / 1000;
     }
 
-    /**
-     * Compares the outermost pixel row/column of a freshly built lod0 tile against the adjacent row/column of
-     * each already-built neighbour tile. A "suspicious" pixel is one with a hard step across the tile border
-     * (>=20 luma) where the pixel is smooth against its own interior neighbour (<=6 luma): exactly what a
-     * seam line looks like.
-     */
     private static void checkSeams(TileKey key, MapTile tile) {
         int[][] dirs = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } };
         String[] names = { "W", "E", "N", "S" };
@@ -327,7 +314,6 @@ public final class MapTileCache {
         }
     }
 
-    /** One-line snapshot of the tile cache for the per-second map screen log. */
     public static String debugState() {
         return "tiles=" + TILES.size() + "/" + capacity + " dirtyPending=" + DIRTY.size();
     }
@@ -883,12 +869,6 @@ public final class MapTileCache {
         }
     }
 
-    /**
-     * Box-blurs the water pixels of a tile. The blur window is {@link SolarisTexture#WATER_BLUR_RADIUS} wide but
-     * the tile only owns its own pixels, so near a tile border the window used to be one-sided and the border
-     * showed up as a hard shade line. The window now reads the real (pre-blur) colours of the water just across the
-     * border from neighbouring chunk data, so both tiles blur the same pixels identically.
-     */
     private static void blurWater(TileKey key, NativeImage image, boolean[] water) {
         final int radius = SolarisTexture.WATER_BLUR_RADIUS;
         final int pad = TILE_PIXELS + 2 * radius;
@@ -964,11 +944,6 @@ public final class MapTileCache {
         }
     }
 
-    /**
-     * Fills the ring of {@code radius} pixels around the tile (inside a padded {@code pad x pad} buffer) with the
-     * final pre-blur colour of every water pixel that belongs to a neighbouring tile, using the same colour steps
-     * the tile builders apply to their own pixels.
-     */
     private static void collectWaterRing(TileKey key, int radius, int pad, int[] colorPad, boolean[] waterPad) {
         int blocksPerPixel = blocksPerPixel(key.lod());
         int worldOriginX = key.tileX() * tileWorldSize(key.lod());

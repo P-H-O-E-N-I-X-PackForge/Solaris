@@ -126,7 +126,6 @@ public class ChunkColorEvents {
         SolarisProfiler.time("chunkSample", () -> resample(level, key, pos));
     }
 
-    /** 8-char string W,E,N,S,NW,NE,SW,SE of loaded (L) / missing (.) neighbouring chunks. */
     static String neighbourMask(Level level, ChunkKey key) {
         int[][] d = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 }, { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } };
         StringBuilder sb = new StringBuilder("W,E,N,S,NW,NE,SW,SE=");

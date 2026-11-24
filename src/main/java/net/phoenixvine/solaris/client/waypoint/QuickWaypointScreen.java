@@ -51,7 +51,6 @@ public class QuickWaypointScreen extends Screen {
     private String icon = WaypointIcon.DOT.name();
     private boolean visible = true;
 
-    // Typed-in values survive init(), which re-runs when the icon picker hands control back or the window resizes.
     private String draftName;
     private String draftX;
     private String draftY;

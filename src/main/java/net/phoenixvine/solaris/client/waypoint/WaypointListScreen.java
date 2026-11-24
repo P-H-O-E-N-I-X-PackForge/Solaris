@@ -628,7 +628,6 @@ public class WaypointListScreen extends Screen {
         init();
     }
 
-    /** Writes whatever is typed in the edit boxes onto the selected waypoint, without rebuilding the screen. */
     private void commitEdits() {
         if (selected == null || nameBox == null) return;
         selected.name = nameBox.getValue().isBlank() ? selected.name : nameBox.getValue();

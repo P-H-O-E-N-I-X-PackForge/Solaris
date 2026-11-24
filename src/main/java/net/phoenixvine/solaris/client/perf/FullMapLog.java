@@ -21,16 +21,6 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Verbose diagnostics for the world map pipeline (chunk sampling, caches, tile builds, minimap texture
- * rebuilds). Everything is gated behind {@code performance.mapDebugLogging} in the Solaris client config.
- *
- * Output goes to both the normal game log ({@code [Solaris map/<cat>]} lines) and a dedicated
- * {@code logs/solaris-map-debug.log} that is truncated every launch, so it can be attached to a bug report
- * without digging through latest.log. A counter summary is written every {@link #SUMMARY_INTERVAL_MS}.
- *
- * Call sites on hot paths should guard with {@link #on()} before building arguments.
- */
 @EventBusSubscriber(modid = PhoenixSolaris.MOD_ID, value = Dist.CLIENT)
 public final class FullMapLog {
 
