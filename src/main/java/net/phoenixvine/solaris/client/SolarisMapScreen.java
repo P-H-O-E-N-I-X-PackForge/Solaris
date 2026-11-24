@@ -82,12 +82,19 @@ import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_TEXT;
 @OnlyIn(Dist.CLIENT)
 public class SolarisMapScreen extends Screen {
 
-    private static final int MARGIN = 20;
+    private static int margin() {
+        return SolarisLayout.mapMargin();
+    }
 
     private static final int MAX_TILE_BUILDS_PER_FRAME = 300;
 
-    private static final int PANEL_INSET = MARGIN - 4;
-    private static final int BORDER_PAD = 4;
+    private static int panelInset() {
+        return margin() > 0 ? margin() - 4 : 0;
+    }
+
+    private static int borderPad() {
+        return margin() > 0 ? 4 : 0;
+    }
 
     private static final int BUTTON_MARGIN = 14;
     private static final int IDEAL_BUTTON_R = 9;
@@ -165,35 +172,35 @@ public class SolarisMapScreen extends Screen {
     }
 
     private int frameLeft() {
-        return MARGIN;
+        return margin();
     }
 
     private int frameTop() {
-        return MARGIN;
+        return margin();
     }
 
     private int frameRight() {
-        return width - MARGIN;
+        return width - margin();
     }
 
     private int frameBottom() {
-        return panelBottom() - BORDER_PAD;
+        return panelBottom() - borderPad();
     }
 
     private int panelLeft() {
-        return PANEL_INSET;
+        return panelInset();
     }
 
     private int panelTop() {
-        return PANEL_INSET;
+        return panelInset();
     }
 
     private int panelRight() {
-        return width - PANEL_INSET;
+        return width - panelInset();
     }
 
     private int panelBottom() {
-        return height - PANEL_INSET;
+        return height - panelInset();
     }
 
     private int globeCx() {
@@ -691,8 +698,10 @@ public class SolarisMapScreen extends Screen {
     }
 
     private void beginFrame(GuiGraphics g) {
-        ModernPanel.draw(g, panelLeft(), panelTop(), panelRight() - panelLeft(), panelBottom() - panelTop(),
-                C_BORDER);
+        if (margin() > 0) {
+            ModernPanel.draw(g, panelLeft(), panelTop(), panelRight() - panelLeft(), panelBottom() - panelTop(),
+                    C_BORDER);
+        }
         g.enableScissor(frameLeft(), frameTop(), frameRight(), frameBottom());
         g.fill(frameLeft(), frameTop(), frameRight(), frameBottom(), C_BG);
         drawUnexploredCoverImage(g);
@@ -781,7 +790,8 @@ public class SolarisMapScreen extends Screen {
         super.render(g, mx, my, partialTick);
 
         g.drawCenteredString(font, title, width / 2, 6, C_ACCENT);
-        g.drawCenteredString(font, footerHint(), (int) frameCenterX(), frameBottom() + 10, C_TEXT);
+        g.drawCenteredString(font, footerHint(), (int) frameCenterX(), margin() > 0 ? frameBottom() + 10 : height - 14,
+                C_TEXT);
 
         net.phoenixvine.solaris.client.page.PageTabs.render(g, font, mx, my, null);
 

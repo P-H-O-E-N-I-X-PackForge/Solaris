@@ -26,7 +26,10 @@ import static net.phoenixvine.solaris.client.SolarisThemeUtils.C_TEXT;
 @OnlyIn(Dist.CLIENT)
 public class SolarisPageScreen extends Screen {
 
-    private static final int MARGIN = 20;
+    private static int margin() {
+        return net.phoenixvine.solaris.client.SolarisLayout.mapMargin();
+    }
+
     private static final int TOP = 24;
 
     private final MapPage page;
@@ -43,7 +46,7 @@ public class SolarisPageScreen extends Screen {
     }
 
     private int left() {
-        return MARGIN;
+        return margin();
     }
 
     private int top() {
@@ -51,11 +54,11 @@ public class SolarisPageScreen extends Screen {
     }
 
     private int right() {
-        return width - MARGIN;
+        return width - margin();
     }
 
     private int bottom() {
-        return height - MARGIN;
+        return height - margin();
     }
 
     private double centreX() {
@@ -114,8 +117,10 @@ public class SolarisPageScreen extends Screen {
         if (!fitted || fittedVariant != page.selectedVariant()) fit();
 
         renderBackground(g, mx, my, partialTick);
-        g.fill(left() - 4, top() - 4, right() + 4, bottom() + 4, C_PANEL);
-        ModernPanel.draw(g, left() - 4, top() - 4, right() - left() + 8, bottom() - top() + 8, C_BORDER);
+        if (margin() > 0) {
+            g.fill(left() - 4, top() - 4, right() + 4, bottom() + 4, C_PANEL);
+            ModernPanel.draw(g, left() - 4, top() - 4, right() - left() + 8, bottom() - top() + 8, C_BORDER);
+        }
 
         MapProjection projection = projection();
         g.enableScissor(left(), top(), right(), bottom());
