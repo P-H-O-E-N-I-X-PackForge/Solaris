@@ -38,6 +38,7 @@ public final class SolarisConfig {
     public static final ForgeConfigSpec.BooleanValue WATER_DEEP_ONLY;
     public static final ForgeConfigSpec.IntValue WATER_DEEP_Y_THRESHOLD;
     public static final ForgeConfigSpec.DoubleValue WAYPOINT_ICON_SCALE;
+    public static final ForgeConfigSpec.BooleanValue FULLSCREEN_MAP;
     public static final ForgeConfigSpec.BooleanValue SHOW_GT_ORE_VEINS;
     public static final ForgeConfigSpec.BooleanValue SHOW_MOBS;
     public static final ForgeConfigSpec.BooleanValue SHOW_PLAYERS;
@@ -313,11 +314,16 @@ public final class SolarisConfig {
         WATER_DEEP_Y_THRESHOLD = builder
                 .comment("Y level below which water still tints when waterDeepOnly is enabled.")
                 .defineInRange("waterDeepYThreshold", 50, -64, 320);
+        FULLSCREEN_MAP = builder
+                .comment(
+                        "Make the map screen fill the whole window, with the buttons drawn over the map. Off puts the " +
+                                "map in a framed panel with a margin round it.")
+                .define("fullscreenMap", true);
         WAYPOINT_ICON_SCALE = builder
                 .comment("Size multiplier for waypoint icons on the fullscreen map and waypoint list " +
                         "(the corner minimap keeps its own small fixed dots regardless. Too little screen " +
                         "space there for a real icon to read).")
-                .defineInRange("waypointIconScale", 1.0, 0.5, 3.0);
+                .defineInRange("waypointIconScale", 0.8, 0.5, 3.0);
         SHOW_GT_ORE_VEINS = builder
                 .comment("Show GTCEu ore veins you've already had revealed to you (prospecting, surface " +
                         "indicators, etc.) as markers on the fullscreen map. No effect if GTCEu isn't " +
