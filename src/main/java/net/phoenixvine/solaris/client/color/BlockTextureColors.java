@@ -21,6 +21,9 @@ public final class BlockTextureColors {
 
     private static final int FALLBACK_RGB = 0x808080;
 
+    private static final long PERSISTENT_AFTER_MS = 30_000L;
+    private static final Map<Block, Long> FIRST_FAILURE_MS = new ConcurrentHashMap<>();
+
     private BlockTextureColors() {}
 
     public static int get(BlockState state) {
@@ -31,22 +34,29 @@ public final class BlockTextureColors {
 
         public final int rgb;
         public final boolean fallback;
+        /**
+         * True once a block has failed for long enough that it clearly isn't a startup race (a block with no
+         * static texture, e.g. a dynamically modelled one). The caller still uses its MapColor fallback but must
+         * not treat the chunk as "not ready yet", which would block it from ever being refreshed.
+         */
+        public final boolean persistent;
 
-        private Result(int rgb, boolean fallback) {
+        private Result(int rgb, boolean fallback, boolean persistent) {
             this.rgb = rgb;
             this.fallback = fallback;
+            this.persistent = persistent;
         }
     }
 
     public static Result getResult(BlockState state) {
         Block block = state.getBlock();
         Integer cached = CACHE.get(block);
-        if (cached != null) return new Result(cached, false);
+        if (cached != null) return new Result(cached, false, false);
 
         Integer computed = computeAverage(state);
         if (computed != null) {
             CACHE.put(block, computed);
-            return new Result(computed, false);
+            return new Result(computed, false, false);
         }
         if (WARNED_FALLBACK_BLOCKS.add(block)) {
             PhoenixSolaris.LOGGER.warn(
@@ -58,7 +68,9 @@ public final class BlockTextureColors {
                             "failure worth reporting, not a one-time startup timing race.",
                     block);
         }
-        return new Result(FALLBACK_RGB, true);
+        long firstFailure = FIRST_FAILURE_MS.computeIfAbsent(block, k -> System.currentTimeMillis());
+        boolean persistent = System.currentTimeMillis() - firstFailure >= PERSISTENT_AFTER_MS;
+        return new Result(FALLBACK_RGB, true, persistent);
     }
 
     private static Integer computeAverage(BlockState state) {

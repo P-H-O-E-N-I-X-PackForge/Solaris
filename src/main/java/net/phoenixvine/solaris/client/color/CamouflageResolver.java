@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.phoenixvine.solaris.integration.copycats.CopycatsIntegration;
+import net.phoenixvine.solaris.integration.createcopycat.CreateCopycatIntegration;
 import net.phoenixvine.solaris.integration.domumornamentum.DomumOrnamentumIntegration;
 import net.phoenixvine.solaris.integration.framedblocks.FramedBlocksIntegration;
 
@@ -15,6 +16,10 @@ public final class CamouflageResolver {
         if (FramedBlocksIntegration.isAvailable()) {
             BlockState camo = FramedBlocksIntegration.getCamoState(level, pos);
             if (camo != null) return camo;
+        }
+        if (CreateCopycatIntegration.isAvailable()) {
+            BlockState material = CreateCopycatIntegration.getMaterialState(level, pos);
+            if (material != null) return material;
         }
         if (CopycatsIntegration.isAvailable()) {
             BlockState material = CopycatsIntegration.getMaterialState(level, pos);

@@ -229,7 +229,7 @@ public final class ChunkColorSampler {
                     BlockTextureColors.Result textureResult = BlockTextureColors.getResult(state);
                     int abgr;
                     if (textureResult.fallback) {
-                        hadFallback = true;
+                        if (!textureResult.persistent) hadFallback = true;
 
                         abgr = mapColor != MapColor.NONE ? mapColor.calculateRGBColor(MapColor.Brightness.NORMAL) :
                                 packAbgr(textureResult.rgb, 255);
