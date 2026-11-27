@@ -204,6 +204,17 @@ dependencies {
 
     modRuntimeOnly("maven.modrinth:copycats:3.0.7+mc.1.20.1-forge") { transitive = false }
 
+    // Integrated Dungeons and Structures with the mods it needs, so the map can be checked against its structures
+    // (dev run only)
+    modRuntimeOnly("maven.modrinth:idas:1.13.0+1.20.1") { transitive = false }
+    // 1.7.2 is the last Integrated API with mixin refmaps; later ones only name the game's methods the production way
+    // and fail to apply in a dev run
+    modRuntimeOnly("maven.modrinth:integrated-api:1.7.2+1.20.1-forge") { transitive = false }
+    modRuntimeOnly("maven.modrinth:supplementaries:1.20-3.1.45-forge") { transitive = false }
+    modRuntimeOnly("maven.modrinth:moonlight:1.20-2.16.39-forge") { transitive = false }
+    modRuntimeOnly("maven.modrinth:quark:1.20.1-4.0-462") { transitive = false }
+    modRuntimeOnly("maven.modrinth:zeta:1.20.1-1.0-31") { transitive = false }
+
     modCompileOnly("com.ldtteam:domum_ornamentum:1.20.1-1.0.296:api") { transitive = false }
     modRuntimeOnly("com.ldtteam:domum_ornamentum:1.20.1-1.0.296:universal") { transitive = false }
 
