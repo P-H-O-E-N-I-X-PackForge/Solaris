@@ -134,12 +134,25 @@ public final class MapTileCache {
                         FullMapLog.count("tile.evict");
                         FullMapLog.log("tile", "EVICT {} (size={} capacity={})", eldest.getKey(), size(), capacity);
                     }
+                    LAST_BUILD_MS.remove(eldest.getKey());
+                    LAST_BLANK_LOG_MS.remove(eldest.getKey());
                     eldest.getValue().close();
                     return true;
                 }
             });
 
     private static final Set<TileKey> DIRTY = ConcurrentHashMap.newKeySet();
+
+    /**
+     * While chunks stream in, the same tile gets marked dirty many times a second. Rebuilding it every time is
+     * wasted work, so an already-built tile is rebuilt at most this often; it keeps showing its previous image in
+     * between and the pending dirty flag is kept, so nothing is lost.
+     */
+    private static final long MIN_REBUILD_INTERVAL_MS = 500L;
+    private static final Map<TileKey, Long> LAST_BUILD_MS = new ConcurrentHashMap<>();
+
+    private static final long BLANK_LOG_INTERVAL_MS = 5000L;
+    private static final Map<TileKey, Long> LAST_BLANK_LOG_MS = new ConcurrentHashMap<>();
 
     private static double lastNightFactorBucket = -1;
     private static final double NIGHT_FACTOR_BUCKET = 0.05;
@@ -176,6 +189,15 @@ public final class MapTileCache {
         boolean dirty = DIRTY.remove(key);
         if (tile != null && !dirty) return tile;
 
+        if (tile != null) {
+            Long lastBuild = LAST_BUILD_MS.get(key);
+            if (lastBuild != null && System.currentTimeMillis() - lastBuild < MIN_REBUILD_INTERVAL_MS) {
+                DIRTY.add(key);
+                if (FullMapLog.on()) FullMapLog.count("tile.rebuildThrottled");
+                return tile;
+            }
+        }
+
         if (!PersistentChunkStore.isLoaded(key.dimension().toString())) {
             if (dirty) DIRTY.add(key);
             if (FullMapLog.on()) {
@@ -192,6 +214,7 @@ public final class MapTileCache {
             return tile;
         }
         buildBudget[0]--;
+        LAST_BUILD_MS.put(key, System.currentTimeMillis());
         long buildStartNanos = System.nanoTime();
         boolean wasNew = tile == null;
 
@@ -333,6 +356,8 @@ public final class MapTileCache {
             TILES.clear();
         }
         DIRTY.clear();
+        LAST_BUILD_MS.clear();
+        LAST_BLANK_LOG_MS.clear();
     }
 
     private static final int HALO = TILE_PIXELS + 2;
@@ -771,7 +796,7 @@ public final class MapTileCache {
             if (ringMissing > 0 && ringMissing < ringTotal) FullMapLog.count("tile.builtPartialHalo");
         }
 
-        if (SolarisConfig.PERF_LOGGING.get() && blankChunks > 0) {
+        if (SolarisConfig.PERF_LOGGING.get() && blankChunks > 0 && shouldLogBlank(key)) {
             PhoenixSolaris.LOGGER.info(
                     "[Solaris tile] {} chunkHits={} persistedHits={} blank={} (blank means neither cache " +
                             "nor disk had data for that chunk when this tile was built)",
@@ -805,6 +830,14 @@ public final class MapTileCache {
         tile.texture.upload();
 
         tile.texture.setFilter(false, false);
+    }
+
+    private static boolean shouldLogBlank(TileKey key) {
+        long now = System.currentTimeMillis();
+        Long last = LAST_BLANK_LOG_MS.get(key);
+        if (last != null && now - last < BLANK_LOG_INTERVAL_MS) return false;
+        LAST_BLANK_LOG_MS.put(key, now);
+        return true;
     }
 
     private static void fillHalo(TileKey key, int[] heights, boolean[] water, int[] waterDepth,
